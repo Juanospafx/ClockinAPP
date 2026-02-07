@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1) No redirigir nada de backend (API)
+    RewriteCond %{REQUEST_URI} ^/api(/|$) [NC]
+    RewriteRule .* - [L]
+
+    # 2) Si entran al dominio raíz, manda al login
+    RewriteRule ^$ frontend [L]
+
+    # 3) Si no existe archivo o carpeta real, manda al login
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . frontend/index.html [L]
+</IfModule>

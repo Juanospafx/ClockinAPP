@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - QR App</title>
+    <link rel="stylesheet" href="../../libs/css/global_login.css">
+    <link rel="stylesheet" href="../../libs/css/index_login.css">
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+            <button type="submit">Login</button>
+            <p id="loginMessage" class="error-message"></p>
+        </form>
+    </div>
+    <script src="../../libs/js/script.js"></script>
+</body>
+
+</html>

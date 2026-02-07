@@ -1,0 +1,123 @@
+/* index_login.css */
+
+/* --- Variables globales --- */
+:root {
+    --primary-color: #007bff;
+    --primary-dark-color: #0056b3;
+    --background-color: #f4f6f9;
+    --card-background: #ffffff;
+    --border-color: #ddd;
+    --text-color: #333;
+    --danger-color: #e74c3c;
+}
+
+/* --- Reset básico --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f4f6f9, #e9ecef);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --- Contenedor del login --- */
+.login-container {
+    background-color: var(--card-background);
+    padding: 40px 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.login-container:hover {
+    transform: translateY(-3px);
+}
+
+.login-container h2 {
+    margin-bottom: 25px;
+    color: var(--primary-color);
+    font-size: 1.8rem;
+}
+
+/* --- Inputs --- */
+.input-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border 0.3s ease, box-shadow 0.3s ease;
+}
+
+.input-group input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+/* --- Botón --- */
+.login-container button {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1rem;
+    border-radius: 6px;
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    border: none;
+}
+
+.login-container button:hover {
+    background-color: var(--primary-dark-color);
+    transform: translateY(-1px);
+}
+
+/* --- Mensajes --- */
+.login-container .error-message {
+    color: var(--danger-color);
+    margin-top: 15px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* --- Responsive --- */
+@media (max-width: 600px) {
+    .login-container {
+        margin: 20px;
+        padding: 30px 20px;
+    }
+
+    .login-container h2 {
+        font-size: 1.5rem;
+    }
+
+    .login-container button {
+        font-size: 1rem;
+        padding: 10px;
+    }
+}

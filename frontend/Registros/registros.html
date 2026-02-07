@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Records</title>
+    <link rel="stylesheet" href="../../libs/css/global_login.css?v=1.3"> <!-- Incrementada la versión -->
+    <link rel="stylesheet" href="../../libs/css/registros.css?v=1.3"> <!-- Incrementada la versión -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
+    <script src="../../libs/js/script.js?v=1.3"></script>
+
+</head>
+
+<body>
+    <div class="sidebar">
+        <button class="close-sidebar-button">×</button>
+        <h2 id="user-greeting">Hello, User!</h2>
+        <div id="timer-display" style="display:none;">
+            <p>Work Time:</p>
+            <p id="timer-clock">00:00:00</p>
+        </div>
+        <ul>
+            <!-- User Navigation -->
+            <li class="user-only"><a href="#" id="nav-scan">Scan QR</a></li>
+            <li class="user-only"><a href="#" id="nav-my-records">My Records</a></li>
+
+            <!-- Special User Navigation -->
+            <li class="special-only"><a href="#" id="nav-scan-special">Scan QR</a></li>
+            <li class="special-only"><a href="#" id="nav-my-records-special">My Records</a></li>
+            <li class="special-only"><a href="#" id="nav-user-records-special">User Records</a></li>
+            <li class="special-only"><a href="#" id="nav-special-tools">Special User Tool</a></li>
+
+            <!-- Admin Navigation -->
+            <li class="admin-only"><a href="#" id="nav-dashboard">Dashboard</a></li>
+            <li class="admin-only"><a href="#" id="nav-all-records">All Records</a></li>
+            <li class="admin-only"><a href="#" id="nav-admin-tools">Admin Tools</a></li>
+            <li class="admin-only"><a href="#" id="nav-users">Users</a></li>
+            <li class="admin-only"><a href="#" id="nav-projects">Projects</a></li>
+            <li class="admin-only"><a href="#" id="nav-timer-control">Timer Control</a></li>
+
+            <li><a href="#" id="nav-logout">Logout</a></li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <button class="open-sidebar-button">☰</button>
+
+        <!-- Section for QR Scanning (for regular users) -->
+        <section id="scan-section">
+            <h3>Scan QR Code</h3>
+            <button id="start-scanner-button">Start Scanner</button>
+            <div id="scanner-container" style="display: none;"><video id="qr-video" playsinline muted></video></div>
+            <p id="scan-result">Waiting for scan...</p>
+            <p id="register-message"></p>
+        </section>
+
+        <!-- Section for Displaying Records (for users and admins) -->
+        <section id="records-section" style="display:none;">
+            <h3>Attendance Records</h3>
+            <div class="admin-only">
+                <div class="form-group">
+                    <label for="admin-user-filter">Filter by User:</label>
+                    <select id="admin-user-filter"></select>
+                </div>
+                <div class="form-group">
+                    <label for="recalculate-date">Date for Recalculation:</label>
+                    <input type="date" id="recalculate-date">
+                    <button id="recalculate-duration-button">Recalculate Daily Duration</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="attendance-table-search">Search Attendance Records:</label>
+                <input type="text" id="attendance-table-search" placeholder="Search...">
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Date</th>
+                        <th>Location</th>
+                        <th>Type</th>
+                        <th>Original Time</th>
+                        <th>Rounded Time</th>
+                        <th>Work Duration (hours)</th>
+                        <th>Lunch Duration (hours)</th>
+                        <th>Project</th>
+                        <th class="admin-only">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-records-body"></tbody>
+            </table>
+        </section>
+
+        <!-- Section for Special User Records -->
+        <section id="special-user-records-section" style="display:none;">
+            <h3>User Records (Last 15)</h3>
+            <div class="form-group">
+                <label for="special-users-filter">Select User:</label>
+                <select id="special-users-filter"></select>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Date</th>
+                        <th>Location</th>
+                        <th>Type</th>
+                        <th>Original Time</th>
+                        <th>Rounded Time</th>
+                        <th>Work Duration (hours)</th>
+                        <th>Lunch Duration (hours)</th>
+                        <th>Project</th>
+                    </tr>
+                </thead>
+                <tbody id="special-user-records-body"></tbody>
+            </table>
+        </section>
+
+        <!-- Section for Admin Dashboard -->
+        <section id="dashboard-section" style="display:none;">
+            <h3>Admin Dashboard</h3>
+            <div class="chart-container">
+                <h4>Hours Worked Summary</h4>
+                <canvas id="hours-chart"></canvas>
+            </div>
+            <div id="user-locations-map-container">
+                <h4>User Locations Map</h4>
+                <div class="form-group">
+                    <label for="history-user-filter">Select User for History:</label>
+                    <select id="history-user-filter"></select>
+                    <label for="history-start-date">Start Date:</label>
+                    <input type="date" id="history-start-date">
+                    <label for="history-end-date">End Date:</label>
+                    <input type="date" id="history-end-date">
+                    <button id="view-history-button">View History</button>
+                </div>
+                <div id="user-locations-map-canvas" style="height: 500px; width: 100%;"></div>
+                <p id="map-message"></p>
+            </div>
+        </section>
+
+        <!-- Section for Admin Tools (QR Generation) -->
+        <section id="admin-tools-section" style="display:none;">
+            <h3>Admin Tools</h3>
+            <h4>Generate QR Codes</h4>
+            <div class="form-group">
+                <label for="project-select">Select Project:</label>
+                <select id="project-select"></select>
+            </div>
+
+            <div class="form-group">
+                <label for="qr-location">Location:</label>
+                <input type="text" id="qr-location" placeholder="e.g., Main Office" required>
+                <button type="button" id="open-qr-map-button">Select on Map</button>
+            </div>
+            <button id="generate-qr-button">Generate QR</button>
+            <div id="qr-code-display" style="margin-top: 20px;"></div>
+            <p id="qr-message"></p>
+
+            <h4>Generated QR Codes</h4>
+            <div class="form-group">
+                <label for="generated-qrs-table-search">Search Generated QRs:</label>
+                <input type="text" id="generated-qrs-table-search" placeholder="Search...">
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>Action Type</th>
+                        <th>Location</th>
+                        <th>Generated At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="generated-qrs-table-body"></tbody>
+            </table>
+        </section>
+
+        <!-- Section for User Management (Admin Only) -->
+        <section id="users-section" style="display:none;">
+            <h3>User Management</h3>
+            <button id="add-user-button">Add New User</button>
+            <div id="user-form-container" style="display:none;">
+                <h4><span id="user-form-title"></span> User</h4>
+                <form id="user-form">
+                    <input type="hidden" id="user-id">
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password">
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Role:</label>
+                        <!-- ⚡ Este select se llena dinámicamente desde roles.php -->
+                        <select id="role"></select>
+                    </div>
+                    <button type="submit" id="save-user-button">Save User</button>
+                    <button type="button" id="cancel-user-edit">Cancel</button>
+                </form>
+                <p id="user-form-message"></p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body"></tbody>
+            </table>
+        </section>
+
+        <!-- Section for Project Management (Admin Only) -->
+        <section id="projects-section" style="display:none;">
+            <h3>Project Management</h3>
+            <button id="add-project-button">Add New Project</button>
+            <div id="project-form-container" style="display:none;">
+                <h4><span id="project-form-title"></span> Project</h4>
+                <form id="project-form">
+                    <input type="hidden" id="project-id">
+                    <div class="form-group">
+                        <label for="project-name">Project Name:</label>
+                        <input type="text" id="project-name" required>
+                    </div>
+                    <button type="submit" id="save-project-button">Save Project</button>
+                    <button type="button" id="cancel-project-edit">Cancel</button>
+                </form>
+                <p id="project-form-message"></p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Creation Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="projects-table-body"></tbody>
+            </table>
+        </section>
+
+        <!-- Section for Special User Tools -->
+        <section id="special-tools-section" style="display:none;">
+            <h3>Active Timers</h3>
+            <p>Here you can see all active timers for regular users. Pause or stop them when necessary.</p>
+            <p id="timer-control-message"></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Project</th>
+                        <th>Start Time</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="active-timers-body"></tbody>
+            </table>
+            <template id="active-timer-row-template">
+                <tr data-timer-row="">
+                    <td data-label="User"></td>
+                    <td data-label="Project"></td>
+                    <td data-label="Start Time"></td>
+                    <td data-label="Duration" data-field="duration"></td>
+                    <td data-label="Status"></td>
+                    <td data-label="Actions">
+                        <button data-action="paused" data-id="">Pause</button>
+                        <button data-action="resumed" data-id="">Resume</button>
+                        <button data-action="stopped" data-id="">Stop</button>
+                    </td>
+                </tr>
+            </template>
+        </section>
+    </div>
+
+    <!-- QR Location Map Modal -->
+    <div id="qr-map-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button">×</span>
+            <h2>Select Location for QR</h2>
+            <input type="text" id="qr-map-search-input" placeholder="Search location...">
+            <button id="qr-map-current-location-button">My Current Location</button>
+            <div id="qr-map-canvas" style="height: 400px; width: 100%; margin-top: 10px;"></div>
+            <button id="select-qr-location-button">Select This Location</button>
+        </div>
+    </div>
+
+    <!-- Edit Record Modal -->
+    <div id="edit-record-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button">×</span>
+            <h2>Edit Record</h2>
+            <form id="edit-record-form">
+                <input type="hidden" id="edit-record-id">
+                <div class="form-group">
+                    <label for="edit-rounded-time">New Rounded Time:</label>
+                    <input type="datetime-local" id="edit-rounded-time" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-total-duration">Total Duration (minutes):</label>
+                    <input type="number" id="edit-total-duration" step="0.01">
+                </div>
+                <button type="submit">Save Changes</button>
+            </form>
+            <p id="edit-message"></p>
+        </div>
+    </div>
+
+    <!-- Action Selection Modal -->
+    <div id="action-selection-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Select Action</h3>
+            <input type="hidden" id="scanned-project-id">
+            <input type="hidden" id="scanned-project-qr-id">
+            <div class="action-buttons">
+                <button class="action-button" data-action="entry">Entry</button>
+                <button class="action-button" data-action="exit">Exit</button>
+                <button class="action-button" data-action="start_lunch">Start Lunch</button>
+                <button class="action-button" data-action="end_lunch">End Lunch</button>
+            </div>
+            <button class="close-button">Cancel</button>
+        </div>
+    </div>
+
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
+    <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        async function loadGoogleMapsApi() {
+            try {
+                const response = await fetch('../../backend/get_api_key.php');
+                const data = await response.json();
+                if (data.success) {
+                    const script = document.createElement('script');
+                    script.src = `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}&callback=initMaps&libraries=places`;
+                    script.async = true;
+                    script.defer = true;
+                    document.head.appendChild(script);
+                } else {
+                    console.error('Error loading Google Maps API key:', data.message);
+                }
+            } catch (error) {
+                console.error('Error fetching Google Maps API key:', error);
+            }
+        }
+        if (sessionStorage.getItem('user_role') === 'admin') {
+            loadGoogleMapsApi();
+        }
+    </script>
+</body>
+
+</html>
