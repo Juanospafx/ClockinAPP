@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="../../../assets/css/global_login.css?v=1.3">
+    <link rel="stylesheet" href="../../../assets/css/registros.css?v=1.3">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../../../assets/js/script.js?v=1.3"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <button class="close-sidebar-button">×</button>
+        <h2 id="user-greeting">Hello, Admin!</h2>
+        <ul>
+            <!-- Admin Navigation will be loaded dynamically -->
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <button class="open-sidebar-button">☰</button>
+
+        <!-- All sections are now in registros.html, but script.js will show the correct one -->
+        <div id="included-sections"></div>
+
+    </div>
+
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+    <script>
+        // Load all sections from registros.html
+        fetch('../../registros/registros.html')
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const sections = doc.querySelectorAll('.main-content > section');
+                const target = document.getElementById('included-sections');
+                sections.forEach(section => {
+                    target.appendChild(section);
+                });
+            });
+    </script>
+</body>
+</html>

@@ -1,15 +1,19 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # 1) No redirigir nada de backend (API)
+    # 1) No redirigir nada de API/Uploads/Assets
     RewriteCond %{REQUEST_URI} ^/api(/|$) [NC]
+    RewriteRule .* - [L]
+    RewriteCond %{REQUEST_URI} ^/uploads(/|$) [NC]
+    RewriteRule .* - [L]
+    RewriteCond %{REQUEST_URI} ^/assets(/|$) [NC]
     RewriteRule .* - [L]
 
     # 2) Si entran al dominio raíz, manda al login
-    RewriteRule ^$ frontend [L]
+    RewriteRule ^$ pages/login/login.html [L]
 
-    # 3) Si no existe archivo o carpeta real, manda al login
+    # 3) Si no existe archivo o carpeta real, manda al landing
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule . frontend/index.html [L]
+    RewriteRule . pages/index.html [L]
 </IfModule>
