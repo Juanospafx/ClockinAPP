@@ -5,11 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance Records</title>
-    <link rel="stylesheet" href="../../assets/css/global_login.css?v=1.3"> <!-- Incrementada la versión -->
-    <link rel="stylesheet" href="../../assets/css/registros.css?v=1.3"> <!-- Incrementada la versión -->
+    <link rel="stylesheet" href="../../assets/css/global_login.css?v=2.0">
+    <link rel="stylesheet" href="../../assets/css/registros.css?v=2.0">
+    <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=2.0">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
-    <script src="../../assets/js/script.js?v=1.3"></script>
+    <script src="../../assets/js/script.js?v=2.0"></script>
 
 </head>
 
@@ -182,6 +183,10 @@
         <section id="users-section" style="display:none;">
             <h3>User Management</h3>
             <button id="add-user-button">Add New User</button>
+            <div class="form-group">
+                <label for="users-table-search">Search Users:</label>
+                <input type="text" id="users-table-search" placeholder="Search users...">
+            </div>
             <div id="user-form-container" style="display:none;">
                 <h4><span id="user-form-title"></span> User</h4>
                 <form id="user-form">
@@ -222,6 +227,10 @@
         <section id="projects-section" style="display:none;">
             <h3>Project Management</h3>
             <button id="add-project-button">Add New Project</button>
+            <div class="form-group">
+                <label for="projects-table-search">Search Projects:</label>
+                <input type="text" id="projects-table-search" placeholder="Search projects...">
+            </div>
             <div id="project-form-container" style="display:none;">
                 <h4><span id="project-form-title"></span> Project</h4>
                 <form id="project-form">
@@ -308,7 +317,7 @@
                     <input type="datetime-local" id="edit-rounded-time" required>
                 </div>
                 <div class="form-group">
-                    <label for="edit-total-duration">Total Duration (minutes):</label>
+                    <label for="edit-total-duration">Total Duration (hours):</label>
                     <input type="number" id="edit-total-duration" step="0.01">
                 </div>
                 <button type="submit">Save Changes</button>
