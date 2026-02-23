@@ -1,17 +1,18 @@
-/* index_login.css */
-
-/* --- Variables globales --- */
+/* index_login.css - modern dark login */
 :root {
-    --primary-color: #007bff;
-    --primary-dark-color: #0056b3;
-    --background-color: #f4f6f9;
-    --card-background: #ffffff;
-    --border-color: #ddd;
-    --text-color: #333;
-    --danger-color: #e74c3c;
+    --login-bg-1: #121a2f;
+    --login-bg-2: #1a2740;
+    --login-card: #1f2941;
+    --login-card-border: rgba(159, 176, 205, 0.22);
+    --login-text: #f4f7ff;
+    --login-muted: #9fb0cd;
+    --login-input-bg: #131d34;
+    --login-input-border: rgba(154, 180, 223, 0.35);
+    --login-accent: #ff6247;
+    --login-accent-hover: #ff7b62;
+    --login-danger: #ff8a97;
 }
 
-/* --- Reset básico --- */
 * {
     margin: 0;
     padding: 0;
@@ -23,115 +24,109 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #f4f6f9, #e9ecef);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--login-text);
+    background: radial-gradient(circle at 15% 10%, #1c2742 0%, var(--login-bg-1) 45%) fixed;
+    padding: 20px;
 }
 
-/* --- Contenedor del login --- */
-.login-container {
-    background-color: var(--card-background);
-    padding: 40px 30px;
-    border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+.app-shell {
     width: 100%;
-    max-width: 400px;
-    text-align: center;
-    transition: transform 0.2s ease;
+    max-width: 460px;
 }
 
-.login-container:hover {
-    transform: translateY(-3px);
+.login-container {
+    width: 100%;
+    background: linear-gradient(165deg, #232e4a 0%, var(--login-card) 100%);
+    border: 1px solid var(--login-card-border);
+    border-radius: 18px;
+    box-shadow: 0 12px 35px rgba(6, 10, 22, 0.4);
+    padding: 40px 32px;
+    text-align: left;
 }
 
 .login-brand {
     margin-bottom: 6px;
-    font-size: 0.92rem;
     text-transform: uppercase;
-    letter-spacing: 1.3px;
-    opacity: 0.9;
+    letter-spacing: 1.4px;
+    font-size: 0.84rem;
+    color: var(--login-muted);
 }
 
 .login-container h2 {
-    margin-bottom: 8px;
-    color: var(--primary-color);
     font-size: 2rem;
+    margin-bottom: 8px;
+    color: #ffffff;
+    text-align: center;
 }
 
 .login-subtitle {
-    margin-bottom: 25px;
-    color: var(--text-color);
-    opacity: 0.75;
+    margin-bottom: 26px;
+    color: var(--login-muted);
+    text-align: center;
 }
 
-/* --- Inputs --- */
 .input-group {
-    margin-bottom: 20px;
-    text-align: left;
+    margin-bottom: 18px;
 }
 
 .input-group label {
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     font-weight: 600;
-    color: var(--text-color);
-    font-size: 0.95rem;
+    color: #d8e0f4;
 }
 
 .input-group input {
     width: 100%;
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
+    padding: 12px 13px;
+    border: 1px solid var(--login-input-border);
+    border-radius: 10px;
     font-size: 1rem;
-    transition: border 0.3s ease, box-shadow 0.3s ease;
+    color: var(--login-text);
+    background: var(--login-input-bg);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-group input:focus {
-    border-color: var(--primary-color);
     outline: none;
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+    border-color: #5ca7ff;
+    box-shadow: 0 0 0 3px rgba(92, 167, 255, 0.35);
 }
 
-/* --- Botón --- */
 .login-container button {
     width: 100%;
     padding: 12px;
-    font-size: 1.1rem;
-    border-radius: 6px;
-    background-color: var(--primary-color);
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.1s ease;
+    margin-top: 6px;
     border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--login-accent), #ff7a5f);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.06rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, background-color 0.2s ease;
 }
 
 .login-container button:hover {
-    background-color: var(--primary-dark-color);
     transform: translateY(-1px);
+    background: linear-gradient(135deg, var(--login-accent-hover), #ff8d74);
 }
 
-/* --- Mensajes --- */
 .login-container .error-message {
-    color: var(--danger-color);
-    margin-top: 15px;
-    font-size: 0.9rem;
-    font-weight: 500;
+    color: var(--login-danger);
+    margin-top: 14px;
+    font-size: 0.92rem;
+    min-height: 1.2em;
+    text-align: center;
 }
 
-/* --- Responsive --- */
 @media (max-width: 600px) {
     .login-container {
-        margin: 20px;
         padding: 30px 20px;
     }
 
     .login-container h2 {
-        font-size: 1.5rem;
-    }
-
-    .login-container button {
-        font-size: 1rem;
-        padding: 10px;
+        font-size: 1.75rem;
     }
 }
