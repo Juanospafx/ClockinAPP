@@ -4,15 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - QR App</title>
+    <title>ClockinAPP • Login</title>
     <link rel="stylesheet" href="../../assets/css/global_login.css">
     <link rel="stylesheet" href="../../assets/css/index_login.css">
+    <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=2.0">
 </head>
 
 <body>
-    <div class="login-container">
-        <h2>Login</h2>
-        <form id="loginForm">
+    <div class="app-shell">
+        <div class="login-container">
+            <p class="login-brand">ClockinAPP</p>
+            <h2>Welcome</h2>
+            <p class="login-subtitle">Sign in to continue</p>
+            <form id="loginForm">
             <div class="input-group">
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
@@ -21,11 +25,12 @@
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required autocomplete="current-password">
             </div>
-            <button type="submit">Login</button>
-            <p id="loginMessage" class="error-message"></p>
-        </form>
+                <button type="submit">Access</button>
+                <p id="loginMessage" class="error-message"></p>
+            </form>
+        </div>
     </div>
-    <script src="../../assets/js/script.js"></script>
+    <script src="../../assets/js/script.js?v=2.0"></script>
 </body>
 
 </html>

@@ -248,6 +248,10 @@ function showSection(sectionId) {
     let target = sectionId;
     const role = normalizeRole(sessionStorage.getItem('user_role'));
 
+    document.querySelectorAll('.sidebar a[id^="nav-"]').forEach((link) => {
+        link.classList.remove('active');
+    });
+
     if (role === 'admin' && (sectionId === 'scan-section' || sectionId === 'special-user-records-section')) {
         target = 'dashboard-section';
     }
@@ -266,6 +270,19 @@ function showSection(sectionId) {
 
     stopActiveTimersTicker();
     stopActiveTimersPolling();
+
+    const navMap = {
+        'scan-section': role === 'special' ? 'nav-scan-special' : 'nav-scan',
+        'records-section': role === 'special' ? 'nav-my-records-special' : (role === 'admin' ? 'nav-all-records' : 'nav-my-records'),
+        'special-user-records-section': 'nav-user-records-special',
+        'dashboard-section': 'nav-dashboard',
+        'admin-tools-section': 'nav-admin-tools',
+        'users-section': 'nav-users',
+        'projects-section': 'nav-projects',
+        'special-tools-section': role === 'admin' ? 'nav-timer-control' : 'nav-special-tools'
+    };
+    const activeNav = document.getElementById(navMap[target] || '');
+    if (activeNav) activeNav.classList.add('active');
 
     if (target === 'dashboard-section') {
         loadDashboardData();
@@ -832,7 +849,7 @@ async function prepareSpecialUserRecordsView() {
         if (select.options.length > 1) {
             select.selectedIndex = 1;
         } else {
-            tbody.innerHTML = '<tr><td colspan="8">Select a user to view records.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9">Select a user to view records.</td></tr>';
             return;
         }
     }
@@ -848,7 +865,7 @@ async function loadSpecialUserRecords(userId) {
         const data = await apiFetch(`attendance?user_id=${userId}`);
 
         if (!data.records || data.records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8">No records found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9">No records found.</td></tr>';
             return;
         }
 
@@ -871,7 +888,7 @@ async function loadSpecialUserRecords(userId) {
       `;
         }).join('');
     } catch (error) {
-        tbody.innerHTML = `<tr><td colspan="8">${error.message || 'Error loading records.'}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">${error.message || 'Error loading records.'}</td></tr>`;
     }
 }
 
@@ -1581,7 +1598,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Menu Event Listeners ---
     const logoutLink = document.getElementById('nav-logout');
-    if (logoutLink) logoutLink.addEventListener('click', logout);
+    if (logoutLink) {
+        logoutLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            logout();
+        });
+    }
 
     const dashboardLink = document.getElementById('nav-dashboard');
     if (dashboardLink) dashboardLink.addEventListener('click', (e) => { e.preventDefault(); showSection('dashboard-section'); });
@@ -1878,7 +1900,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadSpecialUserRecords(selectedUser);
             } else {
                 const tbody = document.getElementById('special-user-records-body');
-                if (tbody) tbody.innerHTML = '<tr><td colspan="8">Select a user to view records.</td></tr>';
+                if (tbody) tbody.innerHTML = '<tr><td colspan="9">Select a user to view records.</td></tr>';
             }
         });
     }
