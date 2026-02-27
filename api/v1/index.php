@@ -16,6 +16,7 @@ require_once __DIR__ . '/controllers/locations.php';
 require_once __DIR__ . '/controllers/roles.php';
 require_once __DIR__ . '/controllers/maps.php';
 require_once __DIR__ . '/controllers/uploads.php';
+require_once __DIR__ . '/controllers/absences.php';
 
 $route = trim((string)($_GET['route'] ?? ''), '/');
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -145,6 +146,24 @@ try {
 
     if ($route === 'uploads/profile' && $method === 'POST') {
         handle_upload_profile();
+        return;
+    }
+
+    // --- Absences ---
+    if ($route === 'absences' && $method === 'GET') {
+        handle_absences_list();
+        return;
+    }
+    if ($route === 'absences' && $method === 'POST') {
+        handle_absences_create();
+        return;
+    }
+    if (preg_match('#^absences/(\\d+)/review$#', $route, $m) && $method === 'PUT') {
+        handle_absences_review((int)$m[1]);
+        return;
+    }
+    if (preg_match('#^absences/(\\d+)$#', $route, $m) && $method === 'DELETE') {
+        handle_absences_delete((int)$m[1]);
         return;
     }
 

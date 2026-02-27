@@ -9,9 +9,11 @@
     <link rel="stylesheet" href="../../assets/css/registros.css?v=2.0">
     <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=2.0">
     <link rel="stylesheet" href="../../assets/css/geofence.css?v=2.0">
+    <link rel="stylesheet" href="../../assets/css/absences.css?v=2.0">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
     <script src="../../assets/js/geofence.js?v=2.0"></script>
+    <script src="../../assets/js/absences.js?v=2.0"></script>
     <script src="../../assets/js/script.js?v=2.0"></script>
 
 </head>
@@ -28,16 +30,19 @@
             <!-- User Navigation -->
             <li class="user-only"><a href="#" id="nav-scan">Scan QR</a></li>
             <li class="user-only"><a href="#" id="nav-my-records">My Records</a></li>
+            <li class="user-only"><a href="#" id="nav-report-absence">Report Absence</a></li>
 
             <!-- Special User Navigation -->
             <li class="special-only"><a href="#" id="nav-scan-special">Scan QR</a></li>
             <li class="special-only"><a href="#" id="nav-my-records-special">My Records</a></li>
+            <li class="special-only"><a href="#" id="nav-report-absence-special">Report Absence</a></li>
             <li class="special-only"><a href="#" id="nav-user-records-special">User Records</a></li>
             <li class="special-only"><a href="#" id="nav-special-tools">Special User Tool</a></li>
 
             <!-- Admin Navigation -->
             <li class="admin-only"><a href="#" id="nav-dashboard">Dashboard</a></li>
             <li class="admin-only"><a href="#" id="nav-all-records">All Records</a></li>
+            <li class="admin-only"><a href="#" id="nav-absence-records">Absence Records</a></li>
             <li class="admin-only"><a href="#" id="nav-admin-tools">Admin Tools</a></li>
             <li class="admin-only"><a href="#" id="nav-users">Users</a></li>
             <li class="admin-only"><a href="#" id="nav-projects">Projects</a></li>
@@ -281,6 +286,140 @@
                 </thead>
                 <tbody id="projects-table-body"></tbody>
             </table>
+        </section>
+
+        <!-- Section: Report Absence (User / Special) -->
+        <section id="report-absence-section" style="display:none;">
+            <h3>Reportar Ausencia</h3>
+            <form id="absence-report-form" class="absence-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="absence-project-select">Proyecto:</label>
+                        <select id="absence-project-select">
+                            <option value="">— Seleccionar proyecto —</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="absence-reason">Razón:</label>
+                        <select id="absence-reason" required>
+                            <option value="">— Seleccionar —</option>
+                            <option value="familiar">Familiar</option>
+                            <option value="enfermedad">Enfermedad</option>
+                            <option value="vacaciones">Vacaciones</option>
+                            <option value="sin_justificacion">Sin justificación</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="absence-date-start">Fecha inicio:</label>
+                        <input type="date" id="absence-date-start" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="absence-date-end">Fecha fin (opcional):</label>
+                        <input type="date" id="absence-date-end">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="absence-notes">Notas adicionales:</label>
+                    <textarea id="absence-notes" rows="3" placeholder="Detalles opcionales..."></textarea>
+                </div>
+                <div class="form-group file-upload-group">
+                    <label for="absence-evidence">Adjuntar evidencia (opcional):</label>
+                    <input type="file" id="absence-evidence" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx">
+                    <div class="file-info">Formatos: JPG, PNG, GIF, PDF, DOC. Máx: 10 MB</div>
+                </div>
+                <button type="submit" class="submit-btn">Enviar reporte</button>
+            </form>
+            <p id="absence-form-message"></p>
+
+            <h4 style="margin-top: 24px;">Mis reportes de ausencia</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Proyecto</th>
+                        <th>Razón</th>
+                        <th>Estado</th>
+                        <th>Notas</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="user-absences-body"></tbody>
+            </table>
+        </section>
+
+        <!-- Section: Absence Records (Admin) -->
+        <section id="absence-records-section" style="display:none;">
+            <h3>Registros de Ausencias</h3>
+
+            <!-- Summary cards + chart -->
+            <div id="absence-summary-container" class="absence-summary-container"></div>
+
+            <!-- Filters -->
+            <div class="absence-filters">
+                <div class="form-group">
+                    <label for="absence-filter-user">Usuario:</label>
+                    <select id="absence-filter-user"><option value="">Todos</option></select>
+                </div>
+                <div class="form-group">
+                    <label for="absence-filter-project">Proyecto:</label>
+                    <select id="absence-filter-project"><option value="">Todos</option></select>
+                </div>
+                <div class="form-group">
+                    <label for="absence-filter-reason">Razón:</label>
+                    <select id="absence-filter-reason">
+                        <option value="">Todas</option>
+                        <option value="familiar">Familiar</option>
+                        <option value="enfermedad">Enfermedad</option>
+                        <option value="vacaciones">Vacaciones</option>
+                        <option value="sin_justificacion">Sin justificación</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="absence-filter-status">Estado:</label>
+                    <select id="absence-filter-status">
+                        <option value="">Todos</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="aprobado">Aprobado</option>
+                        <option value="rechazado">Rechazado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="absence-filter-date-from">Desde:</label>
+                    <input type="date" id="absence-filter-date-from">
+                </div>
+                <div class="form-group">
+                    <label for="absence-filter-date-to">Hasta:</label>
+                    <input type="date" id="absence-filter-date-to">
+                </div>
+                <button class="filter-btn" id="absence-filter-btn">Filtrar</button>
+            </div>
+
+            <!-- Search -->
+            <div class="form-group">
+                <label for="admin-absences-search">Buscar:</label>
+                <input type="text" id="admin-absences-search" placeholder="Buscar en registros...">
+            </div>
+
+            <!-- Table -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Fecha</th>
+                        <th>Proyecto</th>
+                        <th>Razón</th>
+                        <th>Estado</th>
+                        <th>Notas</th>
+                        <th>Evidencia</th>
+                        <th>Reportado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-absences-body"></tbody>
+            </table>
+            <p id="admin-absence-message"></p>
         </section>
 
         <!-- Section for Special User Tools -->

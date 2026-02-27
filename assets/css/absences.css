@@ -1,0 +1,302 @@
+/* =============================================
+   Absences Module Styles
+   ============================================= */
+
+/* --- Absence form --- */
+.absence-form .form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.absence-form .form-row .form-group {
+    flex: 1;
+}
+
+.absence-form .form-group {
+    margin-bottom: 12px;
+}
+
+.absence-form .form-group label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.absence-form .form-group select,
+.absence-form .form-group input,
+.absence-form .form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.absence-form .form-group textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.absence-form .file-upload-group {
+    position: relative;
+}
+
+.absence-form .file-upload-group input[type="file"] {
+    padding: 6px;
+}
+
+.absence-form .file-upload-group .file-info {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    margin-top: 4px;
+}
+
+.absence-form .submit-btn {
+    padding: 10px 24px;
+    background: #e63946;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.absence-form .submit-btn:hover {
+    background: #c62828;
+}
+
+.absence-form .submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* --- Admin filters bar --- */
+.absence-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: flex-end;
+}
+
+.absence-filters .form-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 140px;
+}
+
+.absence-filters .form-group label {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-bottom: 3px;
+}
+
+.absence-filters .form-group select,
+.absence-filters .form-group input {
+    padding: 6px 10px;
+    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    font-size: 0.85rem;
+}
+
+.absence-filters .filter-btn {
+    padding: 6px 16px;
+    background: #e63946;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    height: fit-content;
+    align-self: flex-end;
+}
+
+.absence-filters .filter-btn:hover {
+    background: #c62828;
+}
+
+/* --- Status badges --- */
+.status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-badge.pendiente {
+    background: rgba(243, 156, 18, 0.2);
+    color: #f39c12;
+    border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+.status-badge.aprobado {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.status-badge.rechazado {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+/* --- Reason badges --- */
+.reason-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
+.reason-badge.familiar {
+    background: rgba(155, 89, 182, 0.2);
+    color: #b57cdb;
+}
+
+.reason-badge.enfermedad {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e98a82;
+}
+
+.reason-badge.vacaciones {
+    background: rgba(52, 152, 219, 0.2);
+    color: #7fbde4;
+}
+
+.reason-badge.sin_justificacion {
+    background: rgba(149, 165, 166, 0.2);
+    color: #a0a8a9;
+}
+
+/* --- Admin action buttons in table --- */
+.absence-actions-cell {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.absence-actions-cell button {
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: none;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.absence-actions-cell .approve-btn {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.absence-actions-cell .approve-btn:hover {
+    background: rgba(46, 204, 113, 0.35);
+}
+
+.absence-actions-cell .reject-btn {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.absence-actions-cell .reject-btn:hover {
+    background: rgba(231, 76, 60, 0.35);
+}
+
+.absence-actions-cell .delete-btn {
+    background: rgba(149, 165, 166, 0.15);
+    color: #95a5a6;
+    border: 1px solid rgba(149, 165, 166, 0.2);
+}
+
+/* --- Summary cards --- */
+.absence-summary-container {
+    margin-bottom: 24px;
+}
+
+.absence-summary-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+}
+
+.absence-summary-card h5 {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+    color: #e6e6e6;
+}
+
+.absence-summary-card .reason-breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.absence-summary-card .reason-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+}
+
+.absence-summary-card .reason-item .reason-count {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.absence-summary-card .total-line {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #e63946;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.absence-summary-chart-container {
+    max-width: 350px;
+    margin: 12px auto 0;
+}
+
+/* --- Evidence link --- */
+.evidence-link {
+    color: #3498db;
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+.evidence-link:hover {
+    text-decoration: underline;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .absence-form .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .absence-filters {
+        flex-direction: column;
+    }
+
+    .absence-summary-card .reason-breakdown {
+        flex-direction: column;
+        gap: 6px;
+    }
+}
