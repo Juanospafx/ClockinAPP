@@ -54,9 +54,20 @@ try {
         handle_projects_create();
         return;
     }
-    if (preg_match('#^projects/(\\d+)$#', $route, $m) && $method === 'DELETE') {
-        handle_projects_delete((int)$m[1]);
-        return;
+    if (preg_match('#^projects/(\\d+)$#', $route, $m)) {
+        $id = (int)$m[1];
+        if ($method === 'GET') {
+            handle_projects_get($id);
+            return;
+        }
+        if ($method === 'PUT') {
+            handle_projects_update($id);
+            return;
+        }
+        if ($method === 'DELETE') {
+            handle_projects_delete($id);
+            return;
+        }
     }
 
     if ($route === 'attendance' && $method === 'GET') {

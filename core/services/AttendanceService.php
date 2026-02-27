@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../../funciones/time.php';
+require_once __DIR__ . '/GeofenceService.php';
+require_once __DIR__ . '/ProjectService.php';
 
 class AttendanceService {
     public static function fetchRecords(?int $userId, ?int $limit): array {
@@ -100,6 +102,53 @@ class AttendanceService {
                 $projectQrId = (int)$foundQrId;
             }
         }
+
+        // --- Geofence validation ---
+        $resolvedProjectId = $projectIdFromClient;
+        if (!$resolvedProjectId && $projectQrId !== null) {
+            $pqStmt = $pdo->prepare('SELECT project_id FROM project_qrs WHERE id = ?');
+            $pqStmt->execute([$projectQrId]);
+            $resolvedProjectId = (int)($pqStmt->fetchColumn() ?: 0);
+        }
+
+        if ($resolvedProjectId) {
+            $project = ProjectService::getProject($resolvedProjectId);
+            if ($project && $project['latitude'] !== null && $project['longitude'] !== null) {
+                $userCoords = GeofenceService::parseLocation($location);
+                if ($userCoords === null) {
+                    return [
+                        'error' => [
+                            'code' => 'geofence_error',
+                            'message' => 'No se pudo determinar tu ubicación. La geolocalización es obligatoria para registrar asistencia en este proyecto.'
+                        ],
+                        'status' => 400
+                    ];
+                }
+
+                $geoCheck = GeofenceService::checkPosition(
+                    $userCoords[0],
+                    $userCoords[1],
+                    (float)$project['latitude'],
+                    (float)$project['longitude'],
+                    (int)$project['geofence_radius']
+                );
+
+                if (!$geoCheck['inside']) {
+                    return [
+                        'error' => [
+                            'code' => 'outside_geofence',
+                            'message' => 'No estás dentro del área permitida para este proyecto. Acércate a la ubicación asignada para poder registrar tu entrada/salida.',
+                            'details' => [
+                                'distance_meters' => $geoCheck['distance'],
+                                'allowed_radius'  => $geoCheck['radius'],
+                            ]
+                        ],
+                        'status' => 403
+                    ];
+                }
+            }
+        }
+        // --- End geofence validation ---
 
         $pdo->beginTransaction();
         try {
