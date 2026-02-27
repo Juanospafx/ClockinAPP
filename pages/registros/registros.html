@@ -8,8 +8,10 @@
     <link rel="stylesheet" href="../../assets/css/global_login.css?v=2.0">
     <link rel="stylesheet" href="../../assets/css/registros.css?v=2.0">
     <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=2.0">
+    <link rel="stylesheet" href="../../assets/css/geofence.css?v=2.0">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
+    <script src="../../assets/js/geofence.js?v=2.0"></script>
     <script src="../../assets/js/script.js?v=2.0"></script>
 
 </head>
@@ -235,10 +237,32 @@
                 <h4><span id="project-form-title"></span> Project</h4>
                 <form id="project-form">
                     <input type="hidden" id="project-id">
+                    <input type="hidden" id="project-latitude">
+                    <input type="hidden" id="project-longitude">
+                    <input type="hidden" id="project-geofence-radius" value="100">
                     <div class="form-group">
                         <label for="project-name">Project Name:</label>
                         <input type="text" id="project-name" required>
                     </div>
+
+                    <!-- Geofence Configuration -->
+                    <div class="geofence-config">
+                        <h5>📍 Configuración de Geocerca</h5>
+                        <div class="map-search-container">
+                            <input type="text" id="geofence-search-input" placeholder="Buscar dirección...">
+                            <button type="button" id="geofence-current-loc-btn">📍 Mi ubicación</button>
+                        </div>
+                        <div class="geofence-map-container" id="geofence-map-canvas"></div>
+                        <div class="radius-control">
+                            <label>Radio de tolerancia:</label>
+                            <input type="range" id="geofence-radius-slider" min="10" max="5000" step="10" value="100">
+                            <span class="radius-value" id="geofence-radius-value">100m</span>
+                        </div>
+                        <div class="geofence-coords">
+                            Coordenadas: <span id="geofence-coords-display">No seleccionadas</span>
+                        </div>
+                    </div>
+
                     <button type="submit" id="save-project-button">Save Project</button>
                     <button type="button" id="cancel-project-edit">Cancel</button>
                 </form>
@@ -250,6 +274,7 @@
                     <tr>
                         <th>ID</th>
                         <th>Name</th>
+                        <th>Geofence</th>
                         <th>Creation Date</th>
                         <th>Actions</th>
                     </tr>
@@ -366,7 +391,9 @@
                 console.error('Error fetching Google Maps API key:', error);
             }
         }
-        if (sessionStorage.getItem('user_role') === 'admin') {
+        // Load Google Maps for all roles (admin needs maps + geofence config,
+        // users/special need it for the success mini-map after clock in)
+        if (sessionStorage.getItem('user_id')) {
             loadGoogleMapsApi();
         }
     </script>

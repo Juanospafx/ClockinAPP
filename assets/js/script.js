@@ -546,57 +546,91 @@ async function registerAttendance(action) {
     const projectId = projectIdRaw !== '' ? Number(projectIdRaw) : null;
     const projectQrId = projectQrIdRaw !== '' ? Number(projectQrIdRaw) : null;
 
-    if (!navigator.geolocation) {
+    // --- Geofence: get user location first ---
+    let userCoords = null;
+    try {
+        userCoords = await getUserLocation();
+    } catch (locError) {
+        // Show overlay error for location issues
+        if (typeof showLocationRequiredError === 'function') {
+            showLocationRequiredError();
+        }
         if (messageEl) {
-            messageEl.textContent = 'Geolocation is not supported by your browser.';
+            messageEl.textContent = 'La ubicación es obligatoria para registrar asistencia. Activa la geolocalización e intenta de nuevo.';
             messageEl.className = 'error-message';
         }
         return;
     }
 
-    navigator.geolocation.getCurrentPosition(async (position) => {
-        const userLocation = `${position.coords.latitude},${position.coords.longitude}`;
+    const userLocation = `${userCoords.lat},${userCoords.lng}`;
 
+    // Fetch project geofence info for mini-map display
+    let projectGeo = null;
+    const resolvedProjectId = projectId || null;
+    if (resolvedProjectId) {
         try {
-            const now = new Date();
-            const payload = {
-                user_id: uid,
-                location: userLocation,
-                type: action,
-                project_qr_id: projectQrId,
-                project_id: projectId,
-                client_time_local: formatLocalDateTime(now),
-                client_time_iso: now.toISOString(),
-                client_timestamp: now.getTime(),
-                client_timezone_offset: now.getTimezoneOffset()
-            };
-
-            const response = await apiFetch('attendance', 'POST', payload);
-            if (messageEl) {
-                messageEl.textContent = response.message || 'Attendance registered successfully.';
-                messageEl.className = 'success-message';
+            const pData = await apiFetch(`projects/${resolvedProjectId}`);
+            if (pData.project && pData.project.latitude && pData.project.longitude) {
+                projectGeo = {
+                    lat: parseFloat(pData.project.latitude),
+                    lng: parseFloat(pData.project.longitude),
+                    radius: parseInt(pData.project.geofence_radius, 10) || 100,
+                };
             }
+        } catch (_) { /* non-critical */ }
+    }
 
-            applyLocalTimerAction();
+    try {
+        const now = new Date();
+        const payload = {
+            user_id: uid,
+            location: userLocation,
+            type: action,
+            project_qr_id: projectQrId,
+            project_id: projectId,
+            client_time_local: formatLocalDateTime(now),
+            client_time_iso: now.toISOString(),
+            client_timestamp: now.getTime(),
+            client_timezone_offset: now.getTimezoneOffset()
+        };
 
-            const recordsSection = document.getElementById('records-section');
-            if (recordsSection && recordsSection.style.display === 'block') {
-                const normalizedRole = normalizeRole(sessionStorage.getItem('user_role'));
-                loadAttendanceRecords(normalizedRole === 'admin' ? null : uid);
-            }
-        } catch (error) {
+        const response = await apiFetch('attendance', 'POST', payload);
+
+        // Show success overlay with animation + mini-map
+        const successMsg = response.message || 'Asistencia registrada exitosamente.';
+        if (typeof showClockInSuccess === 'function') {
+            showClockInSuccess(
+                successMsg,
+                { lat: userCoords.lat, lng: userCoords.lng },
+                projectGeo
+            );
+        }
+
+        if (messageEl) {
+            messageEl.textContent = successMsg;
+            messageEl.className = 'success-message';
+        }
+
+        applyLocalTimerAction();
+
+        const recordsSection = document.getElementById('records-section');
+        if (recordsSection && recordsSection.style.display === 'block') {
+            const normalizedRole = normalizeRole(sessionStorage.getItem('user_role'));
+            loadAttendanceRecords(normalizedRole === 'admin' ? null : uid);
+        }
+    } catch (error) {
+        // Check for geofence-specific errors
+        if (error.code === 'outside_geofence' && typeof showGeofenceError === 'function') {
+            showGeofenceError(error.message, error.details || null);
+        } else if (error.code === 'geofence_error' && typeof showLocationRequiredError === 'function') {
+            showGeofenceError(error.message, null);
+        } else {
             if (messageEl) {
                 messageEl.textContent = error.message;
                 messageEl.className = 'error-message';
             }
         }
-    }, (error) => {
-        console.error('Geolocation error:', error);
-        if (messageEl) {
-            messageEl.textContent = `Error getting location: ${error.message}`;
-            messageEl.className = 'error-message';
-        }
-    });
+    }
 }
 
 
@@ -1249,21 +1283,39 @@ async function loadProjects() {
     try {
         const data = await apiFetch('projects');
         if (data.success) {
-            projectsTableBody.innerHTML = data.projects.map(project => `
+            projectsTableBody.innerHTML = data.projects.map(project => {
+                const hasGeo = project.latitude && project.longitude;
+                const geoStatus = hasGeo
+                    ? `📍 ${project.geofence_radius}m`
+                    : '<span style="opacity:0.5">Sin geocerca</span>';
+
+                // Encode project data for edit button
+                const projectData = encodeURIComponent(JSON.stringify({
+                    id: project.id,
+                    name: project.name,
+                    latitude: project.latitude,
+                    longitude: project.longitude,
+                    geofence_radius: project.geofence_radius
+                }));
+
+                return `
         <tr>
           <td data-label="ID">${project.id}</td>
           <td data-label="Name">${project.name}</td>
+          <td data-label="Geofence">${geoStatus}</td>
           <td data-label="Creation Date">${new Date(project.created_at).toLocaleDateString()}</td>
           <td data-label="Actions">
+            <button data-action="edit-project" data-project-data="${projectData}">Edit</button>
             <button data-action="delete-project" data-project-id="${project.id}">Delete</button>
           </td>
         </tr>
-      `).join('');
+      `;
+            }).join('');
         } else {
-            projectsTableBody.innerHTML = `<tr><td colspan="4">Error loading projects: ${data.message}</td></tr>`;
+            projectsTableBody.innerHTML = `<tr><td colspan="5">Error loading projects: ${data.message}</td></tr>`;
         }
     } catch (error) {
-        projectsTableBody.innerHTML = `<tr><td colspan="4">Connection error loading projects.</td></tr>`;
+        projectsTableBody.innerHTML = `<tr><td colspan="5">Connection error loading projects.</td></tr>`;
     }
 }
 
@@ -1281,10 +1333,23 @@ function showProjectForm(action, project = {}) {
         if (formTitle) formTitle.textContent = 'Create';
         if (projectIdInput) projectIdInput.value = '';
         if (projectNameInput) projectNameInput.value = '';
+        // Init geofence map with no initial coordinates
+        if (typeof initGeofenceConfigMap === 'function') {
+            setTimeout(() => initGeofenceConfigMap(null), 100);
+        }
     } else {
         if (formTitle) formTitle.textContent = 'Edit';
         if (projectIdInput) projectIdInput.value = project.id;
         if (projectNameInput) projectNameInput.value = project.name;
+        // Init geofence map with existing coordinates
+        const geoCoords = (project.latitude && project.longitude) ? {
+            lat: parseFloat(project.latitude),
+            lng: parseFloat(project.longitude),
+            radius: parseInt(project.geofence_radius, 10) || 100
+        } : null;
+        if (typeof initGeofenceConfigMap === 'function') {
+            setTimeout(() => initGeofenceConfigMap(geoCoords), 100);
+        }
     }
 }
 
@@ -1294,18 +1359,35 @@ async function saveProject(e) {
     const projectName = document.getElementById('project-name').value;
     const messageEl = document.getElementById('project-form-message');
 
-    const action = projectId ? 'update' : 'create';
-    const payload = { action, name: projectName };
-    if (projectId) payload.id = projectId;
+    const payload = { name: projectName };
+
+    // Include geofence config if available
+    if (typeof getGeofenceConfig === 'function') {
+        const geo = getGeofenceConfig();
+        if (geo.latitude !== null && geo.longitude !== null) {
+            payload.latitude = geo.latitude;
+            payload.longitude = geo.longitude;
+            payload.geofence_radius = geo.geofence_radius;
+        }
+    }
 
     try {
-        const response = await apiFetch('projects', 'POST', payload);
+        let response;
+        if (projectId) {
+            // Update existing project via PUT
+            response = await apiFetch(`projects/${projectId}`, 'PUT', payload);
+        } else {
+            // Create new project via POST
+            response = await apiFetch('projects', 'POST', payload);
+        }
+
         if (messageEl) {
             messageEl.textContent = response.message;
             messageEl.className = response.success ? 'success-message' : 'error-message';
         }
         if (response.success) {
             document.getElementById('project-form-container').style.display = 'none';
+            if (typeof destroyGeofenceConfigMap === 'function') destroyGeofenceConfigMap();
             loadProjects();
             loadProjectsForQrGeneration();
         }
@@ -1795,6 +1877,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cancelProjectEditButton) {
         cancelProjectEditButton.addEventListener('click', () => {
             document.getElementById('project-form-container').style.display = 'none';
+            if (typeof destroyGeofenceConfigMap === 'function') destroyGeofenceConfigMap();
         });
     }
 
@@ -1861,6 +1944,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const projectId = Number(target.dataset.projectId);
                 if (projectId) {
                     deleteProject(projectId);
+                }
+            } else if (target && target.matches('button[data-action="edit-project"]')) {
+                e.preventDefault();
+                try {
+                    const projectData = JSON.parse(decodeURIComponent(target.dataset.projectData));
+                    showProjectForm('edit', projectData);
+                } catch (err) {
+                    console.error('Error parsing project data:', err);
                 }
             }
         });

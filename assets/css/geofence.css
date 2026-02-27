@@ -1,0 +1,251 @@
+/* =============================================
+   Geofence & Clock-in UX Styles
+   ============================================= */
+
+/* --- Success overlay (animated checkmark) --- */
+.clockin-success-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+}
+
+.clockin-success-overlay .checkmark-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #2ecc71;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 0 30px rgba(46, 204, 113, 0.5);
+}
+
+.clockin-success-overlay .checkmark-circle svg {
+    width: 50px;
+    height: 50px;
+}
+
+.clockin-success-overlay .checkmark-circle svg path {
+    stroke: #fff;
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    animation: drawCheck 0.5s 0.3s ease forwards;
+}
+
+.clockin-success-overlay .success-text {
+    color: #fff;
+    margin-top: 16px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.clockin-success-overlay .success-location-info {
+    color: rgba(255,255,255,0.8);
+    margin-top: 8px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* Mini-map shown on success */
+.clockin-success-overlay .success-minimap {
+    width: 280px;
+    height: 180px;
+    margin-top: 16px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.5s 0.6s ease both;
+}
+
+/* --- Geofence error message --- */
+.geofence-error-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+}
+
+.geofence-error-overlay .error-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #e74c3c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 0 30px rgba(231, 76, 60, 0.5);
+}
+
+.geofence-error-overlay .error-circle svg {
+    width: 50px;
+    height: 50px;
+}
+
+.geofence-error-overlay .error-circle svg line {
+    stroke: #fff;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 32;
+    stroke-dashoffset: 32;
+    animation: drawCheck 0.4s 0.3s ease forwards;
+}
+
+.geofence-error-overlay .error-text {
+    color: #fff;
+    margin-top: 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    max-width: 320px;
+    line-height: 1.5;
+}
+
+.geofence-error-overlay .error-details {
+    color: rgba(255,255,255,0.7);
+    margin-top: 8px;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.geofence-error-overlay .dismiss-btn,
+.clockin-success-overlay .dismiss-btn {
+    margin-top: 20px;
+    padding: 10px 28px;
+    border: 2px solid rgba(255,255,255,0.5);
+    border-radius: 8px;
+    background: transparent;
+    color: #fff;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.geofence-error-overlay .dismiss-btn:hover,
+.clockin-success-overlay .dismiss-btn:hover {
+    background: rgba(255,255,255,0.15);
+    border-color: #fff;
+}
+
+/* --- Admin: Geofence config in project form --- */
+.geofence-config {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+}
+
+.geofence-config h5 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    color: #e6e6e6;
+}
+
+.geofence-config .geofence-map-container {
+    width: 100%;
+    height: 350px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    position: relative;
+}
+
+.geofence-config .radius-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.geofence-config .radius-control label {
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+.geofence-config .radius-control input[type="range"] {
+    flex: 1;
+    accent-color: #e63946;
+}
+
+.geofence-config .radius-control .radius-value {
+    min-width: 60px;
+    text-align: center;
+    font-weight: 600;
+    color: #e63946;
+}
+
+.geofence-config .geofence-coords {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.6);
+}
+
+.geofence-config .geofence-coords span {
+    font-family: monospace;
+}
+
+.geofence-config .map-search-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.geofence-config .map-search-container input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.geofence-config .map-search-container button {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.geofence-config .map-search-container button:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
+
+@keyframes drawCheck {
+    to { stroke-dashoffset: 0; }
+}
