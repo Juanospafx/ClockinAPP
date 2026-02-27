@@ -256,7 +256,7 @@ function showSection(sectionId) {
         target = 'dashboard-section';
     }
 
-    ['scan-section', 'records-section', 'special-user-records-section', 'dashboard-section', 'admin-tools-section', 'users-section', 'projects-section', 'special-tools-section']
+    ['scan-section', 'records-section', 'special-user-records-section', 'dashboard-section', 'admin-tools-section', 'users-section', 'projects-section', 'special-tools-section', 'report-absence-section', 'absence-records-section']
         .forEach((id) => {
             const section = document.getElementById(id);
             if (section) section.style.display = (id === target) ? 'block' : 'none';
@@ -279,7 +279,9 @@ function showSection(sectionId) {
         'admin-tools-section': 'nav-admin-tools',
         'users-section': 'nav-users',
         'projects-section': 'nav-projects',
-        'special-tools-section': role === 'admin' ? 'nav-timer-control' : 'nav-special-tools'
+        'special-tools-section': role === 'admin' ? 'nav-timer-control' : 'nav-special-tools',
+        'report-absence-section': role === 'special' ? 'nav-report-absence-special' : 'nav-report-absence',
+        'absence-records-section': 'nav-absence-records'
     };
     const activeNav = document.getElementById(navMap[target] || '');
     if (activeNav) activeNav.classList.add('active');
@@ -298,6 +300,14 @@ function showSection(sectionId) {
         startActiveTimersPolling();
     } else if (target === 'special-user-records-section') {
         prepareSpecialUserRecordsView();
+    } else if (target === 'report-absence-section') {
+        if (typeof loadProjectsForAbsenceForm === 'function') loadProjectsForAbsenceForm();
+        if (typeof loadUserAbsenceHistory === 'function') loadUserAbsenceHistory();
+    } else if (target === 'absence-records-section') {
+        if (typeof loadUsersForAbsenceFilter === 'function') loadUsersForAbsenceFilter();
+        if (typeof loadProjectsForAbsenceFilter === 'function') loadProjectsForAbsenceFilter();
+        if (typeof loadAdminAbsences === 'function') loadAdminAbsences();
+        if (typeof loadAbsenceSummary === 'function') loadAbsenceSummary();
     }
 
     if (window.innerWidth <= 768) {
@@ -1717,6 +1727,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const myRecordsLink = document.getElementById('nav-my-records');
     if (myRecordsLink) myRecordsLink.addEventListener('click', (e) => { e.preventDefault(); showSection('records-section'); loadAttendanceRecords(userId); });
 
+    // Absence nav links
+    const reportAbsenceLink = document.getElementById('nav-report-absence');
+    if (reportAbsenceLink) reportAbsenceLink.addEventListener('click', (e) => { e.preventDefault(); showSection('report-absence-section'); });
+    const reportAbsenceSpecialLink = document.getElementById('nav-report-absence-special');
+    if (reportAbsenceSpecialLink) reportAbsenceSpecialLink.addEventListener('click', (e) => { e.preventDefault(); showSection('report-absence-section'); });
+    const absenceRecordsLink = document.getElementById('nav-absence-records');
+    if (absenceRecordsLink) absenceRecordsLink.addEventListener('click', (e) => { e.preventDefault(); showSection('absence-records-section'); });
+
     const startScannerBtn = document.getElementById('start-scanner-button');
     if (startScannerBtn && userRole !== 'admin') {
         startScannerBtn.addEventListener('click', () => {
@@ -1897,6 +1915,9 @@ document.addEventListener('DOMContentLoaded', () => {
     startLocationTracking();
 
     startTimerSyncLoop();
+
+    // Initialize absences module
+    if (typeof initAbsencesModule === 'function') initAbsencesModule();
 
     const attendanceSearchInput = document.getElementById('attendance-table-search');
     if (attendanceSearchInput) attendanceSearchInput.addEventListener('keyup', () => filterTable('attendance-table-search', 'attendance-records-body'));
