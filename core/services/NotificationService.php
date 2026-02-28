@@ -1,0 +1,52 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../db.php';
+
+class NotificationService
+{
+    public static function create(int $userId, string $type, string $message, ?int $relatedId = null): void
+    {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare('INSERT INTO notifications (user_id, type, message, related_id) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$userId, $type, $message, $relatedId]);
+    }
+
+    public static function notifyAdmins(string $type, string $message, ?int $relatedId = null): void
+    {
+        $pdo = get_pdo();
+        $admins = $pdo->query("SELECT id FROM users WHERE role = 'admin'")->fetchAll(PDO::FETCH_COLUMN);
+        if (!$admins) return;
+
+        $stmt = $pdo->prepare('INSERT INTO notifications (user_id, type, message, related_id) VALUES (?, ?, ?, ?)');
+        foreach ($admins as $adminId) {
+            $stmt->execute([(int)$adminId, $type, $message, $relatedId]);
+        }
+    }
+
+    public static function listByUser(int $userId, int $limit = 20): array
+    {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare('SELECT id, type, message, related_id, is_read, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ?');
+        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+        $stmt->bindValue(2, max(1, min(100, $limit)), PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function unreadCount(int $userId): int
+    {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0');
+        $stmt->execute([$userId]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    public static function markRead(int $notificationId, int $userId): bool
+    {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare('UPDATE notifications SET is_read = 1, read_at = NOW() WHERE id = ? AND user_id = ?');
+        $stmt->execute([$notificationId, $userId]);
+        return $stmt->rowCount() > 0;
+    }
+}

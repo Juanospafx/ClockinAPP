@@ -63,6 +63,29 @@ class AttendanceService {
         return ['labels' => $labels, 'data' => $data];
     }
 
+    public static function getDashboardMetrics(): array {
+        $pdo = get_pdo();
+
+        $activeEmployeesToday = (int)$pdo->query("SELECT COUNT(DISTINCT user_id) FROM attendance_records WHERE type = 'entry' AND DATE(original_time) = CURRENT_DATE()")->fetchColumn();
+        $clockInsToday = (int)$pdo->query("SELECT COUNT(*) FROM attendance_records WHERE type = 'entry' AND DATE(original_time) = CURRENT_DATE()")->fetchColumn();
+        $absencesToday = (int)$pdo->query("SELECT COUNT(*) FROM absences WHERE CURRENT_DATE() BETWEEN date_start AND date_end")->fetchColumn();
+
+        $weeklyAvgStmt = $pdo->query("SELECT AVG(daily_hours) FROM (
+            SELECT user_id, DATE(original_time) AS d, MAX(COALESCE(total_duration, 0))/60.0 AS daily_hours
+            FROM attendance_records
+            WHERE type = 'exit' AND YEARWEEK(original_time, 1) = YEARWEEK(CURRENT_DATE(), 1)
+            GROUP BY user_id, DATE(original_time)
+        ) t");
+        $avgHoursWeek = round((float)($weeklyAvgStmt->fetchColumn() ?: 0), 2);
+
+        return [
+            'active_employees_today' => $activeEmployeesToday,
+            'clockins_today' => $clockInsToday,
+            'absences_today' => $absencesToday,
+            'avg_hours_week' => $avgHoursWeek,
+        ];
+    }
+
     public static function createRecord(int $currentUserId, string $currentUserRole, array $data): array {
         $pdo = get_pdo();
         $userId = isset($data['user_id']) ? (int)$data['user_id'] : $currentUserId;
