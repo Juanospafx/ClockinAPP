@@ -637,3 +637,63 @@ html[data-theme="light"] .login-container .error-message {
 #hours-chart {
     min-height: 320px;
 }
+
+/* Action selection modal */
+.action-modal-content {
+    width: min(560px, 92vw);
+    padding: 18px;
+    border-radius: 18px;
+}
+
+.action-modal-header h3 {
+    margin: 0;
+    font-size: 1.35rem;
+    color: var(--text-color);
+}
+
+.action-modal-header p {
+    margin: 6px 0 14px;
+    color: var(--clr-d8e0f4);
+    opacity: .9;
+}
+
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-2);
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--clr-ff7a5f));
+    color: #fff !important;
+    font-weight: 700;
+    letter-spacing: .1px;
+}
+
+.action-button:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+}
+
+.action-cancel-button {
+    margin-top: 12px;
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-2);
+    background: var(--clr-rgba-255-255-255-0-1) !important;
+    color: var(--text-color) !important;
+    font-weight: 600;
+}
+
+@media (max-width: 640px) {
+    .action-buttons {
+        grid-template-columns: 1fr;
+    }
+}

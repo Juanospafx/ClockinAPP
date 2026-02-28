@@ -14,12 +14,12 @@
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
-    <link rel="stylesheet" href="../../assets/css/global_login.css?v=2.7">
-    <link rel="stylesheet" href="../../assets/css/registros.css?v=2.7">
-    <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=2.7">
-    <link rel="stylesheet" href="../../assets/css/geofence.css?v=2.7">
-    <link rel="stylesheet" href="../../assets/css/absences.css?v=2.7">
-    <link rel="stylesheet" href="../../assets/css/manual_attendance.css?v=1.7">
+    <link rel="stylesheet" href="../../assets/css/global_login.css?v=2.8">
+    <link rel="stylesheet" href="../../assets/css/registros.css?v=2.8">
+    <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=2.8">
+    <link rel="stylesheet" href="../../assets/css/geofence.css?v=2.8">
+    <link rel="stylesheet" href="../../assets/css/absences.css?v=2.8">
+    <link rel="stylesheet" href="../../assets/css/manual_attendance.css?v=1.8">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
     <script src="../../assets/js/geofence.js?v=2.7"></script>
@@ -559,17 +559,20 @@
 
     <!-- Action Selection Modal -->
     <div id="action-selection-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h3>Select Action</h3>
+        <div class="modal-content action-modal-content">
+            <div class="action-modal-header">
+                <h3>Registrar asistencia</h3>
+                <p>Selecciona la acción que deseas registrar.</p>
+            </div>
             <input type="hidden" id="scanned-project-id">
             <input type="hidden" id="scanned-project-qr-id">
             <div class="action-buttons">
-                <button class="action-button" data-action="entry">Entry</button>
-                <button class="action-button" data-action="exit">Exit</button>
-                <button class="action-button" data-action="start_lunch">Start Lunch</button>
-                <button class="action-button" data-action="end_lunch">End Lunch</button>
+                <button class="action-button" data-action="entry"><span>🟢</span> Clock In</button>
+                <button class="action-button" data-action="exit"><span>🔴</span> Clock Out</button>
+                <button class="action-button" data-action="start_lunch"><span>⏸️</span> Start Lunch</button>
+                <button class="action-button" data-action="end_lunch"><span>▶️</span> End Lunch</button>
             </div>
-            <button class="close-button">Cancel</button>
+            <button class="action-cancel-button close-button">Cancelar</button>
         </div>
     </div>
 
