@@ -353,6 +353,51 @@ table {
     border-radius: var(--radius-md);
 }
 
+#records-section table {
+    table-layout: fixed;
+}
+
+#records-section th,
+#records-section td {
+    vertical-align: middle;
+}
+
+#records-section td[data-label="Date"],
+#records-section td[data-label="Original Time"],
+#records-section td[data-label="Rounded Time"],
+#records-section td[data-label="Type"],
+#records-section td[data-label="Status"],
+#records-section td[data-label="Work Duration (hours)"],
+#records-section td[data-label="Lunch Duration (hours)"] {
+    white-space: nowrap;
+}
+
+#records-section td[data-label="Location"] {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#records-section td[data-label="Project"] {
+    word-break: break-word;
+}
+
+#records-section td[data-label="Actions"] {
+    white-space: nowrap;
+}
+
+#records-section td[data-label="Actions"] button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 74px;
+    margin-right: 6px;
+}
+
+#records-section td[data-label="Actions"] button:last-child {
+    margin-right: 0;
+}
+
 table th {
     background: var(--clr-2b3757);
     color: var(--clr-e7edff);
@@ -714,5 +759,32 @@ html[data-theme="light"] .login-container .error-message {
 @media (max-width: 640px) {
     .action-buttons {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    #records-section table {
+        table-layout: auto;
+    }
+
+    #records-section td[data-label="Location"],
+    #records-section td[data-label="Project"],
+    #records-section td[data-label="Date"],
+    #records-section td[data-label="Original Time"],
+    #records-section td[data-label="Rounded Time"] {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+        word-break: break-word;
+    }
+
+    #records-section td[data-label="Actions"] {
+        white-space: normal;
+        display: block;
+    }
+
+    #records-section td[data-label="Actions"] button {
+        width: 100%;
+        margin: 6px 0 0;
     }
 }
