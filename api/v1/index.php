@@ -17,6 +17,7 @@ require_once __DIR__ . '/controllers/roles.php';
 require_once __DIR__ . '/controllers/maps.php';
 require_once __DIR__ . '/controllers/uploads.php';
 require_once __DIR__ . '/controllers/absences.php';
+require_once __DIR__ . '/controllers/manual_attendance.php';
 
 $route = trim((string)($_GET['route'] ?? ''), '/');
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -164,6 +165,12 @@ try {
     }
     if (preg_match('#^absences/(\\d+)$#', $route, $m) && $method === 'DELETE') {
         handle_absences_delete((int)$m[1]);
+        return;
+    }
+
+    // --- Manual Attendance ---
+    if ($route === 'attendance/manual' && $method === 'POST') {
+        handle_manual_attendance_create();
         return;
     }
 
