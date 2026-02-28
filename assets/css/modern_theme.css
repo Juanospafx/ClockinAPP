@@ -610,3 +610,30 @@ html[data-theme="light"] .login-container .error-message {
 .status-absence { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
 .status-neutral { background: var(--clr-rgba-159-176-205-0-16); color: var(--text-color); }
 .manual-badge { padding: 2px 7px; border-radius: 999px; background: var(--clr-rgba-243-156-18-0-2); color: var(--clr-f39c12); font-size: .72rem; }
+
+.chart-container-modern {
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-2);
+    background: linear-gradient(160deg, var(--clr-rgba-255-255-255-0-05), var(--clr-rgba-92-167-255-0-08));
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.chart-chip {
+    font-size: .78rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-2);
+    color: var(--text-color);
+    background: var(--clr-rgba-255-255-255-0-1);
+}
+
+#hours-chart {
+    min-height: 320px;
+}

@@ -1139,10 +1139,14 @@ async function loadHoursChart(uid = null) {
         if (data.success) {
             if (hoursChart) hoursChart.destroy();
             const styles = getComputedStyle(document.documentElement);
-            const chartFill = styles.getPropertyValue('--clr-rgba-231-76-60-0-3').trim() || 'rgba(230,57,70,0.3)';
             const chartStroke = styles.getPropertyValue('--clr-e63946').trim() || '#e63946';
             const chartText = styles.getPropertyValue('--clr-d8e0f4').trim() || '#d8e0f4';
             const chartGrid = styles.getPropertyValue('--clr-rgba-159-176-205-0-2').trim() || 'rgba(159,176,205,0.2)';
+            const chartSurface = styles.getPropertyValue('--clr-rgba-255-255-255-0-05').trim() || 'rgba(255,255,255,0.05)';
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+            gradient.addColorStop(0, chartStroke);
+            gradient.addColorStop(1, chartSurface);
 
             hoursChart = new Chart(ctx, {
                 type: 'bar',
@@ -1151,9 +1155,12 @@ async function loadHoursChart(uid = null) {
                     datasets: [{
                         label: 'Hours Worked',
                         data: data.summary.data,
-                        backgroundColor: chartFill,
+                        backgroundColor: gradient,
                         borderColor: chartStroke,
-                        borderWidth: 1
+                        borderWidth: 1.5,
+                        borderRadius: 10,
+                        borderSkipped: false,
+                        maxBarThickness: 46
                     }]
                 },
                 options: {
@@ -1170,7 +1177,18 @@ async function loadHoursChart(uid = null) {
                     },
                     plugins: {
                         legend: {
-                            labels: { color: chartText }
+                            labels: {
+                                color: chartText,
+                                usePointStyle: true,
+                                pointStyle: 'rectRounded'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15,23,42,0.92)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: chartGrid,
+                            borderWidth: 1
                         }
                     }
                 }
