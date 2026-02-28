@@ -22,7 +22,9 @@
             dateInput.max = `${yyyy}-${mm}-${dd}`;
         }
 
+        if (form.dataset.manualInit === '1') return;
         form.addEventListener('submit', handleManualSubmit);
+        form.dataset.manualInit = '1';
     }
 
     async function populateManualDropdowns() {
