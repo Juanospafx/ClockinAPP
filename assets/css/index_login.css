@@ -1,16 +1,16 @@
 /* index_login.css - modern dark login */
 :root {
-    --login-bg-1: #121a2f;
-    --login-bg-2: #1a2740;
-    --login-card: #1f2941;
-    --login-card-border: rgba(159, 176, 205, 0.22);
-    --login-text: #f4f7ff;
-    --login-muted: #9fb0cd;
-    --login-input-bg: #131d34;
-    --login-input-border: rgba(154, 180, 223, 0.35);
-    --login-accent: #ff6247;
-    --login-accent-hover: #ff7b62;
-    --login-danger: #ff8a97;
+    --login-bg-1: var(--clr-121a2f);
+    --login-bg-2: var(--clr-1a2740);
+    --login-card: var(--clr-1f2941);
+    --login-card-border: var(--clr-rgba-159-176-205-0-22);
+    --login-text: var(--clr-f4f7ff);
+    --login-muted: var(--clr-9fb0cd);
+    --login-input-bg: var(--clr-131d34);
+    --login-input-border: var(--clr-rgba-154-180-223-0-35);
+    --login-accent: var(--clr-ff6247);
+    --login-accent-hover: var(--clr-ff7b62);
+    --login-danger: var(--clr-ff8a97);
 }
 
 * {
@@ -26,7 +26,7 @@ body {
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--login-text);
-    background: radial-gradient(circle at 15% 10%, #1c2742 0%, var(--login-bg-1) 45%) fixed;
+    background: radial-gradient(circle at 15% 10%, var(--clr-1c2742) 0%, var(--login-bg-1) 45%) fixed;
     padding: 20px;
 }
 
@@ -37,10 +37,10 @@ body {
 
 .login-container {
     width: 100%;
-    background: linear-gradient(165deg, #232e4a 0%, var(--login-card) 100%);
+    background: linear-gradient(165deg, var(--clr-232e4a) 0%, var(--login-card) 100%);
     border: 1px solid var(--login-card-border);
     border-radius: 18px;
-    box-shadow: 0 12px 35px rgba(6, 10, 22, 0.4);
+    box-shadow: 0 12px 35px var(--clr-rgba-6-10-22-0-4);
     padding: 40px 32px;
     text-align: left;
 }
@@ -56,7 +56,7 @@ body {
 .login-container h2 {
     font-size: 2rem;
     margin-bottom: 8px;
-    color: #ffffff;
+    color: var(--clr-fff);
     text-align: center;
 }
 
@@ -74,7 +74,7 @@ body {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    color: #d8e0f4;
+    color: var(--clr-d8e0f4);
 }
 
 .input-group input {
@@ -90,8 +90,8 @@ body {
 
 .input-group input:focus {
     outline: none;
-    border-color: #5ca7ff;
-    box-shadow: 0 0 0 3px rgba(92, 167, 255, 0.35);
+    border-color: var(--clr-5ca7ff);
+    box-shadow: 0 0 0 3px var(--clr-rgba-92-167-255-0-35);
 }
 
 .login-container button {
@@ -100,8 +100,8 @@ body {
     margin-top: 6px;
     border: none;
     border-radius: 10px;
-    background: linear-gradient(135deg, var(--login-accent), #ff7a5f);
-    color: #fff;
+    background: linear-gradient(135deg, var(--login-accent), var(--clr-ff7a5f));
+    color: var(--clr-fff);
     font-weight: 700;
     font-size: 1.06rem;
     cursor: pointer;
@@ -110,7 +110,7 @@ body {
 
 .login-container button:hover {
     transform: translateY(-1px);
-    background: linear-gradient(135deg, var(--login-accent-hover), #ff8d74);
+    background: linear-gradient(135deg, var(--login-accent-hover), var(--clr-ff8d74));
 }
 
 .login-container .error-message {

@@ -13,13 +13,13 @@
     min-width: 180px;
 }
 .manual-attendance-form .required {
-    color: #dc3545;
+    color: var(--clr-dc3545);
 }
 .manual-attendance-form textarea {
     width: 100%;
     box-sizing: border-box;
     padding: 8px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--clr-ccc);
     border-radius: 4px;
     font-family: inherit;
     resize: vertical;
@@ -27,15 +27,15 @@
 .manual-attendance-form .submit-btn {
     margin-top: 12px;
     padding: 10px 24px;
-    background: #007bff;
-    color: #fff;
+    background: var(--clr-007bff);
+    color: var(--clr-fff);
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
 }
 .manual-attendance-form .submit-btn:hover {
-    background: #0056b3;
+    background: var(--clr-0056b3);
 }
 
 /* Badge for manual entries in records table */
@@ -43,8 +43,8 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background: #ffc107;
-    color: #212529;
+    background: var(--clr-ffc107);
+    color: var(--clr-212529);
     font-size: 11px;
     font-weight: 600;
     padding: 2px 8px;
@@ -62,9 +62,9 @@
     margin-top: 10px;
     font-weight: 500;
 }
-#manual-attendance-message.success { color: #28a745; }
-#manual-attendance-message.error { color: #dc3545; }
-#manual-attendance-message.warning { color: #856404; }
+#manual-attendance-message.success { color: var(--clr-28a745); }
+#manual-attendance-message.error { color: var(--clr-dc3545); }
+#manual-attendance-message.warning { color: var(--clr-856404); }
 
 /* Tooltip for manual entry details */
 .manual-tooltip {
@@ -73,8 +73,8 @@
 }
 .manual-tooltip .tooltip-text {
     visibility: hidden;
-    background: #333;
-    color: #fff;
+    background: var(--clr-333);
+    color: var(--clr-fff);
     padding: 6px 10px;
     border-radius: 4px;
     font-size: 12px;
