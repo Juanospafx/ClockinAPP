@@ -4,8 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+    <script>
+        (function () {
+            var key = 'clockinapp_theme';
+            var saved = localStorage.getItem(key);
+            var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var theme = saved || (prefersDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <link rel="stylesheet" href="../../../assets/css/global_login.css?v=1.3">
     <link rel="stylesheet" href="../../../assets/css/registros.css?v=1.3">
+    <link rel="stylesheet" href="../../../assets/css/modern_theme.css?v=1.3">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../../../assets/js/script.js?v=1.3"></script>
 </head>

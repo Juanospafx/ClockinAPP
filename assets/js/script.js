@@ -1,3 +1,45 @@
+// --- Theme Management ---
+const THEME_STORAGE_KEY = 'clockinapp_theme';
+
+function resolveInitialTheme() {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (savedTheme === 'dark' || savedTheme === 'light') return savedTheme;
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
+}
+
+function applyTheme(theme) {
+    const nextTheme = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    updateThemeToggleIcon(nextTheme);
+
+    if (typeof hoursChart !== 'undefined' && hoursChart) {
+        loadHoursChart();
+    }
+}
+
+function updateThemeToggleIcon(theme) {
+    const toggle = document.getElementById('theme-toggle');
+    if (!toggle) return;
+    const dark = theme === 'dark';
+    toggle.textContent = dark ? '☀️' : '🌙';
+    toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+
+function initThemeToggle() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || resolveInitialTheme();
+    updateThemeToggleIcon(currentTheme);
+
+    const toggle = document.getElementById('theme-toggle');
+    if (!toggle) return;
+
+    toggle.addEventListener('click', () => {
+        const active = document.documentElement.getAttribute('data-theme') || 'dark';
+        applyTheme(active === 'dark' ? 'light' : 'dark');
+    });
+}
+
 // --- Base API Configuration ---
 const APP_BASE = (() => {
     const path = window.location.pathname.toLowerCase();
@@ -979,6 +1021,12 @@ async function loadHoursChart(uid = null) {
         const data = await apiFetch(endpoint);
         if (data.success) {
             if (hoursChart) hoursChart.destroy();
+            const styles = getComputedStyle(document.documentElement);
+            const chartFill = styles.getPropertyValue('--clr-rgba-231-76-60-0-3').trim() || 'rgba(230,57,70,0.3)';
+            const chartStroke = styles.getPropertyValue('--clr-e63946').trim() || '#e63946';
+            const chartText = styles.getPropertyValue('--clr-d8e0f4').trim() || '#d8e0f4';
+            const chartGrid = styles.getPropertyValue('--clr-rgba-159-176-205-0-2').trim() || 'rgba(159,176,205,0.2)';
+
             hoursChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -986,12 +1034,29 @@ async function loadHoursChart(uid = null) {
                     datasets: [{
                         label: 'Hours Worked',
                         data: data.summary.data,
-                        backgroundColor: 'rgba(230, 57, 70, 0.2)',
-                        borderColor: 'rgba(230, 57, 70, 1)',
+                        backgroundColor: chartFill,
+                        borderColor: chartStroke,
                         borderWidth: 1
                     }]
                 },
-                options: { scales: { y: { beginAtZero: true } } }
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: chartText },
+                            grid: { color: chartGrid }
+                        },
+                        x: {
+                            ticks: { color: chartText },
+                            grid: { color: chartGrid }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: chartText }
+                        }
+                    }
+                }
             });
         } else {
             console.error('Error loading chart data:', data.message);
@@ -1653,6 +1718,7 @@ document.addEventListener('DOMContentLoaded', () => {
     username = sessionStorage.getItem('username');
 
     configureRoleUI(userRole);
+    initThemeToggle();
 
     let defaultSection = 'scan-section';
     if (userRole === 'admin') {
@@ -1664,6 +1730,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const greet = document.getElementById('user-greeting');
     if (greet && username) greet.textContent = `Hello, ${username}!`;
+    const headerProfileName = document.getElementById('header-profile-name');
+    if (headerProfileName && username) headerProfileName.textContent = username;
 
     const sidebar = document.querySelector('.sidebar');
     const openSidebarBtn = document.querySelector('.open-sidebar-button');

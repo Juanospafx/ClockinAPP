@@ -5,6 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance Records</title>
+    <script>
+        (function () {
+            var key = 'clockinapp_theme';
+            var saved = localStorage.getItem(key);
+            var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var theme = saved || (prefersDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <link rel="stylesheet" href="../../assets/css/global_login.css?v=2.0">
     <link rel="stylesheet" href="../../assets/css/registros.css?v=2.0">
     <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=2.0">
@@ -57,6 +66,10 @@
 
     <div class="main-content">
         <button class="open-sidebar-button">☰</button>
+        <div class="app-header">
+            <span id="header-profile-name">User</span>
+            <button id="theme-toggle" type="button" data-tooltip="Toggle theme" aria-label="Toggle theme">☀️</button>
+        </div>
 
         <!-- Section for QR Scanning (for regular users) -->
         <section id="scan-section">

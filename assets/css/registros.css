@@ -1,13 +1,13 @@
 /* --- Variables globales --- */
     :root {
-        --primary-color: #007bff;
-        --primary-dark-color: #0056b3;
-        --background-color: #f4f6f9;
-        --card-background: #ffffff;
-        --border-color: #ddd;
-        --dark-color: #222;
-        --light-color: #f1f1f1;
-        --text-color: #333;
+        --primary-color: var(--clr-007bff);
+        --primary-dark-color: var(--clr-0056b3);
+        --background-color: var(--clr-f4f6f9);
+        --card-background: var(--clr-fff);
+        --border-color: var(--clr-ddd);
+        --dark-color: var(--clr-222);
+        --light-color: var(--clr-f1f1f1);
+        --text-color: var(--clr-333);
     }
 
     /* --- Reset básico --- */
@@ -66,7 +66,7 @@
     }
 
     .sidebar ul li a:hover {
-        background-color: #444;
+        background-color: var(--clr-444);
     }
 
     /* --- Contenido principal --- */
@@ -91,7 +91,7 @@
         background-color: var(--card-background);
         padding: 25px;
         border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 10px var(--clr-rgba-0-0-0-0-05);
         margin-bottom: 25px;
         width: 100%;
         max-width: 1100px;
@@ -163,7 +163,7 @@
     }
 
     table tr:hover {
-        background-color: #f8f9fa;
+        background-color: var(--clr-f8f9fa);
     }
 
     /* --- Mensajes --- */
@@ -185,31 +185,31 @@
         position: fixed;
         z-index: 1000;
         inset: 0;
-        background-color: rgba(0,0,0,0.5);
+        background-color: var(--clr-rgba-0-0-0-0-5);
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
     .modal-content {
-        background: #fff;
+        background: var(--clr-fff);
         padding: 25px;
         border-radius: 10px;
         width: 90%;
         max-width: 600px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 12px var(--clr-rgba-0-0-0-0-2);
     }
 
     .close-button {
         font-size: 22px;
         font-weight: bold;
-        color: #666;
+        color: var(--clr-666);
         float: right;
         cursor: pointer;
     }
 
     .close-button:hover {
-        color: #000;
+        color: var(--clr-000);
     }
 
     /* --- QR --- */
@@ -234,7 +234,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
+        background-color: var(--clr-rgba-0-0-0-0-5);
         z-index: 99; /* Lower than the sidebar */
     }
 
@@ -298,6 +298,6 @@
 
         td:before {
             font-weight: bold;
-            color: #555;
+            color: var(--clr-555);
         }
     }
