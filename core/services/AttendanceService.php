@@ -9,15 +9,29 @@ require_once __DIR__ . '/ProjectService.php';
 class AttendanceService {
     public static function fetchRecords(?int $userId, ?int $limit): array {
         $pdo = get_pdo();
-        $sql = 'SELECT ar.id, ar.user_id, u.username, ar.location, ar.type, ar.original_time, ar.rounded_time,
+
+        $hasEntrySource = self::columnExists($pdo, 'attendance_records', 'entry_source');
+        $hasManualReason = self::columnExists($pdo, 'attendance_records', 'manual_reason');
+        $hasCreatedBy = self::columnExists($pdo, 'attendance_records', 'created_by');
+
+        $selectEntrySource = $hasEntrySource ? 'ar.entry_source' : "NULL AS entry_source";
+        $selectManualReason = $hasManualReason ? 'ar.manual_reason' : "NULL AS manual_reason";
+        $selectCreatedBy = $hasCreatedBy ? 'ar.created_by' : "NULL AS created_by";
+        $selectCreatedByUsername = $hasCreatedBy ? 'admin_u.username AS created_by_username' : "NULL AS created_by_username";
+
+        $sql = "SELECT ar.id, ar.user_id, u.username, ar.location, ar.type, ar.original_time, ar.rounded_time,
                        ar.total_duration, ar.lunch_duration, ar.created_at, p.name AS project_name,
-                       ar.entry_source, ar.manual_reason, ar.created_by,
-                       admin_u.username AS created_by_username
+                       {$selectEntrySource}, {$selectManualReason}, {$selectCreatedBy},
+                       {$selectCreatedByUsername}
                 FROM attendance_records ar
                 JOIN users u ON ar.user_id = u.id
                 LEFT JOIN project_qrs pq ON ar.project_qr_id = pq.id
-                LEFT JOIN projects p ON pq.project_id = p.id
-                LEFT JOIN users admin_u ON ar.created_by = admin_u.id';
+                LEFT JOIN projects p ON pq.project_id = p.id";
+
+        if ($hasCreatedBy) {
+            $sql .= ' LEFT JOIN users admin_u ON ar.created_by = admin_u.id';
+        }
+
         $params = [];
 
         if ($userId !== null) {
@@ -396,6 +410,19 @@ class AttendanceService {
         $stmt->execute(['id' => $timerId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
+    }
+
+    private static function columnExists(PDO $pdo, string $table, string $column): bool {
+        static $cache = [];
+        $key = $table . '.' . $column;
+        if (array_key_exists($key, $cache)) {
+            return $cache[$key];
+        }
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?");
+        $stmt->execute([$table, $column]);
+        $cache[$key] = ((int)$stmt->fetchColumn()) > 0;
+        return $cache[$key];
     }
 
     public static function calculateTimerMetrics(PDO $pdo, array $entryRow, ?DateTime $referenceTime = null): array {
