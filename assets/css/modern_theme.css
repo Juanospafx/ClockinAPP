@@ -499,3 +499,42 @@ select option:focus {
     color: var(--text-color) !important;
     background-color: var(--card-background) !important;
 }
+
+/* Login-specific theme corrections */
+html[data-theme="light"] body {
+    background: radial-gradient(circle at 15% 10%, #ffffff 0%, #f7f8fa 55%) fixed !important;
+    color: #1a202c !important;
+}
+
+html[data-theme="light"] .login-container {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08) !important;
+}
+
+html[data-theme="light"] .login-container h1,
+html[data-theme="light"] .login-container h2,
+html[data-theme="light"] .login-brand,
+html[data-theme="light"] .login-subtitle,
+html[data-theme="light"] .login-container .input-group label {
+    color: #1a202c !important;
+}
+
+html[data-theme="light"] .login-brand,
+html[data-theme="light"] .login-subtitle {
+    color: #4a5568 !important;
+}
+
+html[data-theme="light"] .login-container .input-group input {
+    background: #ffffff !important;
+    color: #1a202c !important;
+    border-color: #d1d5db !important;
+}
+
+html[data-theme="light"] .login-container .input-group input::placeholder {
+    color: #6b7280 !important;
+}
+
+html[data-theme="light"] .login-container .error-message {
+    color: #b91c1c !important;
+}
