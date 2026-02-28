@@ -14,15 +14,18 @@ class AttendanceService {
         $hasManualReason = self::columnExists($pdo, 'attendance_records', 'manual_reason');
         $hasCreatedBy = self::columnExists($pdo, 'attendance_records', 'created_by');
 
+        $hasLateReason = self::columnExists($pdo, 'attendance_records', 'late_reason');
+
         $selectEntrySource = $hasEntrySource ? 'ar.entry_source' : "NULL AS entry_source";
         $selectManualReason = $hasManualReason ? 'ar.manual_reason' : "NULL AS manual_reason";
         $selectCreatedBy = $hasCreatedBy ? 'ar.created_by' : "NULL AS created_by";
         $selectCreatedByUsername = $hasCreatedBy ? 'admin_u.username AS created_by_username' : "NULL AS created_by_username";
+        $selectLateReason = $hasLateReason ? 'ar.late_reason AS late_reason' : "NULL AS late_reason";
 
         $sql = "SELECT ar.id, ar.user_id, u.username, ar.location, ar.type, ar.original_time, ar.rounded_time,
                        ar.total_duration, ar.lunch_duration, ar.created_at, p.name AS project_name,
                        {$selectEntrySource}, {$selectManualReason}, {$selectCreatedBy},
-                       {$selectCreatedByUsername}
+                       {$selectCreatedByUsername}, {$selectLateReason}
                 FROM attendance_records ar
                 JOIN users u ON ar.user_id = u.id
                 LEFT JOIN project_qrs pq ON ar.project_qr_id = pq.id
@@ -108,6 +111,8 @@ class AttendanceService {
         $projectQrId = isset($data['project_qr_id']) ? (int)$data['project_qr_id'] : null;
         $projectIdFromClient = isset($data['project_id']) ? (int)$data['project_id'] : null;
         $clientTimeIso = $data['client_time_iso'] ?? null;
+        $clientTimeLocal = isset($data['client_time_local']) ? trim((string)$data['client_time_local']) : '';
+        $lateReason = isset($data['late_reason']) ? trim((string)$data['late_reason']) : '';
 
         if (!$userId || !$location || !$type) {
             return ['error' => ['code' => 'validation_error', 'message' => 'Missing required fields.'], 'status' => 400];
@@ -140,6 +145,38 @@ class AttendanceService {
             $foundQrId = $stmt->fetchColumn();
             if ($foundQrId) {
                 $projectQrId = (int)$foundQrId;
+            }
+        }
+
+        // --- Late check based on QR schedule (entry + 10 min tolerance) ---
+        if ($type === 'entry' && $projectQrId !== null && self::columnExists($pdo, 'project_qrs', 'entry_time_required')) {
+            $qrStmt = $pdo->prepare('SELECT entry_time_required FROM project_qrs WHERE id = ? LIMIT 1');
+            $qrStmt->execute([$projectQrId]);
+            $entryTimeRequired = (string)($qrStmt->fetchColumn() ?: '');
+
+            if ($entryTimeRequired !== '' && preg_match('/^\d{2}:\d{2}/', $entryTimeRequired)) {
+                $referenceLocal = null;
+                if ($clientTimeLocal !== '') {
+                    $referenceLocal = new DateTime($clientTimeLocal);
+                } else {
+                    $referenceLocal = clone $originalTime;
+                }
+
+                $day = $referenceLocal->format('Y-m-d');
+                $deadline = new DateTime($day . ' ' . substr($entryTimeRequired, 0, 5) . ':00');
+                $deadline->modify('+10 minutes');
+
+                if ($referenceLocal > $deadline && $lateReason === '') {
+                    $lateMinutes = (int)floor(($referenceLocal->getTimestamp() - $deadline->getTimestamp()) / 60);
+                    return [
+                        'error' => [
+                            'code' => 'late_reason_required',
+                            'message' => 'Llegaste tarde. Debes escribir una justificación.',
+                            'details' => ['late_minutes' => max(1, $lateMinutes)]
+                        ],
+                        'status' => 422
+                    ];
+                }
             }
         }
 
@@ -198,10 +235,17 @@ class AttendanceService {
                     $pdo->rollBack();
                     return ['error' => ['code' => 'conflict', 'message' => 'Ya existe un temporizador activo.'], 'status' => 409];
                 }
-                $stmt = $pdo->prepare(
-                    'INSERT INTO attendance_records (user_id, location, type, original_time, rounded_time, project_qr_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
-                );
-                $stmt->execute([$userId, $location, 'entry', $originalTime->format('Y-m-d H:i:s'), $roundedTime->format('Y-m-d H:i:s'), $projectQrId, 1]);
+                if (self::columnExists($pdo, 'attendance_records', 'late_reason')) {
+                    $stmt = $pdo->prepare(
+                        'INSERT INTO attendance_records (user_id, location, type, original_time, rounded_time, project_qr_id, status, late_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                    );
+                    $stmt->execute([$userId, $location, 'entry', $originalTime->format('Y-m-d H:i:s'), $roundedTime->format('Y-m-d H:i:s'), $projectQrId, 1, ($lateReason !== '' ? $lateReason : null)]);
+                } else {
+                    $stmt = $pdo->prepare(
+                        'INSERT INTO attendance_records (user_id, location, type, original_time, rounded_time, project_qr_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
+                    );
+                    $stmt->execute([$userId, $location, 'entry', $originalTime->format('Y-m-d H:i:s'), $roundedTime->format('Y-m-d H:i:s'), $projectQrId, 1]);
+                }
             } else {
                 $openTimer = self::findOpenTimerEntry($pdo, $userId, true);
                 if (!$openTimer) {

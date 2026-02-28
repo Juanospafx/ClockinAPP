@@ -24,6 +24,16 @@ class QrService {
 
         $actionType = $data['action_type'] ?? null;
         $location = $data['location'] ?? null;
+        $entryTimeRequired = isset($data['entry_time_required']) ? trim((string)$data['entry_time_required']) : '';
+        $exitTimeOptional = isset($data['exit_time_optional']) ? trim((string)$data['exit_time_optional']) : '';
+
+        if ($entryTimeRequired === '' || !preg_match('/^\d{2}:\d{2}$/', $entryTimeRequired)) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Entry time is required (HH:MM).'], 'status' => 400];
+        }
+
+        if ($exitTimeOptional !== '' && !preg_match('/^\d{2}:\d{2}$/', $exitTimeOptional)) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Exit time must be HH:MM.'], 'status' => 400];
+        }
 
         $pdo = get_pdo();
         $initialPayload = json_encode(['project_id' => (int)$projectId]);
@@ -39,6 +49,15 @@ class QrService {
             if ($location !== null) {
                 $columns[] = 'location';
                 $values[] = $location;
+            }
+
+            if (self::columnExists($pdo, 'project_qrs', 'entry_time_required')) {
+                $columns[] = 'entry_time_required';
+                $values[] = $entryTimeRequired;
+            }
+            if (self::columnExists($pdo, 'project_qrs', 'exit_time_optional')) {
+                $columns[] = 'exit_time_optional';
+                $values[] = ($exitTimeOptional !== '' ? $exitTimeOptional : null);
             }
 
             $placeholders = implode(',', array_fill(0, count($columns), '?'));
@@ -64,6 +83,18 @@ class QrService {
             }
             return ['error' => ['code' => 'server_error', 'message' => 'Database error: ' . $e->getMessage()], 'status' => 500];
         }
+    }
+
+    private static function columnExists(PDO $pdo, string $table, string $column): bool {
+        static $cache = [];
+        $key = $table . '.' . $column;
+        if (array_key_exists($key, $cache)) {
+            return $cache[$key];
+        }
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?");
+        $stmt->execute([$table, $column]);
+        $cache[$key] = ((int)$stmt->fetchColumn()) > 0;
+        return $cache[$key];
     }
 
     public static function deleteQr(int $qrId): array {
