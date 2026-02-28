@@ -684,6 +684,33 @@ html[data-theme="light"] .login-container .error-message {
     min-height: 320px;
 }
 
+#user-locations-map-container {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-2);
+    background: linear-gradient(160deg, var(--clr-rgba-255-255-255-0-05), var(--clr-rgba-92-167-255-0-08));
+}
+
+#user-locations-map-container h4 {
+    margin-bottom: 10px;
+}
+
+.map-canvas-modern {
+    height: 360px;
+    width: 100%;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--clr-rgba-159-176-205-0-2);
+    box-shadow: var(--shadow-soft);
+}
+
+#map-message {
+    margin-top: 8px;
+    font-size: .9rem;
+    color: var(--clr-d8e0f4);
+}
+
 /* Action selection modal */
 #action-selection-modal {
     position: fixed;
@@ -764,6 +791,10 @@ html[data-theme="light"] .login-container .error-message {
 }
 
 @media (max-width: 576px) {
+    .map-canvas-modern {
+        height: 280px;
+    }
+
     #records-section table {
         table-layout: auto;
     }

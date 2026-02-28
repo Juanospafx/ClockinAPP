@@ -68,6 +68,8 @@ let timerSyncInterval = null; // Para el polling del timer del usuario
 let activeTimersInterval = null; // Para el polling del panel de admin
 let activeTimersTicker = null;
 const activeTimersState = new Map();
+let dashboardMapMarkers = [];
+let dashboardMapPolylines = [];
 
 // Estado de usuario (no redeclarar luego)
 let userId = null;
@@ -1099,7 +1101,7 @@ async function loadUsersForHistoryFilter() {
 
 async function loadDashboardData() {
     loadHoursChart();
-    loadUserLocationsAndDisplayOnMap();
+    loadAllAttendanceLocationsOnMap();
     loadDashboardMetrics();
     loadUsersForHistoryFilter();
 }
@@ -1294,37 +1296,72 @@ function placeQrMarker(latLng) {
     qrLocationMap.panTo(latLng);
 }
 
-async function loadUserLocationsAndDisplayOnMap() {
+function clearDashboardMapLayers() {
+    dashboardMapMarkers.forEach(m => m.setMap(null));
+    dashboardMapMarkers = [];
+    dashboardMapPolylines.forEach(p => p.setMap(null));
+    dashboardMapPolylines = [];
+}
+
+function parseLocationString(value) {
+    if (!value || typeof value !== 'string') return null;
+    const parts = value.split(',').map(v => parseFloat(v.trim()));
+    if (parts.length !== 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) return null;
+    return { lat: parts[0], lng: parts[1] };
+}
+
+async function loadAllAttendanceLocationsOnMap() {
     if (!userLocationsMap) return;
 
-    try {
-        const data = await apiFetch('locations/users');
-        if (data.locations.length > 0) {
-            const bounds = new google.maps.LatLngBounds();
+    clearDashboardMapLayers();
 
-            data.locations.forEach(loc => {
-                const position = { lat: parseFloat(loc.latitude), lng: parseFloat(loc.longitude) };
-                new google.maps.Marker({
-                    position,
-                    map: userLocationsMap,
-                    title: `${loc.username} - Last seen: ${new Date(loc.timestamp).toLocaleString()}`
-                });
-                bounds.extend(position);
+    try {
+        const data = await apiFetch('attendance?all=true&limit=400');
+        const records = Array.isArray(data.records) ? data.records : [];
+
+        const points = records
+            .map(r => ({ ...r, coords: parseLocationString(r.location) }))
+            .filter(r => r.coords);
+
+        if (!points.length) {
+            const msg = document.getElementById('map-message');
+            if (msg) msg.textContent = 'No hay ubicaciones de entradas/salidas para mostrar aún.';
+            return;
+        }
+
+        const bounds = new google.maps.LatLngBounds();
+
+        points.forEach(point => {
+            const isEntry = point.type === 'entry';
+            const marker = new google.maps.Marker({
+                position: point.coords,
+                map: userLocationsMap,
+                title: `${point.username} • ${point.type} • ${new Date(point.original_time).toLocaleString()}`,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 6,
+                    fillColor: isEntry ? '#2ecc71' : '#e74c3c',
+                    fillOpacity: 0.95,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 1.5,
+                }
             });
 
-            if (data.locations.length > 1) {
-                userLocationsMap.fitBounds(bounds);
-            } else {
-                userLocationsMap.setCenter(bounds.getCenter());
-                userLocationsMap.setZoom(15);
-            }
-        } else {
-            const msg = document.getElementById('map-message');
-            if (msg) msg.textContent = 'No recent user locations to display.';
-        }
+            const info = new google.maps.InfoWindow({
+                content: `<div style="min-width:180px"><strong>${point.username}</strong><br>${point.type.toUpperCase()}<br>${new Date(point.original_time).toLocaleString()}</div>`
+            });
+
+            marker.addListener('click', () => info.open(userLocationsMap, marker));
+            dashboardMapMarkers.push(marker);
+            bounds.extend(point.coords);
+        });
+
+        userLocationsMap.fitBounds(bounds);
+        const msg = document.getElementById('map-message');
+        if (msg) msg.textContent = '';
     } catch (error) {
         const msg = document.getElementById('map-message');
-        if (msg) msg.textContent = 'Error loading user locations.';
+        if (msg) msg.textContent = 'Error loading map points.';
     }
 }
 
@@ -1332,6 +1369,7 @@ async function displayUserLocationHistory(uid, startDate, endDate) {
     if (!userLocationsMap) return;
 
     try {
+        clearDashboardMapLayers();
         const endpoint = `locations/history?user_id=${uid}&start_date=${startDate}&end_date=${endDate}`;
         const data = await apiFetch(endpoint);
 
@@ -1341,22 +1379,43 @@ async function displayUserLocationHistory(uid, startDate, endDate) {
             const userPath = new google.maps.Polyline({
                 path: pathCoordinates,
                 geodesic: true,
-                strokeColor: '#FF0000',
-                strokeOpacity: 1.0,
-                strokeWeight: 2
+                strokeColor: '#5ca7ff',
+                strokeOpacity: 0.95,
+                strokeWeight: 3
             });
 
             userPath.setMap(userLocationsMap);
+            dashboardMapPolylines.push(userPath);
 
             const bounds = new google.maps.LatLngBounds();
-            pathCoordinates.forEach(coord => bounds.extend(coord));
+            pathCoordinates.forEach(coord => {
+                const marker = new google.maps.Marker({
+                    position: coord,
+                    map: userLocationsMap,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 4,
+                        fillColor: '#5ca7ff',
+                        fillOpacity: 0.95,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 1
+                    }
+                });
+                dashboardMapMarkers.push(marker);
+                bounds.extend(coord);
+            });
             userLocationsMap.fitBounds(bounds);
-
+            const msg = document.getElementById('map-message');
+            if (msg) msg.textContent = '';
         } else {
-            alert('No location history found for the selected user and date range.');
+            const msg = document.getElementById('map-message');
+            if (msg) msg.textContent = 'Sin historial para ese filtro. Mostrando todas las entradas/salidas recientes.';
+            loadAllAttendanceLocationsOnMap();
         }
     } catch (error) {
-        alert('Error loading location history.');
+        const msg = document.getElementById('map-message');
+        if (msg) msg.textContent = 'Error loading history. Showing default map points.';
+        loadAllAttendanceLocationsOnMap();
     }
 }
 
