@@ -383,19 +383,20 @@ table {
 }
 
 #records-section td[data-label="Actions"] {
-    white-space: nowrap;
+    white-space: normal;
 }
 
 #records-section td[data-label="Actions"] button {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 74px;
-    margin-right: 6px;
+    width: 100%;
+    min-width: 86px;
+    margin: 0 0 8px;
 }
 
 #records-section td[data-label="Actions"] button:last-child {
-    margin-right: 0;
+    margin-bottom: 0;
 }
 
 table th {
