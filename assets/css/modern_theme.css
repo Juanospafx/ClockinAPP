@@ -1,6 +1,18 @@
 /* modern_theme.css - theme system (dark/light) */
 html[data-theme="dark"] {
     --clr-000: #000;
+    --primary-color: var(--clr-ff6247);
+    --primary-dark-color: var(--clr-ff7b62);
+    --background-color: var(--clr-121a2f);
+    --card-background: var(--clr-1f2941);
+    --border-color: var(--clr-rgba-159-176-205-0-2);
+    --dark-color: var(--clr-232d46);
+    --light-color: var(--clr-2b3757);
+    --text-color: var(--clr-d8e0f4);
+    --success-color: var(--clr-59e2a8);
+    --danger-color: var(--clr-ff8a97);
+    --sidebar-active-text: var(--clr-fff);
+    --sidebar-link-text: var(--clr-d8e0f4);
     --clr-0056b3: #0056b3;
     --clr-007bff: #007bff;
     --clr-121a2f: #121a2f;
@@ -119,6 +131,18 @@ html[data-theme="dark"] {
 
 html[data-theme="light"] {
     --clr-121a2f: #f7f8fa;
+    --primary-color: var(--clr-ff6247);
+    --primary-dark-color: var(--clr-ff7b62);
+    --background-color: #f7f8fa;
+    --card-background: #ffffff;
+    --border-color: #e2e8f0;
+    --dark-color: #ffffff;
+    --light-color: #edf2f7;
+    --text-color: #1a202c;
+    --success-color: #15803d;
+    --danger-color: #b91c1c;
+    --sidebar-active-text: #1a202c;
+    --sidebar-link-text: #475569;
     --clr-1f2941: #ffffff;
     --clr-26314c: #ffffff;
     --clr-2b3654: #edf2f7;
@@ -237,14 +261,14 @@ body {
 #timer-clock { color: var(--clr-46d59b); }
 
 .sidebar ul li a {
-    color: var(--clr-9fb0cd);
+    color: var(--sidebar-link-text);
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
 }
 
 .sidebar ul li a:hover,
 .sidebar ul li a.active {
-    color: var(--clr-fff);
+    color: var(--sidebar-active-text);
     background: linear-gradient(90deg, var(--clr-rgba-255-98-71-0-18), var(--clr-rgba-92-167-255-0-15));
     border-color: var(--clr-rgba-159-176-205-0-2);
 }
@@ -275,6 +299,11 @@ input, select, textarea {
 
 input::placeholder,
 textarea::placeholder { color: var(--clr-aaa); }
+
+select option {
+    color: var(--text-color);
+    background-color: var(--card-background);
+}
 
 input:focus,
 select:focus,
@@ -337,8 +366,8 @@ table td {
 
 table tr:hover { background-color: var(--clr-rgba-92-167-255-0-08); }
 
-.success-message { color: var(--clr-59e2a8); }
-.error-message { color: var(--clr-ff8a97); }
+.success-message { color: var(--success-color); }
+.error-message { color: var(--danger-color); }
 
 .modal { background-color: var(--clr-rgba-9-14-24-0-72); }
 .modal-content {
