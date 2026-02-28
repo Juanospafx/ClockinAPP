@@ -639,23 +639,40 @@ async function registerAttendance(action) {
         } catch (_) { /* non-critical */ }
     }
 
+    const now = new Date();
+    const payload = {
+        user_id: uid,
+        location: userLocation,
+        type: action,
+        project_qr_id: projectQrId,
+        project_id: projectId,
+        client_time_local: formatLocalDateTime(now),
+        client_time_iso: now.toISOString(),
+        client_timestamp: now.getTime(),
+        client_timezone_offset: now.getTimezoneOffset()
+    };
+
     try {
-        const now = new Date();
-        const payload = {
-            user_id: uid,
-            location: userLocation,
-            type: action,
-            project_qr_id: projectQrId,
-            project_id: projectId,
-            client_time_local: formatLocalDateTime(now),
-            client_time_iso: now.toISOString(),
-            client_timestamp: now.getTime(),
-            client_timezone_offset: now.getTimezoneOffset()
-        };
+        let response = null;
+        try {
+            response = await apiFetch('attendance', 'POST', payload);
+        } catch (error) {
+            if (action === 'entry' && error.code === 'late_reason_required') {
+                const reason = prompt('Llegaste tarde. Escribe una justificación para continuar:');
+                if (!reason || !reason.trim()) {
+                    if (messageEl) {
+                        messageEl.textContent = 'Debes escribir una justificación para registrar una entrada tardía.';
+                        messageEl.className = 'error-message';
+                    }
+                    return;
+                }
+                payload.late_reason = reason.trim();
+                response = await apiFetch('attendance', 'POST', payload);
+            } else {
+                throw error;
+            }
+        }
 
-        const response = await apiFetch('attendance', 'POST', payload);
-
-        // Show success overlay with animation + mini-map
         const successMsg = response.message || 'Asistencia registrada exitosamente.';
         if (typeof showClockInSuccess === 'function') {
             showClockInSuccess(
@@ -678,7 +695,6 @@ async function registerAttendance(action) {
             loadAttendanceRecords(normalizedRole === 'admin' ? null : uid);
         }
     } catch (error) {
-        // Check for geofence-specific errors
         if (error.code === 'outside_geofence' && typeof showGeofenceError === 'function') {
             showGeofenceError(error.message, error.details || null);
         } else if (error.code === 'geofence_error' && typeof showLocationRequiredError === 'function') {
@@ -705,13 +721,24 @@ async function generateQrCode() {
     }
 
     const projectId = projectSelectElement.value;
+    const entryTimeRequired = document.getElementById('qr-entry-time')?.value || '';
+    const exitTimeOptional = document.getElementById('qr-exit-time')?.value || '';
+
     if (!projectId) {
         if (qrMessage) qrMessage.textContent = 'Please select a project.';
         return;
     }
+    if (!entryTimeRequired) {
+        if (qrMessage) qrMessage.textContent = 'Entry time is required.';
+        return;
+    }
 
     try {
-        const response = await apiFetch('qrs', 'POST', { project_id: projectId });
+        const response = await apiFetch('qrs', 'POST', {
+            project_id: projectId,
+            entry_time_required: entryTimeRequired,
+            exit_time_optional: exitTimeOptional || null
+        });
         if (qrCodeDisplay) qrCodeDisplay.innerHTML = '';
         new QRCode(qrCodeDisplay, {
             text: response.qr_content,
@@ -747,11 +774,8 @@ async function loadAttendanceRecords(uid = null) {
 function getAttendanceStatusBadge(record) {
     if (record.type === 'absence') return '<span class="status-pill status-absence">Ausencia</span>';
     if (record.type !== 'entry') return '<span class="status-pill status-neutral">—</span>';
-
-    const localTime = formatUtcAsLocal(record.original_time).time;
-    const hhmm = localTime.slice(0, 5);
-    if (hhmm <= '09:10') return '<span class="status-pill status-ontime">A tiempo</span>';
-    return '<span class="status-pill status-late">Tardanza</span>';
+    if (record.late_reason) return '<span class="status-pill status-late">Tardanza</span>';
+    return '<span class="status-pill status-ontime">A tiempo</span>';
 }
 
 function renderAttendancePage() {
@@ -817,7 +841,7 @@ function exportAttendanceCsv() {
     const body = rows.map(record => {
         const localTime = formatUtcAsLocal(record.original_time);
         const localRoundedTime = formatUtcAsLocal(record.rounded_time);
-        const statusText = record.type === 'entry' ? (localTime.time.slice(0, 5) <= '09:10' ? 'A tiempo' : 'Tardanza') : (record.type === 'absence' ? 'Ausencia' : '-');
+        const statusText = record.type === 'entry' ? (record.late_reason ? 'Tardanza' : 'A tiempo') : (record.type === 'absence' ? 'Ausencia' : '-');
         return [
             record.username,
             localTime.date,
