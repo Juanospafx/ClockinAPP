@@ -18,6 +18,7 @@ require_once __DIR__ . '/controllers/maps.php';
 require_once __DIR__ . '/controllers/uploads.php';
 require_once __DIR__ . '/controllers/absences.php';
 require_once __DIR__ . '/controllers/manual_attendance.php';
+require_once __DIR__ . '/controllers/notifications.php';
 
 $route = trim((string)($_GET['route'] ?? ''), '/');
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -171,6 +172,16 @@ try {
     // --- Manual Attendance ---
     if ($route === 'attendance/manual' && $method === 'POST') {
         handle_manual_attendance_create();
+        return;
+    }
+
+    // --- Notifications ---
+    if ($route === 'notifications' && $method === 'GET') {
+        handle_notifications_list();
+        return;
+    }
+    if (preg_match('#^notifications/(\\d+)/read$#', $route, $m) && $method === 'PUT') {
+        handle_notifications_read((int)$m[1]);
         return;
     }
 

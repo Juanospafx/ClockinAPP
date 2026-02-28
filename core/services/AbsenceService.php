@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/NotificationService.php';
 
 class AbsenceService
 {
@@ -53,9 +54,16 @@ class AbsenceService
         );
         $stmt->execute([$userId, $projectId, $dateStart, $dateEnd, $reason, $notes ?: null, $evidencePath]);
 
+        $absenceId = (int)$pdo->lastInsertId();
+
+        $uStmt = $pdo->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
+        $uStmt->execute([$userId]);
+        $username = (string)($uStmt->fetchColumn() ?: ('Usuario #' . $userId));
+        NotificationService::notifyAdmins('absence_reported', "{$username} reportó una ausencia ({$dateStart}).", $absenceId);
+
         return ['data' => [
             'message' => 'Reporte de ausencia enviado exitosamente.',
-            'id'      => (int)$pdo->lastInsertId(),
+            'id'      => $absenceId,
         ]];
     }
 
@@ -142,7 +150,19 @@ class AbsenceService
         );
         $stmt->execute([$status, $reviewerId, $absenceId]);
 
+        $ownerStmt = $pdo->prepare('SELECT user_id FROM absences WHERE id = ? LIMIT 1');
+        $ownerStmt->execute([$absenceId]);
+        $ownerId = (int)$ownerStmt->fetchColumn();
+
+        $reviewerStmt = $pdo->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
+        $reviewerStmt->execute([$reviewerId]);
+        $reviewerName = (string)($reviewerStmt->fetchColumn() ?: 'Admin');
+
         $label = $status === 'aprobado' ? 'aprobado' : 'rechazado';
+        if ($ownerId > 0) {
+            NotificationService::create($ownerId, 'absence_reviewed', "Tu ausencia fue {$label} por {$reviewerName}.", $absenceId);
+        }
+
         return ['data' => ['message' => "Reporte de ausencia {$label} exitosamente."]];
     }
 

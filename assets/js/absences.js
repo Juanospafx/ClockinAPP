@@ -101,6 +101,7 @@ async function submitAbsenceReport(e) {
 
         // Reload user's absence history
         loadUserAbsenceHistory();
+        if (typeof loadNotifications === 'function') loadNotifications();
 
     } catch (error) {
         if (messageEl) {
@@ -238,6 +239,7 @@ async function reviewAbsence(absenceId, status) {
         await apiFetch(`absences/${absenceId}/review`, 'PUT', { status });
         loadAdminAbsences();
         loadAbsenceSummary(); // refresh summary
+        if (typeof loadNotifications === 'function') loadNotifications();
     } catch (error) {
         alert('Error: ' + error.message);
     }

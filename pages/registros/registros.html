@@ -14,18 +14,18 @@
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
-    <link rel="stylesheet" href="../../assets/css/global_login.css?v=2.4">
-    <link rel="stylesheet" href="../../assets/css/registros.css?v=2.4">
-    <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=2.4">
-    <link rel="stylesheet" href="../../assets/css/geofence.css?v=2.4">
-    <link rel="stylesheet" href="../../assets/css/absences.css?v=2.4">
-    <link rel="stylesheet" href="../../assets/css/manual_attendance.css?v=1.4">
+    <link rel="stylesheet" href="../../assets/css/global_login.css?v=2.6">
+    <link rel="stylesheet" href="../../assets/css/registros.css?v=2.6">
+    <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=2.6">
+    <link rel="stylesheet" href="../../assets/css/geofence.css?v=2.6">
+    <link rel="stylesheet" href="../../assets/css/absences.css?v=2.6">
+    <link rel="stylesheet" href="../../assets/css/manual_attendance.css?v=1.6">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
-    <script src="../../assets/js/geofence.js?v=2.2"></script>
-    <script src="../../assets/js/absences.js?v=2.2"></script>
-    <script src="../../assets/js/manual_attendance.js?v=1.2"></script>
-    <script src="../../assets/js/script.js?v=2.2"></script>
+    <script src="../../assets/js/geofence.js?v=2.6"></script>
+    <script src="../../assets/js/absences.js?v=2.6"></script>
+    <script src="../../assets/js/manual_attendance.js?v=1.6"></script>
+    <script src="../../assets/js/script.js?v=2.6"></script>
 
 </head>
 
@@ -67,8 +67,13 @@
     <div class="main-content">
         <button class="open-sidebar-button">☰</button>
         <div class="app-header">
+            <button id="notifications-toggle" type="button" data-tooltip="Notificaciones" aria-label="Notificaciones">🔔<span id="notifications-badge" class="notif-badge" style="display:none;">0</span></button>
             <span id="header-profile-name">User</span>
             <button id="theme-toggle" type="button" data-tooltip="Toggle theme" aria-label="Toggle theme">☀️</button>
+            <div id="notifications-panel" class="notifications-panel" style="display:none;">
+                <div class="notifications-panel-header">Notificaciones</div>
+                <ul id="notifications-list"></ul>
+            </div>
         </div>
 
         <!-- Section for QR Scanning (for regular users) -->
@@ -98,6 +103,9 @@
                 <label for="attendance-table-search">Search Attendance Records:</label>
                 <input type="text" id="attendance-table-search" placeholder="Search...">
             </div>
+            <div class="table-tools">
+                <button id="export-attendance-csv" type="button">Export CSV</button>
+            </div>
             <table>
                 <thead>
                     <tr>
@@ -105,6 +113,7 @@
                         <th>Date</th>
                         <th>Location</th>
                         <th>Type</th>
+                        <th>Status</th>
                         <th>Original Time</th>
                         <th>Rounded Time</th>
                         <th>Work Duration (hours)</th>
@@ -115,6 +124,11 @@
                 </thead>
                 <tbody id="attendance-records-body"></tbody>
             </table>
+            <div class="pagination-controls">
+                <button id="attendance-prev-page" type="button">← Prev</button>
+                <span id="attendance-page-info">Page 1</span>
+                <button id="attendance-next-page" type="button">Next →</button>
+            </div>
         </section>
 
         <!-- Section for Special User Records -->
@@ -145,6 +159,12 @@
         <!-- Section for Admin Dashboard -->
         <section id="dashboard-section" style="display:none;">
             <h3>Admin Dashboard</h3>
+            <div id="dashboard-metrics" class="dashboard-metrics">
+                <div class="metric-card"><div class="metric-icon">👥</div><div><div class="metric-label">Total empleados activos hoy</div><div id="metric-active-employees" class="metric-value">0</div></div></div>
+                <div class="metric-card"><div class="metric-icon">⏱️</div><div><div class="metric-label">Clock ins de hoy</div><div id="metric-clockins" class="metric-value">0</div></div></div>
+                <div class="metric-card"><div class="metric-icon">📌</div><div><div class="metric-label">Ausencias de hoy</div><div id="metric-absences" class="metric-value">0</div></div></div>
+                <div class="metric-card"><div class="metric-icon">📊</div><div><div class="metric-label">Promedio horas semana</div><div id="metric-avg-hours" class="metric-value">0.00</div></div></div>
+            </div>
             <div class="chart-container">
                 <h4>Hours Worked Summary</h4>
                 <canvas id="hours-chart"></canvas>

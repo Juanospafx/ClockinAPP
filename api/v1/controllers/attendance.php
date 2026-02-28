@@ -22,6 +22,16 @@ function handle_attendance_list(): void {
         return;
     }
 
+    if (isset($_GET['dashboard'])) {
+        if ($currentUserRole !== 'admin') {
+            json_error('forbidden', 'Only administrators can view dashboard metrics.', 403);
+            return;
+        }
+        $metrics = AttendanceService::getDashboardMetrics();
+        json_ok(['metrics' => $metrics]);
+        return;
+    }
+
     $queryUserId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
     $limitParam = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : null;
     $records = [];

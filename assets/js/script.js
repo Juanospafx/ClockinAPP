@@ -74,6 +74,9 @@ let userId = null;
 let userRole = null;
 let username = null;
 let specialUsersLoaded = false;
+let attendanceAllRecords = [];
+let attendancePage = 1;
+const ATTENDANCE_PAGE_SIZE = 10;
 
 function normalizeRole(role) {
     if (!role) return '';
@@ -733,30 +736,61 @@ async function loadAttendanceRecords(uid = null) {
 
     try {
         const data = await apiFetch(endpoint);
-        // It is assumed that the header row is static in the HTML and has been updated to include a "Lunch Duration" column.
-        recordsBody.innerHTML = (data.records || []).map(record => {
-            const localTime = formatUtcAsLocal(record.original_time);
-            const localRoundedTime = formatUtcAsLocal(record.rounded_time);
-            const projectNameRaw = (record.project_name ?? '').trim();
-            const projectName = projectNameRaw !== '' ? projectNameRaw : 'Sin proyecto';
+        attendanceAllRecords = data.records || [];
+        attendancePage = 1;
+        renderAttendancePage();
+    } catch (_) {
+        recordsBody.innerHTML = `<tr><td colspan="11">Error loading records.</td></tr>`;
+    }
+}
 
-            // Display total_duration for entry/exit, and lunch_duration for end_lunch
-            const sessionDuration = (record.type === 'entry' || record.type === 'exit') ? formatDurationHours(record.total_duration) : 'N/A';
-            const lunchDuration = record.type === 'end_lunch' ? formatDurationHours(record.lunch_duration) : 'N/A';
+function getAttendanceStatusBadge(record) {
+    if (record.type === 'absence') return '<span class="status-pill status-absence">Ausencia</span>';
+    if (record.type !== 'entry') return '<span class="status-pill status-neutral">—</span>';
 
-            const actionsHtml = role === 'admin' ? `
-                <td data-label="Actions">
-                    <button data-action="edit-record" data-record-id="${Number(record.id)}" data-rounded-time="${record.rounded_time}" data-total-duration="${record.total_duration || 0}">Edit</button>
-                    <button data-action="delete-record" data-record-id="${Number(record.id)}">Delete</button>
-                </td>
-            ` : '';
+    const localTime = formatUtcAsLocal(record.original_time).time;
+    const hhmm = localTime.slice(0, 5);
+    if (hhmm <= '09:10') return '<span class="status-pill status-ontime">A tiempo</span>';
+    return '<span class="status-pill status-late">Tardanza</span>';
+}
 
-            return `
+function renderAttendancePage() {
+    const recordsBody = document.getElementById('attendance-records-body');
+    if (!recordsBody) return;
+
+    const role = normalizeRole(sessionStorage.getItem('user_role'));
+    const totalPages = Math.max(1, Math.ceil(attendanceAllRecords.length / ATTENDANCE_PAGE_SIZE));
+    if (attendancePage > totalPages) attendancePage = totalPages;
+
+    const start = (attendancePage - 1) * ATTENDANCE_PAGE_SIZE;
+    const pageItems = attendanceAllRecords.slice(start, start + ATTENDANCE_PAGE_SIZE);
+
+    recordsBody.innerHTML = pageItems.map(record => {
+        const localTime = formatUtcAsLocal(record.original_time);
+        const localRoundedTime = formatUtcAsLocal(record.rounded_time);
+        const projectNameRaw = (record.project_name ?? '').trim();
+        const projectName = projectNameRaw !== '' ? projectNameRaw : 'Sin proyecto';
+
+        const sessionDuration = (record.type === 'entry' || record.type === 'exit') ? formatDurationHours(record.total_duration) : 'N/A';
+        const lunchDuration = record.type === 'end_lunch' ? formatDurationHours(record.lunch_duration) : 'N/A';
+
+        const manualBadge = record.entry_source === 'manual' ? ' <span class="manual-badge">✏️ Manual</span>' : '';
+        const statusBadge = getAttendanceStatusBadge(record);
+
+        const actionsHtml = role === 'admin' ? `
+            <td data-label="Actions">
+                <button data-action="edit-record" data-record-id="${Number(record.id)}" data-rounded-time="${record.rounded_time}" data-total-duration="${record.total_duration || 0}">Edit</button>
+                <button data-action="delete-record" data-record-id="${Number(record.id)}">Delete</button>
+            </td>
+        ` : '';
+
+        return `
         <tr>
           <td data-label="User">${record.username}</td>
           <td data-label="Date">${localTime.date}</td>
           <td data-label="Location">${record.location}</td>
-          <td data-label="Type">${record.type}</td>
+          <td data-label="Type">${record.type}${manualBadge}</td>
+          <td data-label="Status">${statusBadge}</td>
           <td data-label="Original Time">${localTime.time}</td>
           <td data-label="Rounded Time">${localRoundedTime.time}</td>
           <td data-label="Work Duration (hours)">${sessionDuration}</td>
@@ -765,10 +799,47 @@ async function loadAttendanceRecords(uid = null) {
           ${actionsHtml}
         </tr>
       `;
-        }).join('');
-    } catch (_) {
-        recordsBody.innerHTML = `<tr><td colspan="10">Error loading records.</td></tr>`;
-    }
+    }).join('');
+
+    const pageInfo = document.getElementById('attendance-page-info');
+    if (pageInfo) pageInfo.textContent = `Page ${attendancePage} / ${totalPages}`;
+    const prevBtn = document.getElementById('attendance-prev-page');
+    const nextBtn = document.getElementById('attendance-next-page');
+    if (prevBtn) prevBtn.disabled = attendancePage <= 1;
+    if (nextBtn) nextBtn.disabled = attendancePage >= totalPages;
+}
+
+function exportAttendanceCsv() {
+    const rows = attendanceAllRecords || [];
+    if (!rows.length) return;
+
+    const headers = ['User', 'Date', 'Location', 'Type', 'Status', 'Original Time', 'Rounded Time', 'Work Duration', 'Lunch Duration', 'Project'];
+    const body = rows.map(record => {
+        const localTime = formatUtcAsLocal(record.original_time);
+        const localRoundedTime = formatUtcAsLocal(record.rounded_time);
+        const statusText = record.type === 'entry' ? (localTime.time.slice(0, 5) <= '09:10' ? 'A tiempo' : 'Tardanza') : (record.type === 'absence' ? 'Ausencia' : '-');
+        return [
+            record.username,
+            localTime.date,
+            record.location,
+            record.type,
+            statusText,
+            localTime.time,
+            localRoundedTime.time,
+            formatDurationHours(record.total_duration),
+            formatDurationHours(record.lunch_duration),
+            record.project_name || 'Sin proyecto'
+        ];
+    });
+
+    const csv = [headers, ...body].map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'attendance_records.csv';
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 async function loadActiveTimers() {
@@ -1003,6 +1074,52 @@ async function loadUsersForHistoryFilter() {
 async function loadDashboardData() {
     loadHoursChart();
     loadUserLocationsAndDisplayOnMap();
+    loadDashboardMetrics();
+}
+
+async function loadDashboardMetrics() {
+    try {
+        const data = await apiFetch('attendance?dashboard=1');
+        const m = data.metrics || {};
+        const setText = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+        setText('metric-active-employees', m.active_employees_today ?? 0);
+        setText('metric-clockins', m.clockins_today ?? 0);
+        setText('metric-absences', m.absences_today ?? 0);
+        setText('metric-avg-hours', Number(m.avg_hours_week ?? 0).toFixed(2));
+    } catch (_) {}
+}
+
+async function loadNotifications() {
+    try {
+        const data = await apiFetch('notifications?limit=20');
+        const badge = document.getElementById('notifications-badge');
+        const list = document.getElementById('notifications-list');
+        if (!badge || !list) return;
+
+        const unread = Number(data.unread_count || 0);
+        if (unread > 0) {
+            badge.style.display = 'inline-flex';
+            badge.textContent = unread > 99 ? '99+' : String(unread);
+        } else {
+            badge.style.display = 'none';
+            badge.textContent = '0';
+        }
+
+        const items = data.notifications || [];
+        list.innerHTML = items.length
+            ? items.map(n => `<li class="notification-item ${Number(n.is_read) ? 'read' : 'unread'}" data-notification-id="${n.id}">${n.message}<small>${new Date(n.created_at).toLocaleString()}</small></li>`).join('')
+            : '<li class="notification-item read">No notifications</li>';
+    } catch (_) {}
+}
+
+async function markNotificationRead(id) {
+    try {
+        await apiFetch(`notifications/${id}/read`, 'PUT', {});
+        loadNotifications();
+    } catch (_) {}
 }
 
 async function loadHoursChart(uid = null) {
@@ -1995,6 +2112,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const attendanceSearchInput = document.getElementById('attendance-table-search');
     if (attendanceSearchInput) attendanceSearchInput.addEventListener('keyup', () => filterTable('attendance-table-search', 'attendance-records-body'));
+
+    const prevPageBtn = document.getElementById('attendance-prev-page');
+    if (prevPageBtn) prevPageBtn.addEventListener('click', () => { attendancePage = Math.max(1, attendancePage - 1); renderAttendancePage(); });
+
+    const nextPageBtn = document.getElementById('attendance-next-page');
+    if (nextPageBtn) nextPageBtn.addEventListener('click', () => { attendancePage += 1; renderAttendancePage(); });
+
+    const exportBtn = document.getElementById('export-attendance-csv');
+    if (exportBtn) exportBtn.addEventListener('click', exportAttendanceCsv);
+
+    const notificationsToggle = document.getElementById('notifications-toggle');
+    const notificationsPanel = document.getElementById('notifications-panel');
+    if (notificationsToggle && notificationsPanel) {
+        notificationsToggle.addEventListener('click', () => {
+            const isOpen = notificationsPanel.style.display === 'block';
+            notificationsPanel.style.display = isOpen ? 'none' : 'block';
+        });
+    }
+
+    const notificationsList = document.getElementById('notifications-list');
+    if (notificationsList) {
+        notificationsList.addEventListener('click', (e) => {
+            const item = e.target.closest('[data-notification-id]');
+            if (!item) return;
+            const id = Number(item.dataset.notificationId);
+            if (id) markNotificationRead(id);
+        });
+    }
+
+    loadNotifications();
 
     const generatedQrsSearchInput = document.getElementById('generated-qrs-table-search');
     if (generatedQrsSearchInput) generatedQrsSearchInput.addEventListener('keyup', () => filterTable('generated-qrs-table-search', 'generated-qrs-table-body'));
