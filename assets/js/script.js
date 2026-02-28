@@ -28,8 +28,8 @@ function updateThemeToggleIcon(theme) {
 }
 
 function initThemeToggle() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || resolveInitialTheme();
-    updateThemeToggleIcon(currentTheme);
+    const currentTheme = resolveInitialTheme();
+    applyTheme(currentTheme);
 
     const toggle = document.getElementById('theme-toggle');
     if (!toggle) return;
