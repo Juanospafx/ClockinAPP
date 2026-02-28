@@ -15,7 +15,7 @@ class NotificationService
     public static function notifyAdmins(string $type, string $message, ?int $relatedId = null): void
     {
         $pdo = get_pdo();
-        $admins = $pdo->query("SELECT id FROM users WHERE role = 'admin'")->fetchAll(PDO::FETCH_COLUMN);
+        $admins = $pdo->query("SELECT u.id FROM users u JOIN roles r ON r.id = u.role_id WHERE r.name = 'admin'")->fetchAll(PDO::FETCH_COLUMN);
         if (!$admins) return;
 
         $stmt = $pdo->prepare('INSERT INTO notifications (user_id, type, message, related_id) VALUES (?, ?, ?, ?)');
