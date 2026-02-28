@@ -10,11 +10,14 @@ class AttendanceService {
     public static function fetchRecords(?int $userId, ?int $limit): array {
         $pdo = get_pdo();
         $sql = 'SELECT ar.id, ar.user_id, u.username, ar.location, ar.type, ar.original_time, ar.rounded_time,
-                       ar.total_duration, ar.lunch_duration, ar.created_at, p.name AS project_name
+                       ar.total_duration, ar.lunch_duration, ar.created_at, p.name AS project_name,
+                       ar.entry_source, ar.manual_reason, ar.created_by,
+                       admin_u.username AS created_by_username
                 FROM attendance_records ar
                 JOIN users u ON ar.user_id = u.id
                 LEFT JOIN project_qrs pq ON ar.project_qr_id = pq.id
-                LEFT JOIN projects p ON pq.project_id = p.id';
+                LEFT JOIN projects p ON pq.project_id = p.id
+                LEFT JOIN users admin_u ON ar.created_by = admin_u.id';
         $params = [];
 
         if ($userId !== null) {

@@ -4,3 +4,15 @@ Stack trace:
 #0 C:\xampp\htdocs\ClockinAPP\api\v1\index.php(9): require_once()
 #1 {main}
   thrown in C:\xampp\htdocs\ClockinAPP\api\v1\controllers\auth.php on line 4
+[28-Feb-2026 07:50:59 America/Mexico_City] PHP Fatal error:  Uncaught PDOException: could not find driver in /home/admin/ClockinAPP/core/db.php:25
+Stack trace:
+#0 /home/admin/ClockinAPP/core/db.php(25): PDO->__construct()
+#1 /home/admin/ClockinAPP/scripts/db/describe_attendance_records.php(4): get_pdo()
+#2 {main}
+  thrown in /home/admin/ClockinAPP/core/db.php on line 25
+[28-Feb-2026 07:51:07 America/Mexico_City] PHP Fatal error:  Uncaught PDOException: could not find driver in /home/admin/ClockinAPP/core/db.php:25
+Stack trace:
+#0 /home/admin/ClockinAPP/core/db.php(25): PDO->__construct()
+#1 /home/admin/ClockinAPP/scripts/db/describe_attendance_records.php(4): get_pdo()
+#2 {main}
+  thrown in /home/admin/ClockinAPP/core/db.php on line 25

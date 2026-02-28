@@ -10,10 +10,12 @@
     <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=2.0">
     <link rel="stylesheet" href="../../assets/css/geofence.css?v=2.0">
     <link rel="stylesheet" href="../../assets/css/absences.css?v=2.0">
+    <link rel="stylesheet" href="../../assets/css/manual_attendance.css?v=1.0">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
     <script src="../../assets/js/geofence.js?v=2.0"></script>
     <script src="../../assets/js/absences.js?v=2.0"></script>
+    <script src="../../assets/js/manual_attendance.js?v=1.0"></script>
     <script src="../../assets/js/script.js?v=2.0"></script>
 
 </head>
@@ -43,6 +45,7 @@
             <li class="admin-only"><a href="#" id="nav-dashboard">Dashboard</a></li>
             <li class="admin-only"><a href="#" id="nav-all-records">All Records</a></li>
             <li class="admin-only"><a href="#" id="nav-absence-records">Absence Records</a></li>
+            <li class="admin-only"><a href="#" id="nav-manual-attendance">Manual Attendance</a></li>
             <li class="admin-only"><a href="#" id="nav-admin-tools">Admin Tools</a></li>
             <li class="admin-only"><a href="#" id="nav-users">Users</a></li>
             <li class="admin-only"><a href="#" id="nav-projects">Projects</a></li>
@@ -456,6 +459,52 @@
             </template>
         </section>
     </div>
+
+        <!-- Section: Manual Attendance (Admin Only) -->
+        <section id="manual-attendance-section" class="admin-only" style="display:none;">
+            <h3>📝 Manual Attendance Entry</h3>
+            <p>Register attendance entries manually for employees who forgot to clock in/out.</p>
+            <form id="manual-attendance-form" class="manual-attendance-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="manual-employee">Employee: <span class="required">*</span></label>
+                        <select id="manual-employee" required>
+                            <option value="">— Select employee —</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="manual-project">Project:</label>
+                        <select id="manual-project">
+                            <option value="">— Select project —</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="manual-type">Type: <span class="required">*</span></label>
+                        <select id="manual-type" required>
+                            <option value="">— Select —</option>
+                            <option value="entry">Clock In</option>
+                            <option value="exit">Clock Out</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="manual-date">Date: <span class="required">*</span></label>
+                        <input type="date" id="manual-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="manual-time">Time: <span class="required">*</span></label>
+                        <input type="time" id="manual-time" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="manual-reason">Reason for manual entry: <span class="required">*</span></label>
+                    <textarea id="manual-reason" rows="2" placeholder="e.g., Employee forgot to clock in, Device malfunction..." required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Register Manual Entry</button>
+            </form>
+            <p id="manual-attendance-message"></p>
+        </section>
 
     <!-- QR Location Map Modal -->
     <div id="qr-map-modal" class="modal" style="display: none;">

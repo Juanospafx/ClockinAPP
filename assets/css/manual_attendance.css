@@ -1,0 +1,93 @@
+/* Manual Attendance Styles */
+.manual-attendance-form {
+    max-width: 700px;
+    margin-bottom: 20px;
+}
+.manual-attendance-form .form-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.manual-attendance-form .form-group {
+    flex: 1;
+    min-width: 180px;
+}
+.manual-attendance-form .required {
+    color: #dc3545;
+}
+.manual-attendance-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit;
+    resize: vertical;
+}
+.manual-attendance-form .submit-btn {
+    margin-top: 12px;
+    padding: 10px 24px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.manual-attendance-form .submit-btn:hover {
+    background: #0056b3;
+}
+
+/* Badge for manual entries in records table */
+.badge-manual {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #ffc107;
+    color: #212529;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+    white-space: nowrap;
+}
+.badge-manual::before {
+    content: '✏️';
+    font-size: 11px;
+}
+
+/* Manual attendance message */
+#manual-attendance-message {
+    margin-top: 10px;
+    font-weight: 500;
+}
+#manual-attendance-message.success { color: #28a745; }
+#manual-attendance-message.error { color: #dc3545; }
+#manual-attendance-message.warning { color: #856404; }
+
+/* Tooltip for manual entry details */
+.manual-tooltip {
+    position: relative;
+    cursor: help;
+}
+.manual-tooltip .tooltip-text {
+    visibility: hidden;
+    background: #333;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    position: absolute;
+    z-index: 100;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.manual-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
