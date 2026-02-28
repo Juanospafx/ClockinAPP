@@ -334,6 +334,8 @@ function showSection(sectionId) {
 
     if (target === 'dashboard-section') {
         loadDashboardData();
+    } else if (target === 'records-section') {
+        if (role === 'admin') loadUsersForAdminFilter();
     } else if (target === 'users-section') {
         loadUsers();
     } else if (target === 'projects-section') {
@@ -1099,6 +1101,7 @@ async function loadDashboardData() {
     loadHoursChart();
     loadUserLocationsAndDisplayOnMap();
     loadDashboardMetrics();
+    loadUsersForHistoryFilter();
 }
 
 async function loadDashboardMetrics() {
