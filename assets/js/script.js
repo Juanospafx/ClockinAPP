@@ -256,7 +256,7 @@ function showSection(sectionId) {
         target = 'dashboard-section';
     }
 
-    ['scan-section', 'records-section', 'special-user-records-section', 'dashboard-section', 'admin-tools-section', 'users-section', 'projects-section', 'special-tools-section', 'report-absence-section', 'absence-records-section']
+    ['scan-section', 'records-section', 'special-user-records-section', 'dashboard-section', 'admin-tools-section', 'users-section', 'projects-section', 'special-tools-section', 'report-absence-section', 'absence-records-section', 'manual-attendance-section']
         .forEach((id) => {
             const section = document.getElementById(id);
             if (section) section.style.display = (id === target) ? 'block' : 'none';
@@ -281,7 +281,8 @@ function showSection(sectionId) {
         'projects-section': 'nav-projects',
         'special-tools-section': role === 'admin' ? 'nav-timer-control' : 'nav-special-tools',
         'report-absence-section': role === 'special' ? 'nav-report-absence-special' : 'nav-report-absence',
-        'absence-records-section': 'nav-absence-records'
+        'absence-records-section': 'nav-absence-records',
+        'manual-attendance-section': 'nav-manual-attendance'
     };
     const activeNav = document.getElementById(navMap[target] || '');
     if (activeNav) activeNav.classList.add('active');
@@ -308,6 +309,9 @@ function showSection(sectionId) {
         if (typeof loadProjectsForAbsenceFilter === 'function') loadProjectsForAbsenceFilter();
         if (typeof loadAdminAbsences === 'function') loadAdminAbsences();
         if (typeof loadAbsenceSummary === 'function') loadAbsenceSummary();
+    } else if (target === 'manual-attendance-section') {
+        if (typeof initManualAttendance === 'function') initManualAttendance();
+        if (typeof populateManualDropdowns === 'function') populateManualDropdowns();
     }
 
     if (window.innerWidth <= 768) {
@@ -1734,6 +1738,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (reportAbsenceSpecialLink) reportAbsenceSpecialLink.addEventListener('click', (e) => { e.preventDefault(); showSection('report-absence-section'); });
     const absenceRecordsLink = document.getElementById('nav-absence-records');
     if (absenceRecordsLink) absenceRecordsLink.addEventListener('click', (e) => { e.preventDefault(); showSection('absence-records-section'); });
+    const manualAttendanceLink = document.getElementById('nav-manual-attendance');
+    if (manualAttendanceLink) manualAttendanceLink.addEventListener('click', (e) => { e.preventDefault(); showSection('manual-attendance-section'); });
 
     const startScannerBtn = document.getElementById('start-scanner-button');
     if (startScannerBtn && userRole !== 'admin') {
