@@ -77,6 +77,7 @@ let userRole = null;
 let username = null;
 let specialUsersLoaded = false;
 let attendanceAllRecords = [];
+let attendanceEditingRecord = null;
 let attendancePage = 1;
 const ATTENDANCE_PAGE_SIZE = 10;
 
@@ -1434,11 +1435,40 @@ async function deleteRecord(recordId) {
     }
 }
 
-function openEditModal(recordId, roundedTime, totalDuration) {
+async function openEditModal(recordId, roundedTime, totalDuration) {
+    attendanceEditingRecord = attendanceAllRecords.find(r => Number(r.id) === Number(recordId)) || null;
+
     document.getElementById('edit-record-id').value = recordId;
     document.getElementById('edit-rounded-time').value = roundedTime.replace(' ', 'T').slice(0, 16);
     document.getElementById('edit-total-duration').value = (totalDuration / 60).toFixed(2) || '';
+
+    await populateEditProjectSelect(attendanceEditingRecord?.project_id ?? null);
+
     document.getElementById('edit-record-modal').style.display = 'block';
+}
+
+async function populateEditProjectSelect(selectedProjectId = null) {
+    const projectSelect = document.getElementById('edit-project-id');
+    if (!projectSelect) return;
+
+    projectSelect.innerHTML = '<option value="">— Sin proyecto —</option>';
+
+    try {
+        const data = await apiFetch('projects');
+        const projects = data.projects || [];
+        projects.forEach((p) => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name;
+            projectSelect.appendChild(opt);
+        });
+
+        if (selectedProjectId) {
+            projectSelect.value = String(selectedProjectId);
+        }
+    } catch (error) {
+        console.error('Error loading projects for edit modal:', error);
+    }
 }
 
 // --- User Management Functions ---
@@ -2111,17 +2141,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 const recordId = document.getElementById('edit-record-id').value;
                 const newTime = document.getElementById('edit-rounded-time').value;
                 const newDuration = parseFloat(document.getElementById('edit-total-duration').value) * 60;
+                const selectedProjectIdRaw = document.getElementById('edit-project-id')?.value || '';
+                const selectedProjectId = selectedProjectIdRaw ? parseInt(selectedProjectIdRaw, 10) : null;
+
+                if (!attendanceEditingRecord) {
+                    const msg = document.getElementById('edit-message');
+                    if (msg) msg.textContent = 'Could not load record context for editing.';
+                    return;
+                }
+
                 try {
                     await apiFetch(`attendance/${recordId}`, 'PUT', {
                         rounded_time: newTime.replace('T', ' '),
-                        total_duration: newDuration,
-                        user_id: userId,
-                        location: 'N/A',
-                        type: 'N/A',
-                        original_time: newTime.replace('T', ' '),
-                        project_qr_id: null
+                        total_duration: Number.isFinite(newDuration) ? newDuration : null,
+                        user_id: Number(attendanceEditingRecord.user_id),
+                        location: attendanceEditingRecord.location,
+                        type: attendanceEditingRecord.type,
+                        original_time: attendanceEditingRecord.original_time,
+                        project_qr_id: null,
+                        project_id: selectedProjectId
                     });
                     editModal.style.display = 'none';
+                    attendanceEditingRecord = null;
                     loadAttendanceRecords(userRole === 'admin' ? null : userId);
                 } catch (error) {
                     const msg = document.getElementById('edit-message');

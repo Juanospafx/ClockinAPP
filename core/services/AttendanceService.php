@@ -23,7 +23,7 @@ class AttendanceService {
         $selectLateReason = $hasLateReason ? 'ar.late_reason AS late_reason' : "NULL AS late_reason";
 
         $sql = "SELECT ar.id, ar.user_id, u.username, ar.location, ar.type, ar.original_time, ar.rounded_time,
-                       ar.total_duration, ar.lunch_duration, ar.created_at, p.name AS project_name,
+                       ar.total_duration, ar.lunch_duration, ar.created_at, ar.project_qr_id, pq.project_id, p.name AS project_name,
                        {$selectEntrySource}, {$selectManualReason}, {$selectCreatedBy},
                        {$selectCreatedByUsername}, {$selectLateReason}
                 FROM attendance_records ar
@@ -317,13 +317,24 @@ class AttendanceService {
         $originalTimeStr = $data['original_time'] ?? null;
         $roundedTimeStr = $data['rounded_time'] ?? null;
         $totalDuration = isset($data['total_duration']) ? (int)$data['total_duration'] : null;
-        $projectQrId = isset($data['project_qr_id']) ? (int)$data['project_qr_id'] : null;
+        $projectQrId = isset($data['project_qr_id']) && $data['project_qr_id'] !== null ? (int)$data['project_qr_id'] : null;
+        $projectId = isset($data['project_id']) && $data['project_id'] !== null ? (int)$data['project_id'] : null;
 
         if (!$recordId || !$userId || !$location || !$type || !$originalTimeStr || !$roundedTimeStr) {
             return ['error' => ['code' => 'validation_error', 'message' => 'Missing required fields for update.'], 'status' => 400];
         }
 
         $pdo = get_pdo();
+
+        if ($projectId) {
+            $stmtProjectQr = $pdo->prepare('SELECT id FROM project_qrs WHERE project_id = ? ORDER BY id DESC LIMIT 1');
+            $stmtProjectQr->execute([$projectId]);
+            $resolvedProjectQrId = $stmtProjectQr->fetchColumn();
+            if ($resolvedProjectQrId) {
+                $projectQrId = (int)$resolvedProjectQrId;
+            }
+        }
+
         $stmt = $pdo->prepare(
             'UPDATE attendance_records
              SET user_id = ?, location = ?, type = ?, original_time = ?, rounded_time = ?, total_duration = ?, project_qr_id = ?
