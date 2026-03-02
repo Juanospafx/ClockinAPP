@@ -12,6 +12,19 @@
     flex: 1;
     min-width: 180px;
 }
+.manual-attendance-form #manual-employee[multiple] {
+    min-height: 170px;
+}
+.manual-user-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+}
+.manual-user-actions .submit-btn {
+    margin-top: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+}
 .manual-attendance-form .required {
     color: var(--clr-dc3545);
 }

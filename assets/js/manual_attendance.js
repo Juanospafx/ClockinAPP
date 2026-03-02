@@ -12,18 +12,14 @@
         const role = normalizeRole(sessionStorage.getItem('user_role'));
         if (role !== 'admin') return;
 
-        // Set max date to today
-        const dateInput = document.getElementById('manual-date');
-        if (dateInput) {
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            dateInput.max = `${yyyy}-${mm}-${dd}`;
-        }
-
         if (form.dataset.manualInit === '1') return;
         form.addEventListener('submit', handleManualSubmit);
+
+        const selectAllBtn = document.getElementById('manual-select-all-users');
+        const clearBtn = document.getElementById('manual-clear-users');
+        if (selectAllBtn) selectAllBtn.addEventListener('click', selectAllUsers);
+        if (clearBtn) clearBtn.addEventListener('click', clearSelectedUsers);
+
         form.dataset.manualInit = '1';
     }
 
@@ -31,7 +27,7 @@
         const role = normalizeRole(sessionStorage.getItem('user_role'));
         if (role !== 'admin') return;
 
-        // Populate employees
+        // Populate employees (multi-select)
         const employeeSelect = document.getElementById('manual-employee');
         if (employeeSelect && employeeSelect.options.length <= 1) {
             try {
@@ -70,8 +66,9 @@
         e.preventDefault();
         const msg = document.getElementById('manual-attendance-message');
 
+        const selectedUserIds = getSelectedUserIds();
         const payload = {
-            user_id: parseInt(document.getElementById('manual-employee').value, 10),
+            user_ids: selectedUserIds,
             project_id: document.getElementById('manual-project').value ? parseInt(document.getElementById('manual-project').value, 10) : null,
             type: document.getElementById('manual-type').value,
             date: document.getElementById('manual-date').value,
@@ -79,8 +76,8 @@
             reason: document.getElementById('manual-reason').value.trim(),
         };
 
-        if (!payload.user_id || !payload.type || !payload.date || !payload.time || !payload.reason) {
-            if (msg) { msg.textContent = 'Please fill all required fields.'; msg.className = 'error'; }
+        if (!payload.user_ids.length || !payload.type || !payload.date || !payload.time || !payload.reason) {
+            if (msg) { msg.textContent = 'Please fill all required fields and select at least one employee.'; msg.className = 'error'; }
             return;
         }
 
@@ -88,21 +85,47 @@
             const response = await submitManualEntry(payload);
 
             if (response.warning) {
-                // No entry found warning — ask admin to confirm
-                const proceed = confirm(response.error.message);
+                const usersWithWarning = response.error?.details?.user_ids || [];
+                const warningPrefix = usersWithWarning.length
+                    ? `Users with no Clock In: ${usersWithWarning.join(', ')}.\n\n`
+                    : '';
+
+                const proceed = confirm(warningPrefix + (response.error?.message || 'Do you want to continue anyway?'));
                 if (proceed) {
                     payload.force = true;
                     const finalResponse = await submitManualEntry(payload);
-                    showResult(msg, finalResponse);
+                    showResult(msg, finalResponse, payload.user_ids.length);
                 } else {
                     if (msg) { msg.textContent = 'Operation cancelled.'; msg.className = 'warning'; }
                 }
             } else {
-                showResult(msg, response);
+                showResult(msg, response, payload.user_ids.length);
             }
         } catch (err) {
             if (msg) { msg.textContent = err.message || 'Error creating manual record.'; msg.className = 'error'; }
         }
+    }
+
+    function getSelectedUserIds() {
+        const select = document.getElementById('manual-employee');
+        if (!select) return [];
+        return Array.from(select.selectedOptions)
+            .map(opt => parseInt(opt.value, 10))
+            .filter(Number.isFinite);
+    }
+
+    function selectAllUsers() {
+        const select = document.getElementById('manual-employee');
+        if (!select) return;
+        Array.from(select.options).forEach(opt => {
+            if (opt.value) opt.selected = true;
+        });
+    }
+
+    function clearSelectedUsers() {
+        const select = document.getElementById('manual-employee');
+        if (!select) return;
+        Array.from(select.options).forEach(opt => { opt.selected = false; });
     }
 
     async function submitManualEntry(payload) {
@@ -121,13 +144,14 @@
         return data;
     }
 
-    function showResult(msg, response) {
+    function showResult(msg, response, userCount) {
         if (!msg) return;
         if (response.ok) {
-            msg.textContent = '✅ ' + (response.data?.message || 'Record created successfully.');
+            const count = response.data?.count || userCount || 1;
+            msg.textContent = `✅ ${count} manual ${count === 1 ? 'record' : 'records'} created successfully.`;
             msg.className = 'success';
-            // Reset form
             document.getElementById('manual-attendance-form').reset();
+            clearSelectedUsers();
         } else {
             msg.textContent = '❌ ' + (response.error?.message || 'Unknown error.');
             msg.className = 'error';

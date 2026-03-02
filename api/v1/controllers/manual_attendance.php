@@ -11,7 +11,11 @@ function handle_manual_attendance_create(): void
     $currentUserRole = AuthService::getCurrentUserRole() ?? 'user';
 
     $data = read_json_body();
-    $result = ManualAttendanceService::createManual($currentUserId, $currentUserRole, $data);
+    $isBulk = isset($data['user_ids']) && is_array($data['user_ids']) && count($data['user_ids']) > 0;
+
+    $result = $isBulk
+        ? ManualAttendanceService::createManualBulk($currentUserId, $currentUserRole, $data)
+        : ManualAttendanceService::createManual($currentUserId, $currentUserRole, $data);
 
     if (isset($result['warning']) && $result['warning']) {
         // Return as a special warning (not a hard error) so frontend can ask for confirmation
