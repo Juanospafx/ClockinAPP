@@ -317,6 +317,7 @@ class AttendanceService {
         $originalTimeStr = $data['original_time'] ?? null;
         $roundedTimeStr = $data['rounded_time'] ?? null;
         $totalDuration = isset($data['total_duration']) ? (int)$data['total_duration'] : null;
+        $lunchDuration = isset($data['lunch_duration']) ? (int)$data['lunch_duration'] : null;
         $projectQrId = isset($data['project_qr_id']) && $data['project_qr_id'] !== null ? (int)$data['project_qr_id'] : null;
         $projectId = isset($data['project_id']) && $data['project_id'] !== null ? (int)$data['project_id'] : null;
 
@@ -337,7 +338,7 @@ class AttendanceService {
 
         $stmt = $pdo->prepare(
             'UPDATE attendance_records
-             SET user_id = ?, location = ?, type = ?, original_time = ?, rounded_time = ?, total_duration = ?, project_qr_id = ?
+             SET user_id = ?, location = ?, type = ?, original_time = ?, rounded_time = ?, total_duration = ?, lunch_duration = ?, project_qr_id = ?
              WHERE id = ?'
         );
         $stmt->execute([
@@ -347,6 +348,7 @@ class AttendanceService {
             $originalTimeStr,
             $roundedTimeStr,
             $totalDuration,
+            $lunchDuration,
             $projectQrId,
             $recordId
         ]);

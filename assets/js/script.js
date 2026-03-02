@@ -808,7 +808,7 @@ function renderAttendancePage() {
 
         const actionsHtml = role === 'admin' ? `
             <td data-label="Actions">
-                <button data-action="edit-record" data-record-id="${Number(record.id)}" data-rounded-time="${record.rounded_time}" data-total-duration="${record.total_duration || 0}">Edit</button>
+                <button data-action="edit-record" data-record-id="${Number(record.id)}" data-record='${encodeURIComponent(JSON.stringify(record))}'>Edit</button>
                 <button data-action="delete-record" data-record-id="${Number(record.id)}">Delete</button>
             </td>
         ` : '';
@@ -1435,16 +1435,45 @@ async function deleteRecord(recordId) {
     }
 }
 
-async function openEditModal(recordId, roundedTime, totalDuration) {
-    attendanceEditingRecord = attendanceAllRecords.find(r => Number(r.id) === Number(recordId)) || null;
+async function openEditModal(recordData) {
+    attendanceEditingRecord = recordData || null;
+    if (!attendanceEditingRecord) return;
 
-    document.getElementById('edit-record-id').value = recordId;
-    document.getElementById('edit-rounded-time').value = roundedTime.replace(' ', 'T').slice(0, 16);
-    document.getElementById('edit-total-duration').value = (totalDuration / 60).toFixed(2) || '';
+    document.getElementById('edit-record-id').value = attendanceEditingRecord.id;
+    document.getElementById('edit-user-id').value = '';
+    document.getElementById('edit-type').value = attendanceEditingRecord.type || 'entry';
+    document.getElementById('edit-location').value = attendanceEditingRecord.location || '';
+    document.getElementById('edit-original-time').value = (attendanceEditingRecord.original_time || '').replace(' ', 'T').slice(0, 16);
+    document.getElementById('edit-rounded-time').value = (attendanceEditingRecord.rounded_time || '').replace(' ', 'T').slice(0, 16);
+    document.getElementById('edit-total-duration').value = ((Number(attendanceEditingRecord.total_duration || 0)) / 60).toFixed(2);
+    document.getElementById('edit-lunch-duration').value = ((Number(attendanceEditingRecord.lunch_duration || 0)) / 60).toFixed(2);
 
-    await populateEditProjectSelect(attendanceEditingRecord?.project_id ?? null);
+    await Promise.all([
+        populateEditUserSelect(attendanceEditingRecord.user_id),
+        populateEditProjectSelect(attendanceEditingRecord.project_id ?? null),
+    ]);
 
     document.getElementById('edit-record-modal').style.display = 'block';
+}
+
+async function populateEditUserSelect(selectedUserId = null) {
+    const userSelect = document.getElementById('edit-user-id');
+    if (!userSelect) return;
+    userSelect.innerHTML = '';
+
+    try {
+        const data = await apiFetch('users');
+        const users = data.users || [];
+        users.forEach((u) => {
+            const opt = document.createElement('option');
+            opt.value = u.id;
+            opt.textContent = u.username;
+            userSelect.appendChild(opt);
+        });
+        if (selectedUserId) userSelect.value = String(selectedUserId);
+    } catch (error) {
+        console.error('Error loading users for edit modal:', error);
+    }
 }
 
 async function populateEditProjectSelect(selectedProjectId = null) {
@@ -2139,25 +2168,25 @@ document.addEventListener('DOMContentLoaded', () => {
             editForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const recordId = document.getElementById('edit-record-id').value;
-                const newTime = document.getElementById('edit-rounded-time').value;
-                const newDuration = parseFloat(document.getElementById('edit-total-duration').value) * 60;
+                const userIdEdit = parseInt(document.getElementById('edit-user-id').value, 10);
+                const typeEdit = document.getElementById('edit-type').value;
+                const locationEdit = document.getElementById('edit-location').value;
+                const originalTimeEdit = document.getElementById('edit-original-time').value;
+                const roundedTimeEdit = document.getElementById('edit-rounded-time').value;
+                const totalDurationMinutes = parseFloat(document.getElementById('edit-total-duration').value) * 60;
+                const lunchDurationMinutes = parseFloat(document.getElementById('edit-lunch-duration').value) * 60;
                 const selectedProjectIdRaw = document.getElementById('edit-project-id')?.value || '';
                 const selectedProjectId = selectedProjectIdRaw ? parseInt(selectedProjectIdRaw, 10) : null;
 
-                if (!attendanceEditingRecord) {
-                    const msg = document.getElementById('edit-message');
-                    if (msg) msg.textContent = 'Could not load record context for editing.';
-                    return;
-                }
-
                 try {
                     await apiFetch(`attendance/${recordId}`, 'PUT', {
-                        rounded_time: newTime.replace('T', ' '),
-                        total_duration: Number.isFinite(newDuration) ? newDuration : null,
-                        user_id: Number(attendanceEditingRecord.user_id),
-                        location: attendanceEditingRecord.location,
-                        type: attendanceEditingRecord.type,
-                        original_time: attendanceEditingRecord.original_time,
+                        user_id: Number.isFinite(userIdEdit) ? userIdEdit : null,
+                        type: typeEdit,
+                        location: locationEdit,
+                        original_time: originalTimeEdit.replace('T', ' '),
+                        rounded_time: roundedTimeEdit.replace('T', ' '),
+                        total_duration: Number.isFinite(totalDurationMinutes) ? totalDurationMinutes : null,
+                        lunch_duration: Number.isFinite(lunchDurationMinutes) ? lunchDurationMinutes : null,
                         project_qr_id: null,
                         project_id: selectedProjectId
                     });
@@ -2356,10 +2385,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Action triggered:', { action, recordId }); // Debugging line
 
                 if (action === 'edit-record') {
-                    const roundedTime = target.dataset.roundedTime;
-                    const totalDuration = Number(target.dataset.totalDuration);
                     if (recordId) {
-                        openEditModal(recordId, roundedTime, totalDuration);
+                        let recordData = null;
+                        try {
+                            recordData = target.dataset.record ? JSON.parse(decodeURIComponent(target.dataset.record)) : null;
+                        } catch (_) {
+                            recordData = attendanceAllRecords.find(r => Number(r.id) === Number(recordId)) || null;
+                        }
+                        openEditModal(recordData);
                     }
                 } else if (action === 'delete-record') {
                     if (recordId) {

@@ -557,13 +557,46 @@
             <h2>Edit Record</h2>
             <form id="edit-record-form">
                 <input type="hidden" id="edit-record-id">
-                <div class="form-group">
-                    <label for="edit-rounded-time">New Rounded Time:</label>
-                    <input type="datetime-local" id="edit-rounded-time" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-user-id">User:</label>
+                        <select id="edit-user-id" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-type">Type:</label>
+                        <select id="edit-type" required>
+                            <option value="entry">Clock In</option>
+                            <option value="exit">Clock Out</option>
+                            <option value="start_lunch">Start Lunch</option>
+                            <option value="end_lunch">End Lunch</option>
+                            <option value="pause">Pause</option>
+                            <option value="resume">Resume</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="edit-total-duration">Total Duration (hours):</label>
-                    <input type="number" id="edit-total-duration" step="0.01">
+                    <label for="edit-location">Location:</label>
+                    <input type="text" id="edit-location" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-original-time">Original Time:</label>
+                        <input type="datetime-local" id="edit-original-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-rounded-time">Rounded Time:</label>
+                        <input type="datetime-local" id="edit-rounded-time" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-total-duration">Work Duration (hours):</label>
+                        <input type="number" id="edit-total-duration" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-lunch-duration">Lunch Duration (hours):</label>
+                        <input type="number" id="edit-lunch-duration" step="0.01" min="0">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="edit-project-id">Project:</label>
