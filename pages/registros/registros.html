@@ -506,10 +506,14 @@
             <form id="manual-attendance-form" class="manual-attendance-form">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="manual-employee">Employee: <span class="required">*</span></label>
-                        <select id="manual-employee" required>
-                            <option value="">— Select employee —</option>
+                        <label for="manual-employee">Employees: <span class="required">*</span></label>
+                        <select id="manual-employee" multiple required size="8">
+                            <option value="">— Select one or more employees —</option>
                         </select>
+                        <div class="manual-user-actions">
+                            <button type="button" id="manual-select-all-users" class="submit-btn">Select all</button>
+                            <button type="button" id="manual-clear-users" class="submit-btn">Clear</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="manual-project">Project:</label>
