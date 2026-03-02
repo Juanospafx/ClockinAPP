@@ -170,9 +170,25 @@ class ManualAttendanceService
 
         $projectQrId = null;
         if ($projectId) {
+            // Reuse latest QR for the project; if none exists, create a minimal manual linkage QR row.
             $qrStmt = $pdo->prepare('SELECT id FROM project_qrs WHERE project_id = ? ORDER BY id DESC LIMIT 1');
             $qrStmt->execute([$projectId]);
             $projectQrId = $qrStmt->fetchColumn() ?: null;
+
+            if (!$projectQrId) {
+                $projectExistsStmt = $pdo->prepare('SELECT id FROM projects WHERE id = ? LIMIT 1');
+                $projectExistsStmt->execute([$projectId]);
+                if (!$projectExistsStmt->fetchColumn()) {
+                    return ['error' => ['code' => 'validation_error', 'message' => 'Selected project does not exist.'], 'status' => 400];
+                }
+
+                $manualQrPayload = json_encode(['project_id' => (int)$projectId, 'source' => 'manual_attendance']);
+                $createQrStmt = $pdo->prepare(
+                    "INSERT INTO project_qrs (project_id, action_type, location, qr_content) VALUES (?, ?, ?, ?)"
+                );
+                $createQrStmt->execute([$projectId, 'manual', 'Manual Entry', $manualQrPayload]);
+                $projectQrId = (int)$pdo->lastInsertId();
+            }
         }
 
         $stmt = $pdo->prepare(
