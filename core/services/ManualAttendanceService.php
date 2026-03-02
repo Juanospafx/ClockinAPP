@@ -44,11 +44,7 @@ class ManualAttendanceService
             return ['error' => ['code' => 'validation_error', 'message' => 'Invalid date/time format.'], 'status' => 400];
         }
 
-        // No future dates for Clock In; Clock Out manual entries can be future time if needed.
-        $now = new DateTime('now');
-        if ($type === 'entry' && $dt > $now) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Future dates are not allowed for Clock In.'], 'status' => 400];
-        }
+        // Manual entries can be created for any date/time (including future) by admin.
 
         $pdo = get_pdo();
 
