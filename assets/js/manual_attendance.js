@@ -27,18 +27,33 @@
         const role = normalizeRole(sessionStorage.getItem('user_role'));
         if (role !== 'admin') return;
 
-        // Populate employees (multi-select)
-        const employeeSelect = document.getElementById('manual-employee');
-        if (employeeSelect && employeeSelect.options.length <= 1) {
+        // Populate employees (checkbox list)
+        const employeeList = document.getElementById('manual-employee-list');
+        if (employeeList && employeeList.children.length === 0) {
             try {
                 const data = await apiFetch('users');
                 const users = data.users || [];
+                employeeList.innerHTML = '';
+
                 users.forEach(u => {
-                    const opt = document.createElement('option');
-                    opt.value = u.id;
-                    opt.textContent = u.username;
-                    employeeSelect.appendChild(opt);
+                    const item = document.createElement('label');
+                    item.className = 'manual-employee-item';
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'manual-employee-checkbox';
+                    checkbox.value = String(u.id);
+                    checkbox.addEventListener('change', updateSelectedCount);
+
+                    const text = document.createElement('span');
+                    text.textContent = u.username;
+
+                    item.appendChild(checkbox);
+                    item.appendChild(text);
+                    employeeList.appendChild(item);
                 });
+
+                updateSelectedCount();
             } catch (e) {
                 console.error('Error loading users for manual attendance:', e);
             }
@@ -107,25 +122,30 @@
     }
 
     function getSelectedUserIds() {
-        const select = document.getElementById('manual-employee');
-        if (!select) return [];
-        return Array.from(select.selectedOptions)
-            .map(opt => parseInt(opt.value, 10))
+        return Array.from(document.querySelectorAll('.manual-employee-checkbox:checked'))
+            .map(el => parseInt(el.value, 10))
             .filter(Number.isFinite);
     }
 
     function selectAllUsers() {
-        const select = document.getElementById('manual-employee');
-        if (!select) return;
-        Array.from(select.options).forEach(opt => {
-            if (opt.value) opt.selected = true;
+        document.querySelectorAll('.manual-employee-checkbox').forEach((cb) => {
+            cb.checked = true;
         });
+        updateSelectedCount();
     }
 
     function clearSelectedUsers() {
-        const select = document.getElementById('manual-employee');
-        if (!select) return;
-        Array.from(select.options).forEach(opt => { opt.selected = false; });
+        document.querySelectorAll('.manual-employee-checkbox').forEach((cb) => {
+            cb.checked = false;
+        });
+        updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+        const selectedCountEl = document.getElementById('manual-selected-count');
+        if (!selectedCountEl) return;
+        const count = document.querySelectorAll('.manual-employee-checkbox:checked').length;
+        selectedCountEl.textContent = `${count} selected`;
     }
 
     async function submitManualEntry(payload) {

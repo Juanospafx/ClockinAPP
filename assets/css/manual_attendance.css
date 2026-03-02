@@ -12,8 +12,28 @@
     flex: 1;
     min-width: 180px;
 }
-.manual-attendance-form #manual-employee[multiple] {
-    min-height: 170px;
+.manual-employee-list {
+    border: 1px solid var(--clr-ccc);
+    border-radius: 8px;
+    max-height: 220px;
+    overflow: auto;
+    padding: 8px;
+    background: var(--clr-rgba-255-255-255-0-04);
+}
+.manual-employee-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
+    cursor: pointer;
+}
+.manual-employee-item:hover {
+    background: var(--clr-rgba-255-255-255-0-06);
+}
+.manual-selected-count {
+    display: inline-block;
+    margin-top: 6px;
+    opacity: 0.85;
 }
 .manual-user-actions {
     margin-top: 8px;
