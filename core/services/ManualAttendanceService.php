@@ -343,14 +343,26 @@ class ManualAttendanceService
             return ['total_duration_minutes' => null, 'lunch_duration_minutes' => null];
         }
 
-        $lunchStartTime = $lunchStart !== '' ? $lunchStart : '12:00';
-        $lunchEndTime = $lunchEnd !== '' ? $lunchEnd : '13:00';
-        $lunchStartDateTime = $date . ' ' . $lunchStartTime . ':00';
-        $lunchEndDateTime = $date . ' ' . $lunchEndTime . ':00';
-
-        $lunchMinutes = self::overlapMinutes($startDateTime, $exitDateTime, $lunchStartDateTime, $lunchEndDateTime);
-
         $grossMinutes = (int)round(($endTs - $startTs) / 60);
+
+        $hasCustomLunch = ($lunchStart !== '' || $lunchEnd !== '');
+        $lunchMinutes = 0;
+
+        if ($hasCustomLunch) {
+            $lunchStartTime = $lunchStart !== '' ? $lunchStart : '12:00';
+            $lunchEndTime = $lunchEnd !== '' ? $lunchEnd : '13:00';
+            $lunchStartDateTime = $date . ' ' . $lunchStartTime . ':00';
+            $lunchEndDateTime = $date . ' ' . $lunchEndTime . ':00';
+            $lunchMinutes = self::overlapMinutes($startDateTime, $exitDateTime, $lunchStartDateTime, $lunchEndDateTime);
+        } else {
+            // Business rule: default lunch (12-1) is discounted only for full-day shifts (>= 9h gross).
+            if ($grossMinutes >= 540) {
+                $lunchStartDateTime = $date . ' 12:00:00';
+                $lunchEndDateTime = $date . ' 13:00:00';
+                $lunchMinutes = self::overlapMinutes($startDateTime, $exitDateTime, $lunchStartDateTime, $lunchEndDateTime);
+            }
+        }
+
         $workedMinutes = max(0, $grossMinutes - $lunchMinutes);
 
         return [
