@@ -397,30 +397,42 @@
         <section id="absence-records-section" style="display:none;">
             <h3>Registros de Ausencias</h3>
 
-            <div class="absence-filters" style="margin-bottom: 16px;">
-                <div class="form-group">
-                    <label for="admin-absence-user">Registrar ausencia manual para:</label>
-                    <select id="admin-absence-user"><option value="">Seleccionar usuario</option></select>
+            <form id="admin-absence-form" class="manual-attendance-form" style="margin-bottom:16px;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Empleados: <span class="required">*</span></label>
+                        <div id="admin-absence-employee-list" class="manual-employee-list"></div>
+                        <small id="admin-absence-selected-count" class="manual-selected-count">0 selected</small>
+                        <div class="manual-user-actions">
+                            <button type="button" id="admin-absence-select-all" class="submit-btn">Select all</button>
+                            <button type="button" id="admin-absence-clear" class="submit-btn">Clear</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-absence-date">Fecha: <span class="required">*</span></label>
+                        <input type="date" id="admin-absence-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-absence-reason">Razón:</label>
+                        <select id="admin-absence-reason">
+                            <option value="sin_justificacion">Sin justificación</option>
+                            <option value="familiar">Familiar</option>
+                            <option value="enfermedad">Enfermedad</option>
+                            <option value="vacaciones">Vacaciones</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="admin-absence-date">Fecha:</label>
-                    <input type="date" id="admin-absence-date">
+                <div class="form-row">
+                    <div class="form-group" style="flex:2; min-width:280px;">
+                        <label for="admin-absence-notes">Notas:</label>
+                        <input type="text" id="admin-absence-notes" placeholder="Opcional">
+                    </div>
+                    <div class="form-group" style="align-self:flex-end;">
+                        <button type="submit" class="filter-btn" id="admin-absence-create-btn">Registrar ausencia manual</button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="admin-absence-reason">Razón:</label>
-                    <select id="admin-absence-reason">
-                        <option value="sin_justificacion">Sin justificación</option>
-                        <option value="familiar">Familiar</option>
-                        <option value="enfermedad">Enfermedad</option>
-                        <option value="vacaciones">Vacaciones</option>
-                    </select>
-                </div>
-                <div class="form-group" style="flex:2; min-width:280px;">
-                    <label for="admin-absence-notes">Notas:</label>
-                    <input type="text" id="admin-absence-notes" placeholder="Opcional">
-                </div>
-                <button class="filter-btn" id="admin-absence-create-btn">Registrar ausencia manual</button>
-            </div>
+                <p id="admin-absence-create-message"></p>
+            </form>
 
             <div class="absence-filters" style="margin-bottom: 16px;">
                 <div class="form-group">

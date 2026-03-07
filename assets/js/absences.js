@@ -52,7 +52,6 @@ async function submitAbsenceReport(e) {
     const messageEl = document.getElementById('absence-form-message');
 
     const projectId = document.getElementById('absence-project-select').value;
-    const adminUserId = document.getElementById('admin-absence-user')?.value || '';
     const dateStart = document.getElementById('absence-date-start').value;
     const dateEnd = document.getElementById('absence-date-end').value || dateStart;
     const reason = document.getElementById('absence-reason').value;
@@ -70,7 +69,6 @@ async function submitAbsenceReport(e) {
     // Use FormData for multipart (file upload support)
     const formData = new FormData();
     if (projectId) formData.append('project_id', projectId);
-    if (adminUserId) formData.append('user_id', adminUserId);
     formData.append('date_start', dateStart);
     formData.append('date_end', dateEnd);
     formData.append('reason', reason);
@@ -298,44 +296,109 @@ async function loadProjectsForAbsenceFilter() {
 
 
 
+function getSelectedAdminAbsenceUserIds() {
+    return Array.from(document.querySelectorAll('.admin-absence-employee-checkbox:checked'))
+        .map(el => parseInt(el.value, 10))
+        .filter(Number.isFinite);
+}
+
+function updateAdminAbsenceSelectedCount() {
+    const selectedCountEl = document.getElementById('admin-absence-selected-count');
+    if (!selectedCountEl) return;
+    const count = document.querySelectorAll('.admin-absence-employee-checkbox:checked').length;
+    selectedCountEl.textContent = `${count} selected`;
+}
+
+function selectAllAdminAbsenceUsers() {
+    document.querySelectorAll('.admin-absence-employee-checkbox').forEach((cb) => {
+        cb.checked = true;
+    });
+    updateAdminAbsenceSelectedCount();
+}
+
+function clearAdminAbsenceUsers() {
+    document.querySelectorAll('.admin-absence-employee-checkbox').forEach((cb) => {
+        cb.checked = false;
+    });
+    updateAdminAbsenceSelectedCount();
+}
+
 async function loadUsersForAdminAbsenceCreate() {
-    const select = document.getElementById('admin-absence-user');
-    if (!select || select.options.length > 1) return;
+    const employeeList = document.getElementById('admin-absence-employee-list');
+    if (!employeeList || employeeList.children.length > 0) return;
 
     try {
         const data = await apiFetch('users');
         const users = (data.users || []).filter(u => String(u.role || '').toLowerCase() !== 'admin');
-        const opts = users.map(u => `<option value="${u.id}">${u.username}</option>`).join('');
-        select.innerHTML = '<option value="">Seleccionar usuario</option>' + opts;
+        employeeList.innerHTML = '';
+
+        users.forEach(u => {
+            const item = document.createElement('label');
+            item.className = 'manual-employee-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'admin-absence-employee-checkbox';
+            checkbox.value = String(u.id);
+            checkbox.addEventListener('change', updateAdminAbsenceSelectedCount);
+
+            const text = document.createElement('span');
+            text.textContent = u.username;
+
+            item.appendChild(checkbox);
+            item.appendChild(text);
+            employeeList.appendChild(item);
+        });
+
+        updateAdminAbsenceSelectedCount();
     } catch (_) {}
 }
 
-async function createAbsenceByAdmin() {
-    const userId = document.getElementById('admin-absence-user')?.value;
+async function createAbsenceByAdmin(e) {
+    if (e) e.preventDefault();
+
+    const userIds = getSelectedAdminAbsenceUserIds();
     const date = document.getElementById('admin-absence-date')?.value;
     const reason = document.getElementById('admin-absence-reason')?.value || 'sin_justificacion';
     const notesInput = document.getElementById('admin-absence-notes');
+    const messageEl = document.getElementById('admin-absence-create-message');
     const notes = notesInput?.value?.trim() || '';
 
-    if (!userId || !date) {
-        alert('Selecciona usuario y fecha para registrar ausencia manual.');
+    if (!userIds.length || !date) {
+        if (messageEl) {
+            messageEl.textContent = 'Selecciona al menos un empleado y la fecha.';
+            messageEl.className = 'error-message';
+        }
         return;
     }
 
     try {
-        await apiFetch('absences', 'POST', {
-            user_id: Number(userId),
-            date_start: date,
-            date_end: date,
-            reason,
-            notes
-        });
+        for (const uid of userIds) {
+            await apiFetch('absences', 'POST', {
+                user_id: Number(uid),
+                date_start: date,
+                date_end: date,
+                reason,
+                notes
+            });
+        }
+
         if (notesInput) notesInput.value = '';
+        clearAdminAbsenceUsers();
+
+        if (messageEl) {
+            messageEl.textContent = `✅ ${userIds.length} ausencia(s) registrada(s) correctamente.`;
+            messageEl.className = 'success-message';
+        }
+
         loadAdminAbsences();
         loadAbsenceSummary();
         if (typeof loadNotifications === 'function') loadNotifications();
     } catch (error) {
-        alert('Error: ' + error.message);
+        if (messageEl) {
+            messageEl.textContent = 'Error: ' + error.message;
+            messageEl.className = 'error-message';
+        }
     }
 }
 
@@ -473,13 +536,15 @@ function initAbsencesModule() {
     // Admin filter button
     const filterBtn = document.getElementById('absence-filter-btn');
 
-    const adminCreateBtn = document.getElementById('admin-absence-create-btn');
-    if (adminCreateBtn) {
-        adminCreateBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            createAbsenceByAdmin();
-        });
+    const adminAbsenceForm = document.getElementById('admin-absence-form');
+    if (adminAbsenceForm) {
+        adminAbsenceForm.addEventListener('submit', createAbsenceByAdmin);
     }
+
+    const adminAbsenceSelectAll = document.getElementById('admin-absence-select-all');
+    const adminAbsenceClear = document.getElementById('admin-absence-clear');
+    if (adminAbsenceSelectAll) adminAbsenceSelectAll.addEventListener('click', selectAllAdminAbsenceUsers);
+    if (adminAbsenceClear) adminAbsenceClear.addEventListener('click', clearAdminAbsenceUsers);
 
     const autoRunBtn = document.getElementById('auto-absence-run-btn');
     if (autoRunBtn) {
