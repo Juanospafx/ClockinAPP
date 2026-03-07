@@ -2091,6 +2091,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const manualAttendanceLink = document.getElementById('nav-manual-attendance');
     if (manualAttendanceLink) manualAttendanceLink.addEventListener('click', (e) => { e.preventDefault(); showSection('manual-attendance-section'); });
 
+    const manualAbsenceLink = document.getElementById('nav-manual-absence');
+    if (manualAbsenceLink) {
+        manualAbsenceLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSection('manual-attendance-section');
+            const typeSelect = document.getElementById('manual-type');
+            if (typeSelect) {
+                typeSelect.value = 'absence';
+                typeSelect.dispatchEvent(new Event('change'));
+            }
+            document.querySelectorAll('.sidebar a[id^="nav-"]').forEach((link) => link.classList.remove('active'));
+            manualAbsenceLink.classList.add('active');
+        });
+    }
+
     const startScannerBtn = document.getElementById('start-scanner-button');
     if (startScannerBtn && userRole !== 'admin') {
         startScannerBtn.addEventListener('click', () => {
