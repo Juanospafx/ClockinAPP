@@ -379,16 +379,14 @@ class AttendanceService {
 
         $gross = (int)round(($exitTs - $entryTs) / 60);
 
-        $computedLunch = 0;
-        // Business rule for edit flow: default lunch discount applies only on full-day shifts (>= 9h gross).
-        if ($gross >= 540) {
-            $day = date('Y-m-d', $entryTs);
-            $lunchStartTs = strtotime($day . ' 12:00:00');
-            $lunchEndTs = strtotime($day . ' 13:00:00');
-            $overlapStart = max($entryTs, $lunchStartTs);
-            $overlapEnd = min($exitTs, $lunchEndTs);
-            $computedLunch = $overlapEnd > $overlapStart ? (int)round(($overlapEnd - $overlapStart) / 60) : 0;
-        }
+        // Default rule for edit flow: assume lunch 12:00–13:00 when not explicitly provided.
+        // Overlap handles short shifts (e.g., 8-11) by returning 0.
+        $day = date('Y-m-d', $entryTs);
+        $lunchStartTs = strtotime($day . ' 12:00:00');
+        $lunchEndTs = strtotime($day . ' 13:00:00');
+        $overlapStart = max($entryTs, $lunchStartTs);
+        $overlapEnd = min($exitTs, $lunchEndTs);
+        $computedLunch = $overlapEnd > $overlapStart ? (int)round(($overlapEnd - $overlapStart) / 60) : 0;
 
         $totalDuration = max(0, $gross - $computedLunch);
         $lunchDuration = $computedLunch;
