@@ -16,3 +16,9 @@ Stack trace:
 #1 /home/admin/ClockinAPP/scripts/db/describe_attendance_records.php(4): get_pdo()
 #2 {main}
   thrown in /home/admin/ClockinAPP/core/db.php on line 25
+[07-Mar-2026 16:02:01 America/Mexico_City] PHP Fatal error:  Uncaught PDOException: could not find driver in /home/admin/ClockinAPP/core/db.php:25
+Stack trace:
+#0 /home/admin/ClockinAPP/core/db.php(25): PDO->__construct()
+#1 Command line code(1): get_pdo()
+#2 {main}
+  thrown in /home/admin/ClockinAPP/core/db.php on line 25

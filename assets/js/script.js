@@ -2202,6 +2202,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const exitTimeEdit = document.getElementById('edit-exit-time').value;
                 const totalDurationMinutes = parseFloat(document.getElementById('edit-total-duration').value) * 60;
                 const lunchDurationMinutes = parseFloat(document.getElementById('edit-lunch-duration').value) * 60;
+                const isExitType = typeEdit === 'exit';
                 const selectedProjectIdRaw = document.getElementById('edit-project-id')?.value || '';
                 const selectedProjectId = selectedProjectIdRaw ? parseInt(selectedProjectIdRaw, 10) : null;
 
@@ -2214,8 +2215,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         rounded_time: exitTimeEdit.replace('T', ' '),
                         entry_time: entryTimeEdit.replace('T', ' '),
                         exit_time: exitTimeEdit.replace('T', ' '),
-                        total_duration: Number.isFinite(totalDurationMinutes) ? totalDurationMinutes : null,
-                        lunch_duration: Number.isFinite(lunchDurationMinutes) ? lunchDurationMinutes : null,
+                        total_duration: isExitType ? null : (Number.isFinite(totalDurationMinutes) ? totalDurationMinutes : null),
+                        lunch_duration: isExitType ? null : (Number.isFinite(lunchDurationMinutes) ? lunchDurationMinutes : null),
                         project_qr_id: null,
                         project_id: selectedProjectId
                     });
