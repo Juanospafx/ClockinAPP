@@ -370,25 +370,23 @@ class AttendanceService {
         if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $originalTimeStr)) $originalTimeStr .= ':00';
         if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $roundedTimeStr)) $roundedTimeStr .= ':00';
 
-        // Always recompute for exits to avoid stale/blank/zero values.
-        if ($type === 'exit') {
-            $entryTs = strtotime((string)$originalTimeStr);
-            $exitTs = strtotime((string)$roundedTimeStr);
-            if ($entryTs === false || $exitTs === false || $exitTs <= $entryTs) {
-                return ['error' => ['code' => 'validation_error', 'message' => 'Exit time must be greater than entry time.'], 'status' => 400];
-            }
-
-            $day = date('Y-m-d', $entryTs);
-            $lunchStartTs = strtotime($day . ' 12:00:00');
-            $lunchEndTs = strtotime($day . ' 13:00:00');
-            $overlapStart = max($entryTs, $lunchStartTs);
-            $overlapEnd = min($exitTs, $lunchEndTs);
-            $computedLunch = $overlapEnd > $overlapStart ? (int)round(($overlapEnd - $overlapStart) / 60) : 0;
-
-            $gross = (int)round(($exitTs - $entryTs) / 60);
-            $totalDuration = max(0, $gross - $computedLunch);
-            $lunchDuration = $computedLunch;
+        // Recompute whenever both timestamps are present to avoid stale/blank/zero values.
+        $entryTs = strtotime((string)$originalTimeStr);
+        $exitTs = strtotime((string)$roundedTimeStr);
+        if ($entryTs === false || $exitTs === false || $exitTs <= $entryTs) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Exit time must be greater than entry time.'], 'status' => 400];
         }
+
+        $day = date('Y-m-d', $entryTs);
+        $lunchStartTs = strtotime($day . ' 12:00:00');
+        $lunchEndTs = strtotime($day . ' 13:00:00');
+        $overlapStart = max($entryTs, $lunchStartTs);
+        $overlapEnd = min($exitTs, $lunchEndTs);
+        $computedLunch = $overlapEnd > $overlapStart ? (int)round(($overlapEnd - $overlapStart) / 60) : 0;
+
+        $gross = (int)round(($exitTs - $entryTs) / 60);
+        $totalDuration = max(0, $gross - $computedLunch);
+        $lunchDuration = $computedLunch;
 
         $stmt = $pdo->prepare(
             'UPDATE attendance_records
