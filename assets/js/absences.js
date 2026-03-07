@@ -527,7 +527,6 @@ function initAbsencesModule() {
     if (adminDate && !adminDate.value) adminDate.value = today;
     if (autoDate && !autoDate.value) autoDate.value = today;
     // Absence form submit
-    loadUsersForAdminAbsenceCreate();
     const absenceForm = document.getElementById('absence-report-form');
     if (absenceForm) {
         absenceForm.addEventListener('submit', submitAbsenceReport);
@@ -536,15 +535,6 @@ function initAbsencesModule() {
     // Admin filter button
     const filterBtn = document.getElementById('absence-filter-btn');
 
-    const adminAbsenceForm = document.getElementById('admin-absence-form');
-    if (adminAbsenceForm) {
-        adminAbsenceForm.addEventListener('submit', createAbsenceByAdmin);
-    }
-
-    const adminAbsenceSelectAll = document.getElementById('admin-absence-select-all');
-    const adminAbsenceClear = document.getElementById('admin-absence-clear');
-    if (adminAbsenceSelectAll) adminAbsenceSelectAll.addEventListener('click', selectAllAdminAbsenceUsers);
-    if (adminAbsenceClear) adminAbsenceClear.addEventListener('click', clearAdminAbsenceUsers);
 
     const autoRunBtn = document.getElementById('auto-absence-run-btn');
     if (autoRunBtn) {

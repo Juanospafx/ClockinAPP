@@ -20,6 +20,12 @@
         if (selectAllBtn) selectAllBtn.addEventListener('click', selectAllUsers);
         if (clearBtn) clearBtn.addEventListener('click', clearSelectedUsers);
 
+        const typeSelect = document.getElementById('manual-type');
+        if (typeSelect) {
+            typeSelect.addEventListener('change', toggleManualFieldsByType);
+            toggleManualFieldsByType();
+        }
+
         form.dataset.manualInit = '1';
     }
 
@@ -93,13 +99,14 @@
             lunch_end: document.getElementById('manual-lunch-end')?.value || null,
         };
 
-        if (!payload.user_ids.length || !payload.type || !payload.date || !payload.time || !payload.reason) {
+        const isAbsence = payload.type === 'absence';
+        if (!payload.user_ids.length || !payload.type || !payload.date || !payload.reason || (!isAbsence && !payload.time)) {
             if (msg) { msg.textContent = 'Please fill all required fields and select at least one employee.'; msg.className = 'error'; }
             return;
         }
 
         try {
-            const response = await submitManualEntry(payload);
+            const response = isAbsence ? await submitManualAbsence(payload) : await submitManualEntry(payload);
 
             if (response.warning) {
                 const usersWithWarning = response.error?.details?.user_ids || [];
@@ -148,6 +155,43 @@
         if (!selectedCountEl) return;
         const count = document.querySelectorAll('.manual-employee-checkbox:checked').length;
         selectedCountEl.textContent = `${count} selected`;
+    }
+
+
+
+    function toggleManualFieldsByType() {
+        const type = document.getElementById('manual-type')?.value || '';
+        const timeInput = document.getElementById('manual-time');
+        const lunchStart = document.getElementById('manual-lunch-start');
+        const lunchEnd = document.getElementById('manual-lunch-end');
+
+        const isAbsence = type === 'absence';
+        if (timeInput) {
+            timeInput.disabled = isAbsence;
+            if (isAbsence) timeInput.value = '';
+        }
+        if (lunchStart) {
+            lunchStart.disabled = isAbsence;
+            if (isAbsence) lunchStart.value = '';
+        }
+        if (lunchEnd) {
+            lunchEnd.disabled = isAbsence;
+            if (isAbsence) lunchEnd.value = '';
+        }
+    }
+
+    async function submitManualAbsence(payload) {
+        for (const userId of payload.user_ids) {
+            await apiFetch('absences', 'POST', {
+                user_id: userId,
+                project_id: payload.project_id || null,
+                date_start: payload.date,
+                date_end: payload.date,
+                reason: 'sin_justificacion',
+                notes: payload.reason
+            });
+        }
+        return { ok: true, data: { count: payload.user_ids.length } };
     }
 
     async function submitManualEntry(payload) {

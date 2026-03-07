@@ -356,7 +356,6 @@ function showSection(sectionId) {
         if (typeof loadUserAbsenceHistory === 'function') loadUserAbsenceHistory();
     } else if (target === 'absence-records-section') {
         if (typeof loadUsersForAbsenceFilter === 'function') loadUsersForAbsenceFilter();
-        if (typeof loadUsersForAdminAbsenceCreate === 'function') loadUsersForAdminAbsenceCreate();
         if (typeof loadProjectsForAbsenceFilter === 'function') loadProjectsForAbsenceFilter();
         if (typeof loadAdminAbsences === 'function') loadAdminAbsences();
         if (typeof loadAbsenceSummary === 'function') loadAbsenceSummary();
