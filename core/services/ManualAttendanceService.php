@@ -109,19 +109,34 @@ class ManualAttendanceService
         $type        = trim((string)($data['type'] ?? ''));
         $date        = trim((string)($data['date'] ?? ''));
         $time        = trim((string)($data['time'] ?? ''));
+        $entryTime   = trim((string)($data['entry_time'] ?? ''));
+        $exitTime    = trim((string)($data['exit_time'] ?? ''));
         $reason      = trim((string)($data['reason'] ?? ''));
         $lunchStart  = trim((string)($data['lunch_start'] ?? ''));
         $lunchEnd    = trim((string)($data['lunch_end'] ?? ''));
         $force       = !empty($data['force']);
 
+        $isRangeMode = ($entryTime !== '' || $exitTime !== '');
+
         if (!$userId) {
             return ['error' => ['code' => 'validation_error', 'message' => 'Employee is required.'], 'status' => 400];
         }
-        if (!in_array($type, ['entry', 'exit'], true)) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Type must be entry or exit.'], 'status' => 400];
-        }
-        if (!$date || !$time) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Date and time are required.'], 'status' => 400];
+        if ($isRangeMode) {
+            $type = 'exit';
+            if (!$date || !$entryTime || !$exitTime) {
+                return ['error' => ['code' => 'validation_error', 'message' => 'Date, entry time and exit time are required.'], 'status' => 400];
+            }
+            if (!preg_match('/^\d{2}:\d{2}$/', $entryTime) || !preg_match('/^\d{2}:\d{2}$/', $exitTime)) {
+                return ['error' => ['code' => 'validation_error', 'message' => 'Entry/exit time must be HH:MM format.'], 'status' => 400];
+            }
+            $time = $exitTime;
+        } else {
+            if (!in_array($type, ['entry', 'exit'], true)) {
+                return ['error' => ['code' => 'validation_error', 'message' => 'Type must be entry or exit.'], 'status' => 400];
+            }
+            if (!$date || !$time) {
+                return ['error' => ['code' => 'validation_error', 'message' => 'Date and time are required.'], 'status' => 400];
+            }
         }
         if ($reason === '') {
             return ['error' => ['code' => 'validation_error', 'message' => 'A reason for the manual entry is required.'], 'status' => 400];
@@ -132,18 +147,34 @@ class ManualAttendanceService
         }
 
         $datetimeStr = $date . ' ' . $time . ':00';
+        $entryDateTimeStr = $isRangeMode ? ($date . ' ' . $entryTime . ':00') : null;
+
         try {
             new DateTime($datetimeStr);
+            if ($entryDateTimeStr !== null) {
+                new DateTime($entryDateTimeStr);
+                if (strtotime($datetimeStr) <= strtotime($entryDateTimeStr)) {
+                    return ['error' => ['code' => 'validation_error', 'message' => 'Exit time must be greater than entry time.'], 'status' => 400];
+                }
+            }
         } catch (\Exception $e) {
             return ['error' => ['code' => 'validation_error', 'message' => 'Invalid date/time format.'], 'status' => 400];
         }
 
         $pdo = get_pdo();
 
-        $dupStmt = $pdo->prepare(
-            "SELECT id FROM attendance_records WHERE user_id = ? AND type = ? AND original_time = ? LIMIT 1"
-        );
-        $dupStmt->execute([$userId, $type, $datetimeStr]);
+        if ($isRangeMode) {
+            $dupStmt = $pdo->prepare(
+                "SELECT id FROM attendance_records WHERE user_id = ? AND type = 'exit' AND rounded_time = ? LIMIT 1"
+            );
+            $dupStmt->execute([$userId, $datetimeStr]);
+        } else {
+            $dupStmt = $pdo->prepare(
+                "SELECT id FROM attendance_records WHERE user_id = ? AND type = ? AND original_time = ? LIMIT 1"
+            );
+            $dupStmt->execute([$userId, $type, $datetimeStr]);
+        }
+
         if ($dupStmt->fetch()) {
             return ['error' => ['code' => 'duplicate', 'message' => 'A record already exists for this employee with the same type, date and time.'], 'status' => 409];
         }
@@ -186,11 +217,15 @@ class ManualAttendanceService
                 $projectId,
                 $schedule,
                 $lunchStart,
-                $lunchEnd
+                $lunchEnd,
+                $entryDateTimeStr
             );
             $totalDuration = $metrics['total_duration_minutes'];
             $lunchDuration = $metrics['lunch_duration_minutes'];
         }
+
+        $storeOriginal = $isRangeMode && $entryDateTimeStr ? $entryDateTimeStr : $datetimeStr;
+        $storeRounded = $datetimeStr;
 
         $stmt = $pdo->prepare(
             "INSERT INTO attendance_records
@@ -201,8 +236,8 @@ class ManualAttendanceService
             $userId,
             'Manual Entry',
             $type,
-            $datetimeStr,
-            $datetimeStr,
+            $storeOriginal,
+            $storeRounded,
             $projectQrId,
             $totalDuration,
             $lunchDuration,
@@ -289,11 +324,11 @@ class ManualAttendanceService
         return $row ?: null;
     }
 
-    private static function calculateManualExitDurations(PDO $pdo, int $userId, string $date, string $exitDateTime, ?int $projectId, array $schedule, string $lunchStart, string $lunchEnd): array
+    private static function calculateManualExitDurations(PDO $pdo, int $userId, string $date, string $exitDateTime, ?int $projectId, array $schedule, string $lunchStart, string $lunchEnd, ?string $forcedStartDateTime = null): array
     {
         $entry = self::findEntryForExit($pdo, $userId, $date, $exitDateTime, $projectId);
 
-        $startDateTime = $entry['original_time'] ?? null;
+        $startDateTime = $forcedStartDateTime ?: ($entry['original_time'] ?? null);
         if (!$startDateTime && !empty($schedule['entry_time_required']) && preg_match('/^\d{2}:\d{2}/', (string)$schedule['entry_time_required'])) {
             $startDateTime = $date . ' ' . substr((string)$schedule['entry_time_required'], 0, 5) . ':00';
         }

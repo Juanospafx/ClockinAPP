@@ -138,15 +138,15 @@
         const payload = {
             user_ids: getSelectedUserIds(),
             project_id: document.getElementById('manual-project').value ? parseInt(document.getElementById('manual-project').value, 10) : null,
-            type: document.getElementById('manual-type').value,
             date: document.getElementById('manual-date').value,
-            time: document.getElementById('manual-time').value,
+            entry_time: document.getElementById('manual-entry-time').value,
+            exit_time: document.getElementById('manual-exit-time').value,
             reason: document.getElementById('manual-reason').value.trim(),
             lunch_start: document.getElementById('manual-lunch-start')?.value || null,
             lunch_end: document.getElementById('manual-lunch-end')?.value || null,
         };
 
-        if (!payload.user_ids.length || !payload.type || !payload.date || !payload.time || !payload.reason) {
+        if (!payload.user_ids.length || !payload.date || !payload.entry_time || !payload.exit_time || !payload.reason) {
             if (msg) { msg.textContent = 'Please fill all required fields and select at least one employee.'; msg.className = 'error'; }
             return;
         }
