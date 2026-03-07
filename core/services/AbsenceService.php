@@ -330,6 +330,50 @@ class AbsenceService
     }
 
     /**
+     * Edit an absence (admin only).
+     */
+    public static function updateAbsence(int $absenceId, array $data, int $adminId): array
+    {
+        $pdo = get_pdo();
+
+        $check = $pdo->prepare('SELECT id FROM absences WHERE id = ? LIMIT 1');
+        $check->execute([$absenceId]);
+        if (!$check->fetchColumn()) {
+            return ['error' => ['code' => 'not_found', 'message' => 'Reporte no encontrado.'], 'status' => 404];
+        }
+
+        $projectId = isset($data['project_id']) && $data['project_id'] !== '' ? (int)$data['project_id'] : null;
+        $dateStart = trim((string)($data['date_start'] ?? ''));
+        $dateEnd = trim((string)($data['date_end'] ?? $dateStart));
+        $reason = trim((string)($data['reason'] ?? ''));
+        $notes = trim((string)($data['notes'] ?? ''));
+        $status = trim((string)($data['status'] ?? ''));
+
+        if ($dateStart === '' || $dateEnd === '') {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Las fechas son obligatorias.'], 'status' => 400];
+        }
+        if ($dateEnd < $dateStart) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'La fecha final no puede ser anterior a la inicial.'], 'status' => 400];
+        }
+        if (!in_array($reason, self::VALID_REASONS, true)) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Razón inválida.'], 'status' => 400];
+        }
+        if ($status !== '' && !in_array($status, self::VALID_STATUSES, true)) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Estado inválido.'], 'status' => 400];
+        }
+
+        if ($status === '') {
+            $stmt = $pdo->prepare('UPDATE absences SET project_id = ?, date_start = ?, date_end = ?, reason = ?, notes = ? WHERE id = ?');
+            $stmt->execute([$projectId, $dateStart, $dateEnd, $reason, ($notes !== '' ? $notes : null), $absenceId]);
+        } else {
+            $stmt = $pdo->prepare('UPDATE absences SET project_id = ?, date_start = ?, date_end = ?, reason = ?, notes = ?, status = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?');
+            $stmt->execute([$projectId, $dateStart, $dateEnd, $reason, ($notes !== '' ? $notes : null), $status, $adminId, $absenceId]);
+        }
+
+        return ['data' => ['message' => 'Reporte de ausencia actualizado.']];
+    }
+
+    /**
      * Delete an absence (admin only, or own if still pending).
      */
     public static function deleteAbsence(int $absenceId, int $userId, string $role): array

@@ -220,6 +220,7 @@ async function loadAdminAbsences() {
                             <button class="approve-btn" data-action="approve-absence" data-absence-id="${a.id}">✓ Aprobar</button>
                             <button class="reject-btn" data-action="reject-absence" data-absence-id="${a.id}">✗ Rechazar</button>
                         ` : `<span style="opacity:0.5; font-size:0.8rem;">${a.reviewed_by_username ? 'por ' + a.reviewed_by_username : ''}</span>`}
+                        <button class="small-button" data-action="edit-absence" data-absence='${encodeURIComponent(JSON.stringify(a))}'>Editar</button>
                         <button class="delete-btn" data-action="delete-absence" data-absence-id="${a.id}">🗑</button>
                     </div>
                 </td>
@@ -239,6 +240,44 @@ async function reviewAbsence(absenceId, status) {
         await apiFetch(`absences/${absenceId}/review`, 'PUT', { status });
         loadAdminAbsences();
         loadAbsenceSummary(); // refresh summary
+        if (typeof loadNotifications === 'function') loadNotifications();
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+
+
+async function editAbsence(absence) {
+    if (!absence || !absence.id) return;
+
+    const dateStart = prompt('Fecha inicio (YYYY-MM-DD):', absence.date_start || '');
+    if (dateStart === null) return;
+
+    const dateEnd = prompt('Fecha fin (YYYY-MM-DD):', absence.date_end || dateStart || '');
+    if (dateEnd === null) return;
+
+    const reason = prompt('Razón (familiar|enfermedad|vacaciones|sin_justificacion):', absence.reason || 'sin_justificacion');
+    if (reason === null) return;
+
+    const notes = prompt('Notas:', absence.notes || '');
+    if (notes === null) return;
+
+    const status = prompt('Estado (pendiente|aprobado|rechazado) [dejar vacío para mantener]:', absence.status || '');
+    if (status === null) return;
+
+    try {
+        await apiFetch(`absences/${absence.id}`, 'PUT', {
+            project_id: absence.project_id || null,
+            date_start: dateStart.trim(),
+            date_end: dateEnd.trim(),
+            reason: reason.trim(),
+            notes: notes.trim(),
+            status: status.trim()
+        });
+
+        loadAdminAbsences();
+        loadAbsenceSummary();
         if (typeof loadNotifications === 'function') loadNotifications();
     } catch (error) {
         alert('Error: ' + error.message);
@@ -577,12 +616,20 @@ function handleAbsenceAction(e) {
 
     const action = btn.dataset.action;
     const absenceId = Number(btn.dataset.absenceId);
-    if (!absenceId) return;
 
     if (action === 'approve-absence') {
+        if (!absenceId) return;
         reviewAbsence(absenceId, 'aprobado');
     } else if (action === 'reject-absence') {
+        if (!absenceId) return;
         reviewAbsence(absenceId, 'rechazado');
+    } else if (action === 'edit-absence') {
+        const encoded = btn.dataset.absence || '';
+        if (!encoded) return;
+        try {
+            const absence = JSON.parse(decodeURIComponent(encoded));
+            editAbsence(absence);
+        } catch (_) {}
     } else if (action === 'delete-absence') {
         deleteAbsence(absenceId);
     }

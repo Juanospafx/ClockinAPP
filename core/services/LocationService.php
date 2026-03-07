@@ -16,12 +16,38 @@ class LocationService {
         return ['data' => ['message' => 'Location logged successfully.']];
     }
 
-    public static function getHistory(int $userId, string $startDate, string $endDate): array {
+    public static function getHistory(?int $userId = null, ?string $startDate = null, ?string $endDate = null): array {
         $pdo = get_pdo();
-        $stmt = $pdo->prepare(
-            'SELECT latitude, longitude, timestamp FROM location_history WHERE user_id = ? AND timestamp BETWEEN ? AND ? ORDER BY timestamp ASC'
-        );
-        $stmt->execute([$userId, $startDate, $endDate]);
+
+        $sql = 'SELECT lh.latitude, lh.longitude, lh.timestamp, lh.user_id, u.username
+                FROM location_history lh
+                JOIN users u ON u.id = lh.user_id';
+        $conditions = [];
+        $params = [];
+
+        if ($userId !== null && $userId > 0) {
+            $conditions[] = 'lh.user_id = ?';
+            $params[] = $userId;
+        }
+
+        if (!empty($startDate)) {
+            $conditions[] = 'lh.timestamp >= ?';
+            $params[] = $startDate . ' 00:00:00';
+        }
+
+        if (!empty($endDate)) {
+            $conditions[] = 'lh.timestamp <= ?';
+            $params[] = $endDate . ' 23:59:59';
+        }
+
+        if (!empty($conditions)) {
+            $sql .= ' WHERE ' . implode(' AND ', $conditions);
+        }
+
+        $sql .= ' ORDER BY lh.timestamp ASC LIMIT 5000';
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         return ['data' => ['history' => $stmt->fetchAll(PDO::FETCH_ASSOC)]];
     }
 
