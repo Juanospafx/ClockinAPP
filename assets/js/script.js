@@ -1127,7 +1127,7 @@ async function loadUsersForHistoryFilter() {
     if (!selectElement) return;
     try {
         const data = await apiFetch('users');
-        selectElement.innerHTML = '<option value="">Select User</option>' + data.users.map(user => `<option value="${user.id}">${user.username}</option>`).join('');
+        selectElement.innerHTML = '<option value="">Select User</option><option value="__all__">All Users</option>' + data.users.map(user => `<option value="${user.id}">${user.username}</option>`).join('');
     } catch (_) { }
 }
 
@@ -1402,27 +1402,49 @@ async function displayUserLocationHistory(uid, startDate, endDate) {
 
     try {
         clearDashboardMapLayers();
-        const endpoint = `locations/history?user_id=${uid}&start_date=${startDate}&end_date=${endDate}`;
+
+        const params = new URLSearchParams();
+        if (uid && uid !== '__all__') params.set('user_id', uid);
+        if (startDate) params.set('start_date', startDate);
+        if (endDate) params.set('end_date', endDate);
+
+        const endpoint = `locations/history${params.toString() ? '?' + params.toString() : ''}`;
         const data = await apiFetch(endpoint);
+        const history = Array.isArray(data.history) ? data.history : [];
 
-        if (data.history.length > 0) {
-            const pathCoordinates = data.history.map(p => ({ lat: parseFloat(p.latitude), lng: parseFloat(p.longitude) }));
+        if (history.length > 0) {
+            const points = history
+                .map((p) => ({
+                    lat: parseFloat(p.latitude),
+                    lng: parseFloat(p.longitude),
+                    username: p.username || `User #${p.user_id ?? ''}`,
+                    timestamp: p.timestamp,
+                }))
+                .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
 
-            const userPath = new google.maps.Polyline({
-                path: pathCoordinates,
-                geodesic: true,
-                strokeColor: '#5ca7ff',
-                strokeOpacity: 0.95,
-                strokeWeight: 3
-            });
+            if (!points.length) {
+                const msg = document.getElementById('map-message');
+                if (msg) msg.textContent = 'No hay coordenadas válidas para mostrar.';
+                return;
+            }
 
-            userPath.setMap(userLocationsMap);
-            dashboardMapPolylines.push(userPath);
+            const drawPath = !!(uid && uid !== '__all__');
+            if (drawPath) {
+                const userPath = new google.maps.Polyline({
+                    path: points.map((p) => ({ lat: p.lat, lng: p.lng })),
+                    geodesic: true,
+                    strokeColor: '#5ca7ff',
+                    strokeOpacity: 0.95,
+                    strokeWeight: 3
+                });
+                userPath.setMap(userLocationsMap);
+                dashboardMapPolylines.push(userPath);
+            }
 
             const bounds = new google.maps.LatLngBounds();
-            pathCoordinates.forEach(coord => {
+            points.forEach((point) => {
                 const marker = new google.maps.Marker({
-                    position: coord,
+                    position: { lat: point.lat, lng: point.lng },
                     map: userLocationsMap,
                     icon: {
                         path: google.maps.SymbolPath.CIRCLE,
@@ -1431,10 +1453,11 @@ async function displayUserLocationHistory(uid, startDate, endDate) {
                         fillOpacity: 0.95,
                         strokeColor: '#ffffff',
                         strokeWeight: 1
-                    }
+                    },
+                    title: `${point.username} • ${new Date(point.timestamp).toLocaleString()}`
                 });
                 dashboardMapMarkers.push(marker);
-                bounds.extend(coord);
+                bounds.extend({ lat: point.lat, lng: point.lng });
             });
             userLocationsMap.fitBounds(bounds);
             const msg = document.getElementById('map-message');
@@ -2199,8 +2222,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const uidSel = document.getElementById('history-user-filter').value;
             const startDate = document.getElementById('history-start-date').value;
             const endDate = document.getElementById('history-end-date').value;
-            if (!uidSel || !startDate || !endDate) {
-                alert('Please select a user and a date range to view the history.');
+            if (!uidSel) {
+                alert('Please select a user (or All Users).');
                 return;
             }
             displayUserLocationHistory(uidSel, startDate, endDate);

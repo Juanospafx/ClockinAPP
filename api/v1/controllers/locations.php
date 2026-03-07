@@ -21,14 +21,12 @@ function handle_locations_log(): void {
 
 function handle_locations_history(): void {
     require_role(['admin', 'special']);
-    $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
-    $startDate = $_GET['start_date'] ?? '';
-    $endDate = $_GET['end_date'] ?? '';
-    if (!$userId || $startDate === '' || $endDate === '') {
-        json_error('validation_error', 'Missing user_id, start_date, or end_date.', 400);
-        return;
-    }
-    $result = LocationService::getHistory($userId, $startDate, $endDate);
+
+    $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
+    $startDate = isset($_GET['start_date']) ? trim((string)$_GET['start_date']) : null;
+    $endDate = isset($_GET['end_date']) ? trim((string)$_GET['end_date']) : null;
+
+    $result = LocationService::getHistory($userId, $startDate ?: null, $endDate ?: null);
     json_ok($result['data']);
 }
 
