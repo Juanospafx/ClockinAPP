@@ -576,6 +576,16 @@
                     <label for="manual-reason">Reason for manual entry: <span class="required">*</span></label>
                     <textarea id="manual-reason" rows="2" placeholder="e.g., Employee forgot to clock in, Device malfunction..." required></textarea>
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="manual-lunch-start">Lunch start (optional):</label>
+                        <input type="time" id="manual-lunch-start" placeholder="12:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="manual-lunch-end">Lunch end (optional):</label>
+                        <input type="time" id="manual-lunch-end" placeholder="13:00">
+                    </div>
+                </div>
                 <button type="submit" class="submit-btn">Register Manual Entry</button>
             </form>
             <p id="manual-attendance-message"></p>

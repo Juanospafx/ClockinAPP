@@ -802,7 +802,9 @@ function renderAttendancePage() {
         const projectName = projectNameRaw !== '' ? projectNameRaw : 'Sin proyecto';
 
         const sessionDuration = (record.type === 'entry' || record.type === 'exit') ? formatDurationHours(record.total_duration) : 'N/A';
-        const lunchDuration = record.type === 'end_lunch' ? formatDurationHours(record.lunch_duration) : 'N/A';
+        const lunchDuration = (record.type === 'end_lunch' || record.type === 'exit')
+            ? formatDurationHours(record.lunch_duration)
+            : 'N/A';
 
         const manualBadge = record.entry_source === 'manual' ? ' <span class="manual-badge">✏️ Manual</span>' : '';
         const statusBadge = getAttendanceStatusBadge(record);
