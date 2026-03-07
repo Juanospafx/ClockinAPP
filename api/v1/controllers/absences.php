@@ -12,12 +12,13 @@ require_once __DIR__ . '/../../../core/services/AuthService.php';
 function handle_absences_create(): void
 {
     $userId = require_login();
+    $role = AuthService::getCurrentUserRole() ?? 'user';
 
     // Read data from POST (multipart) or JSON body
     $data = !empty($_POST) ? $_POST : read_json_body();
     $file = $_FILES['evidence'] ?? null;
 
-    $result = AbsenceService::createAbsence($userId, $data, $file);
+    $result = AbsenceService::createAbsence($userId, $role, $data, $file);
     if (isset($result['error'])) {
         json_error($result['error']['code'], $result['error']['message'], $result['status'] ?? 400);
         return;
@@ -79,6 +80,28 @@ function handle_absences_review(int $absenceId): void
         json_error($result['error']['code'], $result['error']['message'], $result['status'] ?? 400);
         return;
     }
+    json_ok($result['data']);
+}
+
+
+
+/**
+ * POST /absences/auto-mark — auto mark unexcused absences for a date (admin only)
+ */
+function handle_absences_auto_mark(): void
+{
+    $adminId = require_login();
+    require_role(['admin']);
+
+    $data = read_json_body();
+    $date = trim((string)($data['date'] ?? date('Y-m-d')));
+
+    $result = AbsenceService::autoMarkUnexcusedForDate($date, $adminId);
+    if (isset($result['error'])) {
+        json_error($result['error']['code'], $result['error']['message'], $result['status'] ?? 400);
+        return;
+    }
+
     json_ok($result['data']);
 }
 

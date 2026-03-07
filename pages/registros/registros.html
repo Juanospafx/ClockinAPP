@@ -397,6 +397,39 @@
         <section id="absence-records-section" style="display:none;">
             <h3>Registros de Ausencias</h3>
 
+            <div class="absence-filters" style="margin-bottom: 16px;">
+                <div class="form-group">
+                    <label for="admin-absence-user">Registrar ausencia manual para:</label>
+                    <select id="admin-absence-user"><option value="">Seleccionar usuario</option></select>
+                </div>
+                <div class="form-group">
+                    <label for="admin-absence-date">Fecha:</label>
+                    <input type="date" id="admin-absence-date">
+                </div>
+                <div class="form-group">
+                    <label for="admin-absence-reason">Razón:</label>
+                    <select id="admin-absence-reason">
+                        <option value="sin_justificacion">Sin justificación</option>
+                        <option value="familiar">Familiar</option>
+                        <option value="enfermedad">Enfermedad</option>
+                        <option value="vacaciones">Vacaciones</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:2; min-width:280px;">
+                    <label for="admin-absence-notes">Notas:</label>
+                    <input type="text" id="admin-absence-notes" placeholder="Opcional">
+                </div>
+                <button class="filter-btn" id="admin-absence-create-btn">Registrar ausencia manual</button>
+            </div>
+
+            <div class="absence-filters" style="margin-bottom: 16px;">
+                <div class="form-group">
+                    <label for="auto-absence-date">Auto-registrar faltas del día:</label>
+                    <input type="date" id="auto-absence-date">
+                </div>
+                <button class="filter-btn" id="auto-absence-run-btn">Ejecutar auto-ausencias</button>
+            </div>
+
             <!-- Summary cards + chart -->
             <div id="absence-summary-container" class="absence-summary-container"></div>
 
