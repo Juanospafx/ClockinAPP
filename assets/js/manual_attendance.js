@@ -89,6 +89,8 @@
             date: document.getElementById('manual-date').value,
             time: document.getElementById('manual-time').value,
             reason: document.getElementById('manual-reason').value.trim(),
+            lunch_start: document.getElementById('manual-lunch-start')?.value || null,
+            lunch_end: document.getElementById('manual-lunch-end')?.value || null,
         };
 
         if (!payload.user_ids.length || !payload.type || !payload.date || !payload.time || !payload.reason) {
