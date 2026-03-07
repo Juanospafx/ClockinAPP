@@ -24,6 +24,25 @@ class AttendanceService {
 
         $sql = "SELECT ar.id, ar.user_id, u.username, ar.location, ar.type, ar.original_time, ar.rounded_time,
                        ar.total_duration, ar.lunch_duration, ar.created_at, ar.project_qr_id, pq.project_id, p.name AS project_name,
+                       CASE
+                           WHEN ar.type = 'exit' THEN ar.original_time
+                           WHEN ar.type = 'entry' THEN ar.original_time
+                           ELSE ar.original_time
+                       END AS entry_time,
+                       CASE
+                           WHEN ar.type = 'exit' THEN ar.rounded_time
+                           WHEN ar.type = 'entry' THEN (
+                               SELECT x.rounded_time
+                               FROM attendance_records x
+                               WHERE x.user_id = ar.user_id
+                                 AND x.type = 'exit'
+                                 AND DATE(x.original_time) = DATE(ar.original_time)
+                                 AND x.original_time >= ar.original_time
+                               ORDER BY x.original_time ASC, x.id ASC
+                               LIMIT 1
+                           )
+                           ELSE ar.rounded_time
+                       END AS exit_time,
                        {$selectEntrySource}, {$selectManualReason}, {$selectCreatedBy},
                        {$selectCreatedByUsername}, {$selectLateReason}
                 FROM attendance_records ar
@@ -333,6 +352,35 @@ class AttendanceService {
             $resolvedProjectQrId = $stmtProjectQr->fetchColumn();
             if ($resolvedProjectQrId) {
                 $projectQrId = (int)$resolvedProjectQrId;
+            }
+        }
+
+        // If the UI sends entry/exit times for attendance editing, map them into
+        // original/rounded and recompute durations (default lunch overlap 12:00–13:00).
+        $entryTimeStr = isset($data['entry_time']) ? trim((string)$data['entry_time']) : '';
+        $exitTimeStr = isset($data['exit_time']) ? trim((string)$data['exit_time']) : '';
+
+        if ($entryTimeStr !== '' && $exitTimeStr !== '') {
+            $originalTimeStr = $entryTimeStr;
+            $roundedTimeStr = $exitTimeStr;
+
+            $entryTs = strtotime($entryTimeStr);
+            $exitTs = strtotime($exitTimeStr);
+            if ($entryTs === false || $exitTs === false || $exitTs <= $entryTs) {
+                return ['error' => ['code' => 'validation_error', 'message' => 'Exit time must be greater than entry time.'], 'status' => 400];
+            }
+
+            $day = date('Y-m-d', $entryTs);
+            $lunchStartTs = strtotime($day . ' 12:00:00');
+            $lunchEndTs = strtotime($day . ' 13:00:00');
+            $overlapStart = max($entryTs, $lunchStartTs);
+            $overlapEnd = min($exitTs, $lunchEndTs);
+            $computedLunch = $overlapEnd > $overlapStart ? (int)round(($overlapEnd - $overlapStart) / 60) : 0;
+
+            $gross = (int)round(($exitTs - $entryTs) / 60);
+            $totalDuration = max(0, $gross - $computedLunch);
+            if ($lunchDuration === null) {
+                $lunchDuration = $computedLunch;
             }
         }
 

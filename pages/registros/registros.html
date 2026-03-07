@@ -115,8 +115,8 @@
                         <th>Location</th>
                         <th>Type</th>
                         <th>Status</th>
-                        <th>Original Time</th>
-                        <th>Rounded Time</th>
+                        <th>Entry Time</th>
+                        <th>Exit Time</th>
                         <th>Work Duration (hours)</th>
                         <th>Lunch Duration (hours)</th>
                         <th>Project</th>
@@ -146,8 +146,8 @@
                         <th>Date</th>
                         <th>Location</th>
                         <th>Type</th>
-                        <th>Original Time</th>
-                        <th>Rounded Time</th>
+                        <th>Entry Time</th>
+                        <th>Exit Time</th>
                         <th>Work Duration (hours)</th>
                         <th>Lunch Duration (hours)</th>
                         <th>Project</th>
@@ -535,20 +535,16 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="manual-type">Type: <span class="required">*</span></label>
-                        <select id="manual-type" required>
-                            <option value="">— Select —</option>
-                            <option value="entry">Clock In</option>
-                            <option value="exit">Clock Out</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
                         <label for="manual-date">Date: <span class="required">*</span></label>
                         <input type="date" id="manual-date" required>
                     </div>
                     <div class="form-group">
-                        <label for="manual-time">Time: <span class="required">*</span></label>
-                        <input type="time" id="manual-time" required>
+                        <label for="manual-entry-time">Entry time: <span class="required">*</span></label>
+                        <input type="time" id="manual-entry-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="manual-exit-time">Exit time: <span class="required">*</span></label>
+                        <input type="time" id="manual-exit-time" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -640,12 +636,12 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="edit-original-time">Original Time:</label>
-                        <input type="datetime-local" id="edit-original-time" required>
+                        <label for="edit-entry-time">Entry Time:</label>
+                        <input type="datetime-local" id="edit-entry-time" required>
                     </div>
                     <div class="form-group">
-                        <label for="edit-rounded-time">Rounded Time:</label>
-                        <input type="datetime-local" id="edit-rounded-time" required>
+                        <label for="edit-exit-time">Exit Time:</label>
+                        <input type="datetime-local" id="edit-exit-time" required>
                     </div>
                 </div>
                 <div class="form-row">

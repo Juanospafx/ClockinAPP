@@ -795,8 +795,10 @@ function renderAttendancePage() {
     const pageItems = attendanceAllRecords.slice(start, start + ATTENDANCE_PAGE_SIZE);
 
     recordsBody.innerHTML = pageItems.map(record => {
-        const localTime = formatUtcAsLocal(record.original_time);
-        const localRoundedTime = formatUtcAsLocal(record.rounded_time);
+        const entryTimeRaw = record.entry_time || record.original_time;
+        const exitTimeRaw = record.exit_time || record.rounded_time;
+        const localEntryTime = formatUtcAsLocal(entryTimeRaw);
+        const localExitTime = formatUtcAsLocal(exitTimeRaw);
         const projectNameRaw = (record.project_name ?? '').trim();
         const projectName = projectNameRaw !== '' ? projectNameRaw : 'Sin proyecto';
 
@@ -818,12 +820,12 @@ function renderAttendancePage() {
         return `
         <tr>
           <td data-label="User">${record.username}</td>
-          <td data-label="Date">${localTime.date}</td>
+          <td data-label="Date">${localEntryTime.date}</td>
           <td data-label="Location">${record.location}</td>
           <td data-label="Type">${record.type}${manualBadge}</td>
           <td data-label="Status">${statusBadge}</td>
-          <td data-label="Original Time">${localTime.time}</td>
-          <td data-label="Rounded Time">${localRoundedTime.time}</td>
+          <td data-label="Entry Time">${localEntryTime.time}</td>
+          <td data-label="Exit Time">${localExitTime.time}</td>
           <td data-label="Work Duration (hours)">${sessionDuration}</td>
           <td data-label="Lunch Duration (hours)">${lunchDuration}</td>
           <td data-label="Project">${projectName}</td>
@@ -844,10 +846,12 @@ function exportAttendanceCsv() {
     const rows = attendanceAllRecords || [];
     if (!rows.length) return;
 
-    const headers = ['User', 'Date', 'Location', 'Type', 'Status', 'Original Time', 'Rounded Time', 'Work Duration', 'Lunch Duration', 'Project'];
+    const headers = ['User', 'Date', 'Location', 'Type', 'Status', 'Entry Time', 'Exit Time', 'Work Duration', 'Lunch Duration', 'Project'];
     const body = rows.map(record => {
-        const localTime = formatUtcAsLocal(record.original_time);
-        const localRoundedTime = formatUtcAsLocal(record.rounded_time);
+        const entryTimeRaw = record.entry_time || record.original_time;
+        const exitTimeRaw = record.exit_time || record.rounded_time;
+        const localEntryTime = formatUtcAsLocal(entryTimeRaw);
+        const localExitTime = formatUtcAsLocal(exitTimeRaw);
         const statusText = record.type === 'entry' ? (record.late_reason ? 'Tardanza' : 'A tiempo') : (record.type === 'absence' ? 'Ausencia' : '-');
         return [
             record.username,
@@ -1062,18 +1066,20 @@ async function loadSpecialUserRecords(userId) {
         }
 
         tbody.innerHTML = data.records.map(record => {
-            const localTime = formatUtcAsLocal(record.original_time);
-            const localRoundedTime = formatUtcAsLocal(record.rounded_time);
+            const entryTimeRaw = record.entry_time || record.original_time;
+            const exitTimeRaw = record.exit_time || record.rounded_time;
+            const localEntryTime = formatUtcAsLocal(entryTimeRaw);
+            const localExitTime = formatUtcAsLocal(exitTimeRaw);
             const projectNameRaw = (record.project_name ?? '').trim();
             const projectName = projectNameRaw !== '' ? projectNameRaw : 'Sin proyecto';
             return `
         <tr>
           <td data-label="User">${record.username}</td>
-          <td data-label="Date">${localTime.date}</td>
+          <td data-label="Date">${localEntryTime.date}</td>
           <td data-label="Location">${record.location}</td>
           <td data-label="Type">${record.type}</td>
-          <td data-label="Original Time">${localTime.time}</td>
-          <td data-label="Rounded Time">${localRoundedTime.time}</td>
+          <td data-label="Entry Time">${localEntryTime.time}</td>
+          <td data-label="Exit Time">${localExitTime.time}</td>
           <td data-label="Duration (hours)">${formatDurationHours(record.total_duration)}</td>
           <td data-label="Project">${projectName}</td>
         </tr>
@@ -1445,8 +1451,10 @@ async function openEditModal(recordData) {
     document.getElementById('edit-user-id').value = '';
     document.getElementById('edit-type').value = attendanceEditingRecord.type || 'entry';
     document.getElementById('edit-location').value = attendanceEditingRecord.location || '';
-    document.getElementById('edit-original-time').value = (attendanceEditingRecord.original_time || '').replace(' ', 'T').slice(0, 16);
-    document.getElementById('edit-rounded-time').value = (attendanceEditingRecord.rounded_time || '').replace(' ', 'T').slice(0, 16);
+    const entryTimeEdit = (attendanceEditingRecord.entry_time || attendanceEditingRecord.original_time || '');
+    const exitTimeEdit = (attendanceEditingRecord.exit_time || attendanceEditingRecord.rounded_time || '');
+    document.getElementById('edit-entry-time').value = entryTimeEdit.replace(' ', 'T').slice(0, 16);
+    document.getElementById('edit-exit-time').value = exitTimeEdit.replace(' ', 'T').slice(0, 16);
     document.getElementById('edit-total-duration').value = ((Number(attendanceEditingRecord.total_duration || 0)) / 60).toFixed(2);
     document.getElementById('edit-lunch-duration').value = ((Number(attendanceEditingRecord.lunch_duration || 0)) / 60).toFixed(2);
 
@@ -2190,8 +2198,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const userIdEdit = parseInt(document.getElementById('edit-user-id').value, 10);
                 const typeEdit = document.getElementById('edit-type').value;
                 const locationEdit = document.getElementById('edit-location').value;
-                const originalTimeEdit = document.getElementById('edit-original-time').value;
-                const roundedTimeEdit = document.getElementById('edit-rounded-time').value;
+                const entryTimeEdit = document.getElementById('edit-entry-time').value;
+                const exitTimeEdit = document.getElementById('edit-exit-time').value;
                 const totalDurationMinutes = parseFloat(document.getElementById('edit-total-duration').value) * 60;
                 const lunchDurationMinutes = parseFloat(document.getElementById('edit-lunch-duration').value) * 60;
                 const selectedProjectIdRaw = document.getElementById('edit-project-id')?.value || '';
@@ -2202,8 +2210,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         user_id: Number.isFinite(userIdEdit) ? userIdEdit : null,
                         type: typeEdit,
                         location: locationEdit,
-                        original_time: originalTimeEdit.replace('T', ' '),
-                        rounded_time: roundedTimeEdit.replace('T', ' '),
+                        original_time: entryTimeEdit.replace('T', ' '),
+                        rounded_time: exitTimeEdit.replace('T', ' '),
+                        entry_time: entryTimeEdit.replace('T', ' '),
+                        exit_time: exitTimeEdit.replace('T', ' '),
                         total_duration: Number.isFinite(totalDurationMinutes) ? totalDurationMinutes : null,
                         lunch_duration: Number.isFinite(lunchDurationMinutes) ? lunchDurationMinutes : null,
                         project_qr_id: null,
