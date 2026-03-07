@@ -355,17 +355,25 @@ class AttendanceService {
             }
         }
 
-        // If the UI sends entry/exit times for attendance editing, map them into
-        // original/rounded and recompute durations (default lunch overlap 12:00–13:00).
+        // If the UI sends entry/exit times, map them into original/rounded.
         $entryTimeStr = isset($data['entry_time']) ? trim((string)$data['entry_time']) : '';
         $exitTimeStr = isset($data['exit_time']) ? trim((string)$data['exit_time']) : '';
 
         if ($entryTimeStr !== '' && $exitTimeStr !== '') {
             $originalTimeStr = $entryTimeStr;
             $roundedTimeStr = $exitTimeStr;
+        }
 
-            $entryTs = strtotime($entryTimeStr);
-            $exitTs = strtotime($exitTimeStr);
+        // Normalize without timezone suffix and ensure seconds for stable parsing.
+        $originalTimeStr = preg_replace('/\s+/', ' ', str_replace('T', ' ', (string)$originalTimeStr));
+        $roundedTimeStr = preg_replace('/\s+/', ' ', str_replace('T', ' ', (string)$roundedTimeStr));
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $originalTimeStr)) $originalTimeStr .= ':00';
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $roundedTimeStr)) $roundedTimeStr .= ':00';
+
+        // Always recompute for exits to avoid stale/blank/zero values.
+        if ($type === 'exit') {
+            $entryTs = strtotime((string)$originalTimeStr);
+            $exitTs = strtotime((string)$roundedTimeStr);
             if ($entryTs === false || $exitTs === false || $exitTs <= $entryTs) {
                 return ['error' => ['code' => 'validation_error', 'message' => 'Exit time must be greater than entry time.'], 'status' => 400];
             }
@@ -379,9 +387,7 @@ class AttendanceService {
 
             $gross = (int)round(($exitTs - $entryTs) / 60);
             $totalDuration = max(0, $gross - $computedLunch);
-            if ($lunchDuration === null) {
-                $lunchDuration = $computedLunch;
-            }
+            $lunchDuration = $computedLunch;
         }
 
         $stmt = $pdo->prepare(
