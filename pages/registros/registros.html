@@ -512,8 +512,9 @@
         </section>
         <!-- Section: Manual Attendance (Admin Only) -->
         <section id="manual-attendance-section" style="display:none;">
-            <h3>📝 Manual Attendance Entry</h3>
-            <p>Register attendance entries manually for employees who forgot to clock in/out.</p>
+            <h3 id="manual-section-title">📝 Manual Records</h3>
+            <p id="manual-section-subtitle">Register attendance entries manually for employees who forgot to clock in/out.</p>
+
             <form id="manual-attendance-form" class="manual-attendance-form">
                 <div class="form-row">
                     <div class="form-group">
@@ -539,7 +540,6 @@
                             <option value="">— Select —</option>
                             <option value="entry">Clock In</option>
                             <option value="exit">Clock Out</option>
-                            <option value="absence">Absence</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -547,8 +547,8 @@
                         <input type="date" id="manual-date" required>
                     </div>
                     <div class="form-group">
-                        <label for="manual-time">Time:</label>
-                        <input type="time" id="manual-time">
+                        <label for="manual-time">Time: <span class="required">*</span></label>
+                        <input type="time" id="manual-time" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -567,6 +567,44 @@
                 </div>
                 <button type="submit" class="submit-btn">Register Manual Entry</button>
             </form>
+
+            <form id="manual-absence-form" class="manual-attendance-form" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="manual-absence-user">User: <span class="required">*</span></label>
+                        <select id="manual-absence-user" required>
+                            <option value="">— Select user —</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="manual-absence-project">Project:</label>
+                        <select id="manual-absence-project">
+                            <option value="">— Select project —</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="manual-absence-date">Date: <span class="required">*</span></label>
+                        <input type="date" id="manual-absence-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="manual-absence-reason">Absence type:</label>
+                        <select id="manual-absence-reason">
+                            <option value="sin_justificacion">Sin justificación</option>
+                            <option value="familiar">Familiar</option>
+                            <option value="enfermedad">Enfermedad</option>
+                            <option value="vacaciones">Vacaciones</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="manual-absence-notes">Notes:</label>
+                    <textarea id="manual-absence-notes" rows="2" placeholder="Optional"></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Register Manual Absence</button>
+            </form>
+
             <p id="manual-attendance-message"></p>
         </section>
     </div>

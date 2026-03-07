@@ -2089,18 +2089,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const absenceRecordsLink = document.getElementById('nav-absence-records');
     if (absenceRecordsLink) absenceRecordsLink.addEventListener('click', (e) => { e.preventDefault(); showSection('absence-records-section'); });
     const manualAttendanceLink = document.getElementById('nav-manual-attendance');
-    if (manualAttendanceLink) manualAttendanceLink.addEventListener('click', (e) => { e.preventDefault(); showSection('manual-attendance-section'); });
+    if (manualAttendanceLink) {
+        manualAttendanceLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSection('manual-attendance-section');
+            if (typeof setManualMode === 'function') setManualMode('attendance');
+        });
+    }
 
     const manualAbsenceLink = document.getElementById('nav-manual-absence');
     if (manualAbsenceLink) {
         manualAbsenceLink.addEventListener('click', (e) => {
             e.preventDefault();
             showSection('manual-attendance-section');
-            const typeSelect = document.getElementById('manual-type');
-            if (typeSelect) {
-                typeSelect.value = 'absence';
-                typeSelect.dispatchEvent(new Event('change'));
-            }
+            if (typeof setManualMode === 'function') setManualMode('absence');
             document.querySelectorAll('.sidebar a[id^="nav-"]').forEach((link) => link.classList.remove('active'));
             manualAbsenceLink.classList.add('active');
         });
