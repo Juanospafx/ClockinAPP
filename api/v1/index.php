@@ -168,6 +168,10 @@ try {
         handle_absences_auto_mark();
         return;
     }
+    if (preg_match('#^absences/(\\d+)$#', $route, $m) && $method === 'PUT') {
+        handle_absences_update((int)$m[1]);
+        return;
+    }
     if (preg_match('#^absences/(\\d+)$#', $route, $m) && $method === 'DELETE') {
         handle_absences_delete((int)$m[1]);
         return;

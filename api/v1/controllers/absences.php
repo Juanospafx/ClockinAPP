@@ -106,6 +106,23 @@ function handle_absences_auto_mark(): void
 }
 
 /**
+ * PUT /absences/:id — edit absence (admin only)
+ */
+function handle_absences_update(int $absenceId): void
+{
+    $adminId = require_login();
+    require_role(['admin']);
+
+    $data = read_json_body();
+    $result = AbsenceService::updateAbsence($absenceId, $data, $adminId);
+    if (isset($result['error'])) {
+        json_error($result['error']['code'], $result['error']['message'], $result['status'] ?? 400);
+        return;
+    }
+    json_ok($result['data']);
+}
+
+/**
  * DELETE /absences/:id — delete absence
  */
 function handle_absences_delete(int $absenceId): void
