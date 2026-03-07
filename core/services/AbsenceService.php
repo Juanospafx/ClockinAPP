@@ -15,8 +15,21 @@ class AbsenceService
     /**
      * Create an absence report.
      */
-    public static function createAbsence(int $userId, array $data, ?array $file = null): array
+    public static function createAbsence(int $actorUserId, string $actorRole, array $data, ?array $file = null): array
     {
+        $targetUserId = $actorUserId;
+        if ($actorRole === 'admin' && isset($data['user_id']) && $data['user_id'] !== '') {
+            $targetUserId = (int)$data['user_id'];
+        }
+
+        if ($targetUserId <= 0) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Usuario inválido para registrar ausencia.'], 'status' => 400];
+        }
+
+        if (self::isAdminUser($targetUserId)) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Los administradores no requieren registro de asistencia/ausencia.'], 'status' => 400];
+        }
+
         $projectId = isset($data['project_id']) && $data['project_id'] !== '' ? (int)$data['project_id'] : null;
         $dateStart = trim($data['date_start'] ?? '');
         $dateEnd   = trim($data['date_end'] ?? $dateStart);
@@ -40,7 +53,7 @@ class AbsenceService
         // Handle file upload
         $evidencePath = null;
         if ($file && isset($file['error']) && $file['error'] === UPLOAD_ERR_OK) {
-            $uploadResult = self::handleEvidenceUpload($file, $userId);
+            $uploadResult = self::handleEvidenceUpload($file, $targetUserId);
             if (isset($uploadResult['error'])) {
                 return $uploadResult;
             }
@@ -52,13 +65,13 @@ class AbsenceService
             'INSERT INTO absences (user_id, project_id, date_start, date_end, reason, notes, evidence_path)
              VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute([$userId, $projectId, $dateStart, $dateEnd, $reason, $notes ?: null, $evidencePath]);
+        $stmt->execute([$targetUserId, $projectId, $dateStart, $dateEnd, $reason, $notes ?: null, $evidencePath]);
 
         $absenceId = (int)$pdo->lastInsertId();
 
         $uStmt = $pdo->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
-        $uStmt->execute([$userId]);
-        $username = (string)($uStmt->fetchColumn() ?: ('Usuario #' . $userId));
+        $uStmt->execute([$targetUserId]);
+        $username = (string)($uStmt->fetchColumn() ?: ('Usuario #' . $targetUserId));
         NotificationService::notifyAdmins('absence_reported', "{$username} reportó una ausencia ({$dateStart}).", $absenceId);
 
         return ['data' => [
@@ -226,6 +239,94 @@ class AbsenceService
         }
 
         return array_values($grouped);
+    }
+
+
+
+    /**
+     * Auto-mark unexcused absences for users without attendance/justification on a date.
+     */
+    public static function autoMarkUnexcusedForDate(string $date, int $adminId): array
+    {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Fecha inválida. Formato esperado: YYYY-MM-DD'], 'status' => 400];
+        }
+
+        $pdo = get_pdo();
+
+        $usersStmt = $pdo->query("
+            SELECT u.id
+            FROM users u
+            JOIN roles r ON r.id = u.role_id
+            WHERE r.name <> 'admin'
+        ");
+        $userIds = array_map('intval', $usersStmt->fetchAll(PDO::FETCH_COLUMN));
+
+        $inserted = 0;
+        $skippedWithAttendance = 0;
+        $skippedWithAbsence = 0;
+
+        $attendanceStmt = $pdo->prepare("
+            SELECT 1
+            FROM attendance_records
+            WHERE user_id = ?
+              AND DATE(original_time) = ?
+            LIMIT 1
+        ");
+
+        $absenceStmt = $pdo->prepare("
+            SELECT 1
+            FROM absences
+            WHERE user_id = ?
+              AND ? BETWEEN date_start AND date_end
+              AND status <> 'rechazado'
+            LIMIT 1
+        ");
+
+        $insertStmt = $pdo->prepare("
+            INSERT INTO absences (user_id, project_id, date_start, date_end, reason, notes, status, reviewed_by, reviewed_at)
+            VALUES (?, NULL, ?, ?, 'sin_justificacion', ?, 'aprobado', ?, NOW())
+        ");
+
+        foreach ($userIds as $userId) {
+            $attendanceStmt->execute([$userId, $date]);
+            if ($attendanceStmt->fetchColumn()) {
+                $skippedWithAttendance++;
+                continue;
+            }
+
+            $absenceStmt->execute([$userId, $date]);
+            if ($absenceStmt->fetchColumn()) {
+                $skippedWithAbsence++;
+                continue;
+            }
+
+            $insertStmt->execute([
+                $userId,
+                $date,
+                $date,
+                'Ausencia registrada automáticamente por falta de asistencia y sin justificación.' ,
+                $adminId
+            ]);
+            $inserted++;
+        }
+
+        return ['data' => [
+            'date' => $date,
+            'processed_users' => count($userIds),
+            'inserted_absences' => $inserted,
+            'skipped_with_attendance' => $skippedWithAttendance,
+            'skipped_with_existing_absence' => $skippedWithAbsence,
+            'message' => "Ausencias automáticas procesadas para {$date}."
+        ]];
+    }
+
+    private static function isAdminUser(int $userId): bool
+    {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare('SELECT r.name FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = ? LIMIT 1');
+        $stmt->execute([$userId]);
+        return (string)$stmt->fetchColumn() === 'admin';
     }
 
     /**

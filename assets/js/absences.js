@@ -52,6 +52,7 @@ async function submitAbsenceReport(e) {
     const messageEl = document.getElementById('absence-form-message');
 
     const projectId = document.getElementById('absence-project-select').value;
+    const adminUserId = document.getElementById('admin-absence-user')?.value || '';
     const dateStart = document.getElementById('absence-date-start').value;
     const dateEnd = document.getElementById('absence-date-end').value || dateStart;
     const reason = document.getElementById('absence-reason').value;
@@ -69,6 +70,7 @@ async function submitAbsenceReport(e) {
     // Use FormData for multipart (file upload support)
     const formData = new FormData();
     if (projectId) formData.append('project_id', projectId);
+    if (adminUserId) formData.append('user_id', adminUserId);
     formData.append('date_start', dateStart);
     formData.append('date_end', dateEnd);
     formData.append('reason', reason);
@@ -294,6 +296,66 @@ async function loadProjectsForAbsenceFilter() {
 }
 
 
+
+
+async function loadUsersForAdminAbsenceCreate() {
+    const select = document.getElementById('admin-absence-user');
+    if (!select || select.options.length > 1) return;
+
+    try {
+        const data = await apiFetch('users');
+        const users = (data.users || []).filter(u => String(u.role || '').toLowerCase() !== 'admin');
+        const opts = users.map(u => `<option value="${u.id}">${u.username}</option>`).join('');
+        select.innerHTML = '<option value="">Seleccionar usuario</option>' + opts;
+    } catch (_) {}
+}
+
+async function createAbsenceByAdmin() {
+    const userId = document.getElementById('admin-absence-user')?.value;
+    const date = document.getElementById('admin-absence-date')?.value;
+    const reason = document.getElementById('admin-absence-reason')?.value || 'sin_justificacion';
+    const notesInput = document.getElementById('admin-absence-notes');
+    const notes = notesInput?.value?.trim() || '';
+
+    if (!userId || !date) {
+        alert('Selecciona usuario y fecha para registrar ausencia manual.');
+        return;
+    }
+
+    try {
+        await apiFetch('absences', 'POST', {
+            user_id: Number(userId),
+            date_start: date,
+            date_end: date,
+            reason,
+            notes
+        });
+        if (notesInput) notesInput.value = '';
+        loadAdminAbsences();
+        loadAbsenceSummary();
+        if (typeof loadNotifications === 'function') loadNotifications();
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function runAutoAbsences() {
+    const date = document.getElementById('auto-absence-date')?.value;
+    if (!date) {
+        alert('Selecciona la fecha a procesar.');
+        return;
+    }
+
+    try {
+        const resp = await apiFetch('absences/auto-mark', 'POST', { date });
+        alert(resp.message || 'Auto-ausencias procesadas.');
+        loadAdminAbsences();
+        loadAbsenceSummary();
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
 // ========================================================
 // Absence Summary / Report
 // ========================================================
@@ -396,7 +458,13 @@ async function loadAbsenceSummary() {
 // ========================================================
 
 function initAbsencesModule() {
+    const today = new Date().toISOString().slice(0, 10);
+    const adminDate = document.getElementById('admin-absence-date');
+    const autoDate = document.getElementById('auto-absence-date');
+    if (adminDate && !adminDate.value) adminDate.value = today;
+    if (autoDate && !autoDate.value) autoDate.value = today;
     // Absence form submit
+    loadUsersForAdminAbsenceCreate();
     const absenceForm = document.getElementById('absence-report-form');
     if (absenceForm) {
         absenceForm.addEventListener('submit', submitAbsenceReport);
@@ -404,6 +472,22 @@ function initAbsencesModule() {
 
     // Admin filter button
     const filterBtn = document.getElementById('absence-filter-btn');
+
+    const adminCreateBtn = document.getElementById('admin-absence-create-btn');
+    if (adminCreateBtn) {
+        adminCreateBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            createAbsenceByAdmin();
+        });
+    }
+
+    const autoRunBtn = document.getElementById('auto-absence-run-btn');
+    if (autoRunBtn) {
+        autoRunBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            runAutoAbsences();
+        });
+    }
     if (filterBtn) {
         filterBtn.addEventListener('click', () => {
             loadAdminAbsences();

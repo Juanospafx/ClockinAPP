@@ -164,6 +164,10 @@ try {
         handle_absences_review((int)$m[1]);
         return;
     }
+    if ($route === 'absences/auto-mark' && $method === 'POST') {
+        handle_absences_auto_mark();
+        return;
+    }
     if (preg_match('#^absences/(\\d+)$#', $route, $m) && $method === 'DELETE') {
         handle_absences_delete((int)$m[1]);
         return;
