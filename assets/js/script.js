@@ -823,8 +823,10 @@ function renderAttendancePage() {
         const projectNameRaw = (record.project_name ?? '').trim();
         const projectName = projectNameRaw !== '' ? projectNameRaw : 'Sin proyecto';
 
-        const sessionDuration = (record.type === 'entry' || record.type === 'exit') ? formatDurationHours(record.total_duration) : 'N/A';
-        const lunchDuration = (record.type === 'end_lunch' || record.type === 'exit')
+        const sessionDuration = (record.total_duration !== null && record.total_duration !== undefined)
+            ? formatDurationHours(record.total_duration)
+            : 'N/A';
+        const lunchDuration = (record.lunch_duration !== null && record.lunch_duration !== undefined)
             ? formatDurationHours(record.lunch_duration)
             : 'N/A';
 
