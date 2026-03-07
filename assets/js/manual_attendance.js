@@ -1,46 +1,76 @@
 /**
- * Manual Attendance Entry (Admin Only)
- * Handles the form submission and populates dropdowns.
+ * Manual Attendance / Absence (Admin Only)
  */
 (function () {
     'use strict';
 
-    function initManualAttendance() {
-        const form = document.getElementById('manual-attendance-form');
-        if (!form) return;
+    let currentManualMode = 'attendance';
 
+    function initManualAttendance() {
         const role = normalizeRole(sessionStorage.getItem('user_role'));
         if (role !== 'admin') return;
 
-        if (form.dataset.manualInit === '1') return;
-        form.addEventListener('submit', handleManualSubmit);
+        const attendanceForm = document.getElementById('manual-attendance-form');
+        const absenceForm = document.getElementById('manual-absence-form');
+        if (!attendanceForm || !absenceForm) return;
 
-        const selectAllBtn = document.getElementById('manual-select-all-users');
-        const clearBtn = document.getElementById('manual-clear-users');
-        if (selectAllBtn) selectAllBtn.addEventListener('click', selectAllUsers);
-        if (clearBtn) clearBtn.addEventListener('click', clearSelectedUsers);
+        if (attendanceForm.dataset.manualInit !== '1') {
+            attendanceForm.addEventListener('submit', handleManualAttendanceSubmit);
 
-        const typeSelect = document.getElementById('manual-type');
-        if (typeSelect) {
-            typeSelect.addEventListener('change', toggleManualFieldsByType);
-            toggleManualFieldsByType();
+            const selectAllBtn = document.getElementById('manual-select-all-users');
+            const clearBtn = document.getElementById('manual-clear-users');
+            if (selectAllBtn) selectAllBtn.addEventListener('click', selectAllUsers);
+            if (clearBtn) clearBtn.addEventListener('click', clearSelectedUsers);
+
+            attendanceForm.dataset.manualInit = '1';
         }
 
-        form.dataset.manualInit = '1';
+        if (absenceForm.dataset.manualInit !== '1') {
+            absenceForm.addEventListener('submit', handleManualAbsenceSubmit);
+            absenceForm.dataset.manualInit = '1';
+        }
+
+        setManualMode(currentManualMode);
+    }
+
+    function setManualMode(mode) {
+        currentManualMode = (mode === 'absence') ? 'absence' : 'attendance';
+
+        const titleEl = document.getElementById('manual-section-title');
+        const subtitleEl = document.getElementById('manual-section-subtitle');
+        const attendanceForm = document.getElementById('manual-attendance-form');
+        const absenceForm = document.getElementById('manual-absence-form');
+        const messageEl = document.getElementById('manual-attendance-message');
+
+        if (messageEl) {
+            messageEl.textContent = '';
+            messageEl.className = '';
+        }
+
+        if (currentManualMode === 'absence') {
+            if (titleEl) titleEl.textContent = '📝 Manual Records';
+            if (subtitleEl) subtitleEl.textContent = 'Register absence manually (user, absence type, date and notes).';
+            if (attendanceForm) attendanceForm.style.display = 'none';
+            if (absenceForm) absenceForm.style.display = 'block';
+        } else {
+            if (titleEl) titleEl.textContent = '📝 Manual Records';
+            if (subtitleEl) subtitleEl.textContent = 'Register attendance entries manually for employees who forgot to clock in/out.';
+            if (attendanceForm) attendanceForm.style.display = 'block';
+            if (absenceForm) absenceForm.style.display = 'none';
+        }
     }
 
     async function populateManualDropdowns() {
         const role = normalizeRole(sessionStorage.getItem('user_role'));
         if (role !== 'admin') return;
 
-        // Populate employees (checkbox list)
-        const employeeList = document.getElementById('manual-employee-list');
-        if (employeeList && employeeList.children.length === 0) {
-            try {
-                const data = await apiFetch('users');
-                const users = data.users || [];
-                employeeList.innerHTML = '';
+        try {
+            const data = await apiFetch('users');
+            const users = data.users || [];
 
+            const employeeList = document.getElementById('manual-employee-list');
+            if (employeeList && employeeList.children.length === 0) {
+                employeeList.innerHTML = '';
                 users.forEach(u => {
                     const item = document.createElement('label');
                     item.className = 'manual-employee-item';
@@ -58,38 +88,55 @@
                     item.appendChild(text);
                     employeeList.appendChild(item);
                 });
-
                 updateSelectedCount();
-            } catch (e) {
-                console.error('Error loading users for manual attendance:', e);
             }
+
+            const absenceUserSelect = document.getElementById('manual-absence-user');
+            if (absenceUserSelect && absenceUserSelect.options.length <= 1) {
+                const opts = users
+                    .filter(u => String(u.role || '').toLowerCase() !== 'admin')
+                    .map(u => `<option value="${u.id}">${u.username}</option>`)
+                    .join('');
+                absenceUserSelect.innerHTML = '<option value="">— Select user —</option>' + opts;
+            }
+        } catch (e) {
+            console.error('Error loading users for manual forms:', e);
         }
 
-        // Populate projects
-        const projectSelect = document.getElementById('manual-project');
-        if (projectSelect && projectSelect.options.length <= 1) {
-            try {
-                const data = await apiFetch('projects');
-                const projects = data.projects || [];
+        try {
+            const data = await apiFetch('projects');
+            const projects = data.projects || [];
+
+            const attendanceProject = document.getElementById('manual-project');
+            if (attendanceProject && attendanceProject.options.length <= 1) {
                 projects.forEach(p => {
                     const opt = document.createElement('option');
                     opt.value = p.id;
                     opt.textContent = p.name;
-                    projectSelect.appendChild(opt);
+                    attendanceProject.appendChild(opt);
                 });
-            } catch (e) {
-                console.error('Error loading projects for manual attendance:', e);
             }
+
+            const absenceProject = document.getElementById('manual-absence-project');
+            if (absenceProject && absenceProject.options.length <= 1) {
+                projects.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    absenceProject.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error('Error loading projects for manual forms:', e);
         }
     }
 
-    async function handleManualSubmit(e) {
+    async function handleManualAttendanceSubmit(e) {
         e.preventDefault();
         const msg = document.getElementById('manual-attendance-message');
 
-        const selectedUserIds = getSelectedUserIds();
         const payload = {
-            user_ids: selectedUserIds,
+            user_ids: getSelectedUserIds(),
             project_id: document.getElementById('manual-project').value ? parseInt(document.getElementById('manual-project').value, 10) : null,
             type: document.getElementById('manual-type').value,
             date: document.getElementById('manual-date').value,
@@ -99,14 +146,13 @@
             lunch_end: document.getElementById('manual-lunch-end')?.value || null,
         };
 
-        const isAbsence = payload.type === 'absence';
-        if (!payload.user_ids.length || !payload.type || !payload.date || !payload.reason || (!isAbsence && !payload.time)) {
+        if (!payload.user_ids.length || !payload.type || !payload.date || !payload.time || !payload.reason) {
             if (msg) { msg.textContent = 'Please fill all required fields and select at least one employee.'; msg.className = 'error'; }
             return;
         }
 
         try {
-            const response = isAbsence ? await submitManualAbsence(payload) : await submitManualEntry(payload);
+            const response = await submitManualEntry(payload);
 
             if (response.warning) {
                 const usersWithWarning = response.error?.details?.user_ids || [];
@@ -118,15 +164,56 @@
                 if (proceed) {
                     payload.force = true;
                     const finalResponse = await submitManualEntry(payload);
-                    showResult(msg, finalResponse, payload.user_ids.length);
-                } else {
-                    if (msg) { msg.textContent = 'Operation cancelled.'; msg.className = 'warning'; }
+                    showResult(msg, finalResponse, payload.user_ids.length, 'attendance');
+                } else if (msg) {
+                    msg.textContent = 'Operation cancelled.';
+                    msg.className = 'warning';
                 }
             } else {
-                showResult(msg, response, payload.user_ids.length);
+                showResult(msg, response, payload.user_ids.length, 'attendance');
             }
         } catch (err) {
             if (msg) { msg.textContent = err.message || 'Error creating manual record.'; msg.className = 'error'; }
+        }
+    }
+
+    async function handleManualAbsenceSubmit(e) {
+        e.preventDefault();
+        const msg = document.getElementById('manual-attendance-message');
+
+        const userId = parseInt(document.getElementById('manual-absence-user')?.value || '', 10);
+        const projectId = document.getElementById('manual-absence-project')?.value ? parseInt(document.getElementById('manual-absence-project').value, 10) : null;
+        const date = document.getElementById('manual-absence-date')?.value;
+        const reason = document.getElementById('manual-absence-reason')?.value || 'sin_justificacion';
+        const notes = (document.getElementById('manual-absence-notes')?.value || '').trim();
+
+        if (!Number.isFinite(userId) || !date) {
+            if (msg) { msg.textContent = 'Please select user and date.'; msg.className = 'error'; }
+            return;
+        }
+
+        try {
+            await apiFetch('absences', 'POST', {
+                user_id: userId,
+                project_id: projectId,
+                date_start: date,
+                date_end: date,
+                reason,
+                notes
+            });
+
+            const form = document.getElementById('manual-absence-form');
+            if (form) form.reset();
+            if (msg) {
+                msg.textContent = '✅ Manual absence created successfully.';
+                msg.className = 'success';
+            }
+
+            if (typeof loadAdminAbsences === 'function') loadAdminAbsences();
+            if (typeof loadAbsenceSummary === 'function') loadAbsenceSummary();
+            if (typeof loadNotifications === 'function') loadNotifications();
+        } catch (err) {
+            if (msg) { msg.textContent = err.message || 'Error creating manual absence.'; msg.className = 'error'; }
         }
     }
 
@@ -137,16 +224,12 @@
     }
 
     function selectAllUsers() {
-        document.querySelectorAll('.manual-employee-checkbox').forEach((cb) => {
-            cb.checked = true;
-        });
+        document.querySelectorAll('.manual-employee-checkbox').forEach((cb) => { cb.checked = true; });
         updateSelectedCount();
     }
 
     function clearSelectedUsers() {
-        document.querySelectorAll('.manual-employee-checkbox').forEach((cb) => {
-            cb.checked = false;
-        });
+        document.querySelectorAll('.manual-employee-checkbox').forEach((cb) => { cb.checked = false; });
         updateSelectedCount();
     }
 
@@ -155,43 +238,6 @@
         if (!selectedCountEl) return;
         const count = document.querySelectorAll('.manual-employee-checkbox:checked').length;
         selectedCountEl.textContent = `${count} selected`;
-    }
-
-
-
-    function toggleManualFieldsByType() {
-        const type = document.getElementById('manual-type')?.value || '';
-        const timeInput = document.getElementById('manual-time');
-        const lunchStart = document.getElementById('manual-lunch-start');
-        const lunchEnd = document.getElementById('manual-lunch-end');
-
-        const isAbsence = type === 'absence';
-        if (timeInput) {
-            timeInput.disabled = isAbsence;
-            if (isAbsence) timeInput.value = '';
-        }
-        if (lunchStart) {
-            lunchStart.disabled = isAbsence;
-            if (isAbsence) lunchStart.value = '';
-        }
-        if (lunchEnd) {
-            lunchEnd.disabled = isAbsence;
-            if (isAbsence) lunchEnd.value = '';
-        }
-    }
-
-    async function submitManualAbsence(payload) {
-        for (const userId of payload.user_ids) {
-            await apiFetch('absences', 'POST', {
-                user_id: userId,
-                project_id: payload.project_id || null,
-                date_start: payload.date,
-                date_end: payload.date,
-                reason: 'sin_justificacion',
-                notes: payload.reason
-            });
-        }
-        return { ok: true, data: { count: payload.user_ids.length } };
     }
 
     async function submitManualEntry(payload) {
@@ -210,13 +256,17 @@
         return data;
     }
 
-    function showResult(msg, response, userCount) {
+    function showResult(msg, response, userCount, mode) {
         if (!msg) return;
         if (response.ok) {
             const count = response.data?.count || userCount || 1;
-            msg.textContent = `✅ ${count} manual ${count === 1 ? 'record' : 'records'} created successfully.`;
+            msg.textContent = mode === 'attendance'
+                ? `✅ ${count} manual ${count === 1 ? 'record' : 'records'} created successfully.`
+                : '✅ Manual absence created successfully.';
             msg.className = 'success';
-            document.getElementById('manual-attendance-form').reset();
+
+            const attendanceForm = document.getElementById('manual-attendance-form');
+            if (attendanceForm) attendanceForm.reset();
             clearSelectedUsers();
         } else {
             msg.textContent = '❌ ' + (response.error?.message || 'Unknown error.');
@@ -227,4 +277,5 @@
     // Expose for script.js navigation
     window.populateManualDropdowns = populateManualDropdowns;
     window.initManualAttendance = initManualAttendance;
+    window.setManualMode = setManualMode;
 })();
