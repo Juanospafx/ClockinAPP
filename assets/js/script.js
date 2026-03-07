@@ -153,6 +153,27 @@ function formatUtcAsLocal(utcString) {
     };
 }
 
+function formatLocalDateTimeString(value) {
+    if (!value) return { date: 'N/A', time: 'N/A' };
+    const normalized = String(value).replace(' ', 'T');
+    const date = new Date(normalized);
+    if (isNaN(date.getTime())) return { date: 'Invalid Date', time: 'Invalid Time' };
+
+    const pad = (v) => String(v).padStart(2, '0');
+    return {
+        date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+        time: `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+    };
+}
+
+function formatRecordDateTime(record, value) {
+    // Manual entries are captured in local wall-clock time; avoid UTC shift on display.
+    if (record && record.entry_source === 'manual') {
+        return formatLocalDateTimeString(value);
+    }
+    return formatUtcAsLocal(value);
+}
+
 function formatDurationHours(totalMinutes) {
     if (totalMinutes === null || totalMinutes === undefined) {
         return 'N/A';
@@ -797,8 +818,8 @@ function renderAttendancePage() {
     recordsBody.innerHTML = pageItems.map(record => {
         const entryTimeRaw = record.entry_time || record.original_time;
         const exitTimeRaw = record.exit_time || record.rounded_time;
-        const localEntryTime = formatUtcAsLocal(entryTimeRaw);
-        const localExitTime = formatUtcAsLocal(exitTimeRaw);
+        const localEntryTime = formatRecordDateTime(record, entryTimeRaw);
+        const localExitTime = formatRecordDateTime(record, exitTimeRaw);
         const projectNameRaw = (record.project_name ?? '').trim();
         const projectName = projectNameRaw !== '' ? projectNameRaw : 'Sin proyecto';
 
@@ -850,8 +871,8 @@ function exportAttendanceCsv() {
     const body = rows.map(record => {
         const entryTimeRaw = record.entry_time || record.original_time;
         const exitTimeRaw = record.exit_time || record.rounded_time;
-        const localEntryTime = formatUtcAsLocal(entryTimeRaw);
-        const localExitTime = formatUtcAsLocal(exitTimeRaw);
+        const localEntryTime = formatRecordDateTime(record, entryTimeRaw);
+        const localExitTime = formatRecordDateTime(record, exitTimeRaw);
         const statusText = record.type === 'entry' ? (record.late_reason ? 'Tardanza' : 'A tiempo') : (record.type === 'absence' ? 'Ausencia' : '-');
         return [
             record.username,
@@ -1068,8 +1089,8 @@ async function loadSpecialUserRecords(userId) {
         tbody.innerHTML = data.records.map(record => {
             const entryTimeRaw = record.entry_time || record.original_time;
             const exitTimeRaw = record.exit_time || record.rounded_time;
-            const localEntryTime = formatUtcAsLocal(entryTimeRaw);
-            const localExitTime = formatUtcAsLocal(exitTimeRaw);
+            const localEntryTime = formatRecordDateTime(record, entryTimeRaw);
+            const localExitTime = formatRecordDateTime(record, exitTimeRaw);
             const projectNameRaw = (record.project_name ?? '').trim();
             const projectName = projectNameRaw !== '' ? projectNameRaw : 'Sin proyecto';
             return `
