@@ -32,7 +32,9 @@ class ManualAttendanceService
         $force = !empty($data['force']);
 
         // Pre-check warnings for bulk Clock Out without force (to avoid partial inserts)
-        if (!$force && (($data['type'] ?? '') === 'exit')) {
+        // Skip warning when full manual range mode is used (entry_time + exit_time).
+        $isRangeMode = !empty($data['entry_time']) || !empty($data['exit_time']);
+        if (!$force && !$isRangeMode && (($data['type'] ?? '') === 'exit')) {
             $warningUsers = [];
             foreach ($userIds as $uid) {
                 $checkData = $data;
@@ -186,7 +188,7 @@ class ManualAttendanceService
 
         $schedule = self::getProjectSchedule($pdo, $projectQrId);
 
-        if ($type === 'exit' && !$force) {
+        if ($type === 'exit' && !$force && !$isRangeMode) {
             $entry = self::findEntryForExit($pdo, $userId, $date, $datetimeStr, $projectId);
             $hasScheduleStart = !empty($schedule['entry_time_required']);
             if (!$entry && !$hasScheduleStart) {
