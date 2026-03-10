@@ -26,6 +26,15 @@ class AbsenceService
             return ['error' => ['code' => 'validation_error', 'message' => 'Usuario inválido para registrar ausencia.'], 'status' => 400];
         }
 
+        $pdo = get_pdo();
+
+        // Verify target user exists
+        $userCheck = $pdo->prepare('SELECT id FROM users WHERE id = ? LIMIT 1');
+        $userCheck->execute([$targetUserId]);
+        if (!$userCheck->fetchColumn()) {
+            return ['error' => ['code' => 'not_found', 'message' => 'El usuario especificado no existe.'], 'status' => 404];
+        }
+
         if (self::isAdminUser($targetUserId)) {
             return ['error' => ['code' => 'validation_error', 'message' => 'Los administradores no requieren registro de asistencia/ausencia.'], 'status' => 400];
         }
@@ -60,7 +69,6 @@ class AbsenceService
             $evidencePath = $uploadResult['path'];
         }
 
-        $pdo = get_pdo();
         $stmt = $pdo->prepare(
             'INSERT INTO absences (user_id, project_id, date_start, date_end, reason, notes, evidence_path)
              VALUES (?, ?, ?, ?, ?, ?, ?)'

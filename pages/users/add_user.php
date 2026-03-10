@@ -34,10 +34,7 @@ if (AuthService::getCurrentUserRole() !== 'admin') {
           <div class="form-group">
             <label for="role">User Role</label>
             <select class="form-control" name="role_id" id="role_id">
-              <!-- Roles will be dynamically loaded here or hardcoded for now -->
-              <option value="1">Admin</option>
-              <option value="2" selected>User</option>
-              <option value="3">Special User</option>
+              <option value="">Loading roles...</option>
             </select>
           </div>
           <button type="submit" class="btn btn-primary">Add User</button>
@@ -48,6 +45,20 @@ if (AuthService::getCurrentUserRole() !== 'admin') {
   </div>
 </div>
 <script>
+// Cargar roles dinámicamente
+(async function loadRoles() {
+    try {
+        const res = await fetch('/api/v1/roles');
+        const data = await res.json();
+        if (data.ok && data.data && data.data.roles) {
+            const select = document.getElementById('role_id');
+            select.innerHTML = data.data.roles.map(r => `<option value="${r.id}" ${r.name === 'user' ? 'selected' : ''}>${r.name}</option>`).join('');
+        }
+    } catch (e) {
+        console.error('Error loading roles:', e);
+    }
+})();
+
 document.getElementById('addUserForm').addEventListener('submit', async function(event) {
     event.preventDefault();
 
@@ -57,16 +68,15 @@ document.getElementById('addUserForm').addEventListener('submit', async function
     const responseMessageDiv = document.getElementById('responseMessage');
 
     try {
+        const csrfToken = sessionStorage.getItem('csrf_token') || '';
+        const headers = { 'Content-Type': 'application/json' };
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
         const response = await fetch('/api/v1/users', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                username: username,
-                password: password,
-                role_id: role_id
-            })
+            headers: headers,
+            body: JSON.stringify({ username: username, password: password, role_id: role_id })
         });
 
         const result = await response.json();

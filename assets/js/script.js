@@ -79,6 +79,7 @@ let specialUsersLoaded = false;
 let attendanceAllRecords = [];
 let attendanceEditingRecord = null;
 let attendancePage = 1;
+let attendanceFilterText = '';
 const ATTENDANCE_PAGE_SIZE = 10;
 
 function normalizeRole(role) {
@@ -818,12 +819,26 @@ function renderAttendancePage() {
     const recordsBody = document.getElementById('attendance-records-body');
     if (!recordsBody) return;
 
+    let filteredRecords = attendanceAllRecords;
+    if (attendanceFilterText) {
+        filteredRecords = attendanceAllRecords.filter(record => {
+            const searchable = [
+                record.username,
+                record.location,
+                record.type,
+                record.project_name || '',
+                record.entry_source || ''
+            ].join(' ').toUpperCase();
+            return searchable.includes(attendanceFilterText);
+        });
+    }
+
     const role = normalizeRole(sessionStorage.getItem('user_role'));
-    const totalPages = Math.max(1, Math.ceil(attendanceAllRecords.length / ATTENDANCE_PAGE_SIZE));
+    const totalPages = Math.max(1, Math.ceil(filteredRecords.length / ATTENDANCE_PAGE_SIZE));
     if (attendancePage > totalPages) attendancePage = totalPages;
 
     const start = (attendancePage - 1) * ATTENDANCE_PAGE_SIZE;
-    const pageItems = attendanceAllRecords.slice(start, start + ATTENDANCE_PAGE_SIZE);
+    const pageItems = filteredRecords.slice(start, start + ATTENDANCE_PAGE_SIZE);
 
     recordsBody.innerHTML = pageItems.map(record => {
         const entryTimeRaw = record.entry_time || record.original_time;
@@ -2373,7 +2388,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof initAbsencesModule === 'function') initAbsencesModule();
 
     const attendanceSearchInput = document.getElementById('attendance-table-search');
-    if (attendanceSearchInput) attendanceSearchInput.addEventListener('keyup', () => filterTable('attendance-table-search', 'attendance-records-body'));
+    if (attendanceSearchInput) {
+        attendanceSearchInput.addEventListener('keyup', () => {
+            attendanceFilterText = attendanceSearchInput.value.toUpperCase();
+            attendancePage = 1;
+            renderAttendancePage();
+        });
+    }
 
     const prevPageBtn = document.getElementById('attendance-prev-page');
     if (prevPageBtn) prevPageBtn.addEventListener('click', () => { attendancePage = Math.max(1, attendancePage - 1); renderAttendancePage(); });
