@@ -1,0 +1,9 @@
+.env
+.DS_Store
+uploads/logs/
+uploads/php_errors.log
+uploads/shell_test.log
+uploads/test_file.txt
+scripts/diagnostics/
+!scripts/diagnostics/
+!scripts/diagnostics/.htaccess

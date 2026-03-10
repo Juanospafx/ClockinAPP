@@ -7,11 +7,20 @@ require_once __DIR__ . '/../../../core/middlewares/auth.php';
 
 function handle_locations_log(): void {
     require_role(['admin', 'special', 'user']);
+    $currentUserId = require_login();
+    $currentRole = AuthService::getCurrentUserRole() ?? 'user';
+
     $data = read_json_body();
-    $userId = isset($data['user_id']) ? (int)$data['user_id'] : 0;
+    $targetUserId = isset($data['user_id']) ? (int)$data['user_id'] : $currentUserId;
+
+    // Non-admin users can only log their own location
+    if ($currentRole !== 'admin' && $targetUserId !== $currentUserId) {
+        $targetUserId = $currentUserId;
+    }
+
     $latitude = $data['latitude'] ?? null;
     $longitude = $data['longitude'] ?? null;
-    $result = LocationService::logLocation($userId, $latitude, $longitude);
+    $result = LocationService::logLocation($targetUserId, $latitude, $longitude);
     if (isset($result['error'])) {
         json_error($result['error']['code'], $result['error']['message'], $result['status'] ?? 400);
         return;

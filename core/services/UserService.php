@@ -10,6 +10,7 @@ class UserService {
             SELECT u.id, u.username, u.role_id, r.name AS role, u.profile_pic_url
             FROM users u
             JOIN roles r ON u.role_id = r.id
+            WHERE u.deleted_at IS NULL
         ');
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -90,9 +91,22 @@ class UserService {
         if (!$id) {
             return ['error' => ['code' => 'validation_error', 'message' => 'Missing user ID.'], 'status' => 400];
         }
+
         $pdo = get_pdo();
-        $stmt = $pdo->prepare('DELETE FROM users WHERE id = ?');
+
+        // Check for dependent records
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM attendance_records WHERE user_id = ?');
+        $countStmt->execute([$id]);
+        $recordCount = (int)$countStmt->fetchColumn();
+
+        // Soft delete
+        $stmt = $pdo->prepare('UPDATE users SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL');
         $stmt->execute([$id]);
-        return ['data' => ['message' => 'User deleted successfully.']];
+
+        if ($stmt->rowCount() === 0) {
+            return ['error' => ['code' => 'not_found', 'message' => 'User not found or already deleted.'], 'status' => 404];
+        }
+
+        return ['data' => ['message' => "User deactivated. {$recordCount} attendance records preserved."]];
     }
 }

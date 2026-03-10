@@ -249,7 +249,7 @@ class AttendanceService {
         $pdo->beginTransaction();
         try {
             if ($type === 'entry') {
-                $openTimer = self::findOpenTimerEntry($pdo, $userId, false);
+                $openTimer = self::findOpenTimerEntry($pdo, $userId, true);
                 if ($openTimer) {
                     $pdo->rollBack();
                     return ['error' => ['code' => 'conflict', 'message' => 'Ya existe un temporizador activo.'], 'status' => 409];

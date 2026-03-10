@@ -151,6 +151,12 @@ class ManualAttendanceService
         $datetimeStr = $date . ' ' . $time . ':00';
         $entryDateTimeStr = $isRangeMode ? ($date . ' ' . $entryTime . ':00') : null;
 
+        // No permitir fechas futuras
+        $today = date('Y-m-d');
+        if ($date > $today) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Cannot create records for future dates.'], 'status' => 400];
+        }
+
         try {
             new DateTime($datetimeStr);
             if ($entryDateTimeStr !== null) {

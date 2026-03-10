@@ -10,6 +10,11 @@ ini_set('log_errors', '1');
 ini_set('error_log', APP_ROOT . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'php_errors.log');
 error_reporting(E_ALL);
 
+ini_set('session.cookie_httponly', '1');
+ini_set('session.cookie_secure', '1');
+ini_set('session.cookie_samesite', 'Strict');
+ini_set('session.use_strict_mode', '1');
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }

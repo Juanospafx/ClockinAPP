@@ -31,7 +31,7 @@ class AuthService {
         }
 
         $pdo = get_pdo();
-        $stmt = $pdo->prepare('SELECT r.name FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = ?');
+        $stmt = $pdo->prepare('SELECT r.name FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = ? AND u.deleted_at IS NULL');
         $stmt->execute([$userId]);
         $role = $stmt->fetchColumn();
         $cachedRole = self::normalizeRole($role ?: null);
@@ -44,7 +44,7 @@ class AuthService {
             'SELECT u.id, u.username, u.password, r.name AS role, u.profile_pic_url
              FROM users u
              JOIN roles r ON u.role_id = r.id
-             WHERE u.username = ?'
+             WHERE u.username = ? AND u.deleted_at IS NULL'
         );
         $stmt->execute([$username]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);

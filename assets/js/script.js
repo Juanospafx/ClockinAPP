@@ -99,7 +99,7 @@ function getTimerKey() {
 // --- Utility Functions ---
 async function apiFetch(endpoint, method = 'GET', data = null, contentType = 'json') {
     const url = `${API_BASE_URL}/${endpoint}`;
-    const options = { method };
+    const options = { method, credentials: 'same-origin' };
 
     if (data) {
         if (contentType === 'json') {
@@ -108,6 +108,16 @@ async function apiFetch(endpoint, method = 'GET', data = null, contentType = 'js
         } else if (contentType === 'form') {
             options.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
             options.body = new URLSearchParams(data).toString();
+        }
+    }
+
+    if (!options.headers) options.headers = {};
+
+    // Agregar CSRF token a requests de escritura
+    if (method !== 'GET' && method !== 'HEAD') {
+        const csrfToken = sessionStorage.getItem('csrf_token') || '';
+        if (csrfToken) {
+            options.headers['X-CSRF-Token'] = csrfToken;
         }
     }
 
@@ -878,12 +888,12 @@ function exportAttendanceCsv() {
         const statusText = record.type === 'entry' ? (record.late_reason ? 'Tardanza' : 'A tiempo') : (record.type === 'absence' ? 'Ausencia' : '-');
         return [
             record.username,
-            localTime.date,
+            localEntryTime.date,
             record.location,
             record.type,
             statusText,
-            localTime.time,
-            localRoundedTime.time,
+            localEntryTime.time,
+            localExitTime.time,
             formatDurationHours(record.total_duration),
             formatDurationHours(record.lunch_duration),
             record.project_name || 'Sin proyecto'
@@ -2035,7 +2045,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionStorage.setItem('user_id', user.id);
                 sessionStorage.setItem('user_role', normalizedRole);
                 sessionStorage.setItem('username', user.username);
-                sessionStorage.setItem('token', 'dummy_token_123');
+                if (response.csrf_token) {
+                    sessionStorage.setItem('csrf_token', response.csrf_token);
+                }
                 window.location.href = appUrl('/pages/registros/registros.html');
             } else {
                 if (messageEl) messageEl.textContent = 'Login failed.';
