@@ -81,8 +81,14 @@ async function submitAbsenceReport(e) {
 
     try {
         const url = `${API_BASE_URL}/absences`;
+        const csrfToken = sessionStorage.getItem('csrf_token') || '';
+        const headers = {};
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
         const response = await fetch(url, {
             method: 'POST',
+            headers: headers,
             body: formData
         });
 

@@ -101,13 +101,26 @@ class QrService {
         if (!$qrId) {
             return ['error' => ['code' => 'validation_error', 'message' => 'QR ID is required.'], 'status' => 400];
         }
+
         $pdo = get_pdo();
+
+        // Check for dependent attendance records
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM attendance_records WHERE project_qr_id = ?');
+        $countStmt->execute([$qrId]);
+        $dependentCount = (int)$countStmt->fetchColumn();
+
         $stmt = $pdo->prepare('DELETE FROM project_qrs WHERE id = :id');
         $stmt->bindParam(':id', $qrId, PDO::PARAM_INT);
         $stmt->execute();
+
         if ($stmt->rowCount() > 0) {
-            return ['data' => ['message' => 'QR deleted successfully.']];
+            $msg = 'QR deleted successfully.';
+            if ($dependentCount > 0) {
+                $msg .= " Note: {$dependentCount} attendance record(s) lost their project association.";
+            }
+            return ['data' => ['message' => $msg, 'affected_records' => $dependentCount]];
         }
+
         return ['error' => ['code' => 'not_found', 'message' => 'QR not found or already deleted.'], 'status' => 404];
     }
 }

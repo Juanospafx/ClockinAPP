@@ -12,7 +12,7 @@ class NotificationService
             $stmt = $pdo->prepare('INSERT INTO notifications (user_id, type, message, related_id) VALUES (?, ?, ?, ?)');
             $stmt->execute([$userId, $type, $message, $relatedId]);
         } catch (\Throwable $e) {
-            // Fail-safe: notifications must not break primary business flows.
+            error_log('NotificationService error: ' . $e->getMessage());
         }
     }
 
@@ -28,7 +28,7 @@ class NotificationService
                 $stmt->execute([(int)$adminId, $type, $message, $relatedId]);
             }
         } catch (\Throwable $e) {
-            // Fail-safe: notifications must not break primary business flows.
+            error_log('NotificationService error: ' . $e->getMessage());
         }
     }
 

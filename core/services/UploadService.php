@@ -23,7 +23,15 @@ class UploadService {
             return ['error' => ['code' => 'validation_error', 'message' => 'Invalid file type.'], 'status' => 400];
         }
 
-        $newFileName = md5((string)time() . $fileName) . '.' . $fileExtension;
+        // Verificar MIME type real
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $realMime = $finfo->file($fileTmpPath);
+        $allowedMimes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!in_array($realMime, $allowedMimes, true)) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'File content does not match an allowed image type.'], 'status' => 400];
+        }
+
+        $newFileName = bin2hex(random_bytes(16)) . '.' . $fileExtension;
         $uploadFileDir = APP_ROOT . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'users' . DIRECTORY_SEPARATOR;
         if (!is_dir($uploadFileDir)) {
             mkdir($uploadFileDir, 0775, true);

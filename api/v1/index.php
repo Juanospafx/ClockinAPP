@@ -6,6 +6,8 @@ require_once __DIR__ . '/../../core/response.php';
 apply_cors();
 header('Content-Type: application/json');
 
+require_once __DIR__ . '/../../core/services/CsrfService.php';
+
 require_once __DIR__ . '/controllers/auth.php';
 require_once __DIR__ . '/controllers/users.php';
 require_once __DIR__ . '/controllers/projects.php';
@@ -23,9 +25,21 @@ require_once __DIR__ . '/controllers/notifications.php';
 $route = trim((string)($_GET['route'] ?? ''), '/');
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+// CSRF validation for state-changing methods (except login bootstrap endpoint)
+if (!in_array($method, ['GET', 'HEAD', 'OPTIONS'], true) && $route !== 'auth/login') {
+    if (!CsrfService::validateRequest()) {
+        json_error('csrf_invalid', 'Invalid or missing CSRF token.', 403);
+        exit;
+    }
+}
+
 try {
     if ($route === 'auth/login' && $method === 'POST') {
         handle_auth_login();
+        return;
+    }
+    if ($route === 'auth/logout' && $method === 'POST') {
+        handle_auth_logout();
         return;
     }
 
@@ -195,5 +209,7 @@ try {
 
     json_error('not_found', 'Endpoint not found.', 404);
 } catch (Throwable $e) {
-    json_error('server_error', 'Server error: ' . $e->getMessage(), 500);
+    error_log('API Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    $message = APP_DEBUG ? ('Server error: ' . $e->getMessage()) : 'An internal server error occurred.';
+    json_error('server_error', $message, 500);
 }

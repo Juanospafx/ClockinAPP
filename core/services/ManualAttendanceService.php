@@ -151,6 +151,12 @@ class ManualAttendanceService
         $datetimeStr = $date . ' ' . $time . ':00';
         $entryDateTimeStr = $isRangeMode ? ($date . ' ' . $entryTime . ':00') : null;
 
+        // No permitir fechas futuras
+        $today = date('Y-m-d');
+        if ($date > $today) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Cannot create records for future dates.'], 'status' => 400];
+        }
+
         try {
             new DateTime($datetimeStr);
             if ($entryDateTimeStr !== null) {
@@ -166,10 +172,11 @@ class ManualAttendanceService
         $pdo = get_pdo();
 
         if ($isRangeMode) {
+            // Check for duplicate by both entry and exit times
             $dupStmt = $pdo->prepare(
-                "SELECT id FROM attendance_records WHERE user_id = ? AND type = 'exit' AND rounded_time = ? LIMIT 1"
+                "SELECT id FROM attendance_records WHERE user_id = ? AND ((original_time = ? AND type IN ('entry', 'exit')) OR (rounded_time = ? AND type = 'exit')) LIMIT 1"
             );
-            $dupStmt->execute([$userId, $datetimeStr]);
+            $dupStmt->execute([$userId, $entryDateTimeStr, $datetimeStr]);
         } else {
             $dupStmt = $pdo->prepare(
                 "SELECT id FROM attendance_records WHERE user_id = ? AND type = ? AND original_time = ? LIMIT 1"
@@ -347,13 +354,27 @@ class ManualAttendanceService
 
         $grossMinutes = (int)round(($endTs - $startTs) / 60);
 
-        // Default rule: if admin does not provide lunch, assume 12:00–13:00.
-        // The overlap calculation naturally avoids discounting lunch for shifts that do not cross lunch time.
-        $lunchStartTime = $lunchStart !== '' ? $lunchStart : '12:00';
-        $lunchEndTime = $lunchEnd !== '' ? $lunchEnd : '13:00';
-        $lunchStartDateTime = $date . ' ' . $lunchStartTime . ':00';
-        $lunchEndDateTime = $date . ' ' . $lunchEndTime . ':00';
-        $lunchMinutes = self::overlapMinutes($startDateTime, $exitDateTime, $lunchStartDateTime, $lunchEndDateTime);
+        $lunchMinutes = 0;
+        if ($lunchStart !== '' && $lunchEnd !== '') {
+            // Admin explicitly provided lunch times — use them
+            $lunchStartDateTime = $date . ' ' . $lunchStart . ':00';
+            $lunchEndDateTime = $date . ' ' . $lunchEnd . ':00';
+            $lunchMinutes = self::overlapMinutes($startDateTime, $exitDateTime, $lunchStartDateTime, $lunchEndDateTime);
+        } else {
+            // No lunch specified — only auto-discount for shifts >= 6 hours that fully contain 12:00-13:00
+            $MIN_HOURS_FOR_AUTO_LUNCH = 6;
+            if ($grossMinutes >= ($MIN_HOURS_FOR_AUTO_LUNCH * 60)) {
+                $lunchStartDateTime = $date . ' 12:00:00';
+                $lunchEndDateTime = $date . ' 13:00:00';
+                $startTs = strtotime($startDateTime);
+                $lunchStartTs = strtotime($lunchStartDateTime);
+                $lunchEndTs = strtotime($lunchEndDateTime);
+                $endTs = strtotime($exitDateTime);
+                if ($startTs <= $lunchStartTs && $endTs >= $lunchEndTs) {
+                    $lunchMinutes = 60;
+                }
+            }
+        }
 
         $workedMinutes = max(0, $grossMinutes - $lunchMinutes);
 

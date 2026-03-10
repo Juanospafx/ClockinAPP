@@ -79,6 +79,7 @@ let specialUsersLoaded = false;
 let attendanceAllRecords = [];
 let attendanceEditingRecord = null;
 let attendancePage = 1;
+let attendanceFilterText = '';
 const ATTENDANCE_PAGE_SIZE = 10;
 
 function normalizeRole(role) {
@@ -99,7 +100,7 @@ function getTimerKey() {
 // --- Utility Functions ---
 async function apiFetch(endpoint, method = 'GET', data = null, contentType = 'json') {
     const url = `${API_BASE_URL}/${endpoint}`;
-    const options = { method };
+    const options = { method, credentials: 'same-origin' };
 
     if (data) {
         if (contentType === 'json') {
@@ -108,6 +109,16 @@ async function apiFetch(endpoint, method = 'GET', data = null, contentType = 'js
         } else if (contentType === 'form') {
             options.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
             options.body = new URLSearchParams(data).toString();
+        }
+    }
+
+    if (!options.headers) options.headers = {};
+
+    // Agregar CSRF token a requests de escritura
+    if (method !== 'GET' && method !== 'HEAD') {
+        const csrfToken = sessionStorage.getItem('csrf_token') || '';
+        if (csrfToken) {
+            options.headers['X-CSRF-Token'] = csrfToken;
         }
     }
 
@@ -808,12 +819,26 @@ function renderAttendancePage() {
     const recordsBody = document.getElementById('attendance-records-body');
     if (!recordsBody) return;
 
+    let filteredRecords = attendanceAllRecords;
+    if (attendanceFilterText) {
+        filteredRecords = attendanceAllRecords.filter(record => {
+            const searchable = [
+                record.username,
+                record.location,
+                record.type,
+                record.project_name || '',
+                record.entry_source || ''
+            ].join(' ').toUpperCase();
+            return searchable.includes(attendanceFilterText);
+        });
+    }
+
     const role = normalizeRole(sessionStorage.getItem('user_role'));
-    const totalPages = Math.max(1, Math.ceil(attendanceAllRecords.length / ATTENDANCE_PAGE_SIZE));
+    const totalPages = Math.max(1, Math.ceil(filteredRecords.length / ATTENDANCE_PAGE_SIZE));
     if (attendancePage > totalPages) attendancePage = totalPages;
 
     const start = (attendancePage - 1) * ATTENDANCE_PAGE_SIZE;
-    const pageItems = attendanceAllRecords.slice(start, start + ATTENDANCE_PAGE_SIZE);
+    const pageItems = filteredRecords.slice(start, start + ATTENDANCE_PAGE_SIZE);
 
     recordsBody.innerHTML = pageItems.map(record => {
         const entryTimeRaw = record.entry_time || record.original_time;
@@ -878,12 +903,12 @@ function exportAttendanceCsv() {
         const statusText = record.type === 'entry' ? (record.late_reason ? 'Tardanza' : 'A tiempo') : (record.type === 'absence' ? 'Ausencia' : '-');
         return [
             record.username,
-            localTime.date,
+            localEntryTime.date,
             record.location,
             record.type,
             statusText,
-            localTime.time,
-            localRoundedTime.time,
+            localEntryTime.time,
+            localExitTime.time,
             formatDurationHours(record.total_duration),
             formatDurationHours(record.lunch_duration),
             record.project_name || 'Sin proyecto'
@@ -2035,7 +2060,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionStorage.setItem('user_id', user.id);
                 sessionStorage.setItem('user_role', normalizedRole);
                 sessionStorage.setItem('username', user.username);
-                sessionStorage.setItem('token', 'dummy_token_123');
+                if (response.csrf_token) {
+                    sessionStorage.setItem('csrf_token', response.csrf_token);
+                }
                 window.location.href = appUrl('/pages/registros/registros.html');
             } else {
                 if (messageEl) messageEl.textContent = 'Login failed.';
@@ -2361,7 +2388,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof initAbsencesModule === 'function') initAbsencesModule();
 
     const attendanceSearchInput = document.getElementById('attendance-table-search');
-    if (attendanceSearchInput) attendanceSearchInput.addEventListener('keyup', () => filterTable('attendance-table-search', 'attendance-records-body'));
+    if (attendanceSearchInput) {
+        attendanceSearchInput.addEventListener('keyup', () => {
+            attendanceFilterText = attendanceSearchInput.value.toUpperCase();
+            attendancePage = 1;
+            renderAttendancePage();
+        });
+    }
 
     const prevPageBtn = document.getElementById('attendance-prev-page');
     if (prevPageBtn) prevPageBtn.addEventListener('click', () => { attendancePage = Math.max(1, attendancePage - 1); renderAttendancePage(); });

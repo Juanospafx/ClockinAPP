@@ -109,7 +109,7 @@ class AttendanceService {
         $weeklyAvgStmt = $pdo->query("SELECT AVG(daily_hours) FROM (
             SELECT user_id, DATE(original_time) AS d, MAX(COALESCE(total_duration, 0))/60.0 AS daily_hours
             FROM attendance_records
-            WHERE type = 'exit' AND YEARWEEK(original_time, 1) = YEARWEEK(CURRENT_DATE(), 1)
+            WHERE total_duration IS NOT NULL AND YEARWEEK(original_time, 1) = YEARWEEK(CURRENT_DATE(), 1)
             GROUP BY user_id, DATE(original_time)
         ) t");
         $avgHoursWeek = round((float)($weeklyAvgStmt->fetchColumn() ?: 0), 2);
@@ -249,7 +249,7 @@ class AttendanceService {
         $pdo->beginTransaction();
         try {
             if ($type === 'entry') {
-                $openTimer = self::findOpenTimerEntry($pdo, $userId, false);
+                $openTimer = self::findOpenTimerEntry($pdo, $userId, true);
                 if ($openTimer) {
                     $pdo->rollBack();
                     return ['error' => ['code' => 'conflict', 'message' => 'Ya existe un temporizador activo.'], 'status' => 409];
@@ -379,14 +379,20 @@ class AttendanceService {
 
         $gross = (int)round(($exitTs - $entryTs) / 60);
 
-        // Default rule for edit flow: assume lunch 12:00–13:00 when not explicitly provided.
-        // Overlap handles short shifts (e.g., 8-11) by returning 0.
-        $day = date('Y-m-d', $entryTs);
-        $lunchStartTs = strtotime($day . ' 12:00:00');
-        $lunchEndTs = strtotime($day . ' 13:00:00');
-        $overlapStart = max($entryTs, $lunchStartTs);
-        $overlapEnd = min($exitTs, $lunchEndTs);
-        $computedLunch = $overlapEnd > $overlapStart ? (int)round(($overlapEnd - $overlapStart) / 60) : 0;
+        // Only auto-discount lunch (12:00–13:00) for shifts >= 6 hours that fully contain the lunch window.
+        // Short shifts or shifts that only partially overlap lunch should not be penalized.
+        $computedLunch = 0;
+        $MIN_HOURS_FOR_AUTO_LUNCH = 6;
+        if ($gross >= ($MIN_HOURS_FOR_AUTO_LUNCH * 60)) {
+            $day = date('Y-m-d', $entryTs);
+            $lunchStartTs = strtotime($day . ' 12:00:00');
+            $lunchEndTs = strtotime($day . ' 13:00:00');
+
+            // Only discount if the shift fully contains the 12:00-13:00 window
+            if ($entryTs <= $lunchStartTs && $exitTs >= $lunchEndTs) {
+                $computedLunch = 60; // Full 1-hour lunch
+            }
+        }
 
         $totalDuration = max(0, $gross - $computedLunch);
         $lunchDuration = $computedLunch;

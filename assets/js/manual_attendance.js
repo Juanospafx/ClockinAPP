@@ -242,9 +242,14 @@
 
     async function submitManualEntry(payload) {
         const url = `${API_BASE_URL}/attendance/manual`;
+        const csrfToken = sessionStorage.getItem('csrf_token') || '';
+        const headers = { 'Content-Type': 'application/json' };
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
         const res = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers,
             body: JSON.stringify(payload),
         });
         const data = await res.json();
