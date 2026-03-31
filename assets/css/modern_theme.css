@@ -287,6 +287,40 @@ section,
     box-shadow: var(--shadow-soft);
 }
 
+/* Scan card: centered and clearer on desktop + mobile */
+#scan-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+    min-height: 220px;
+}
+
+#scan-section h3 {
+    margin: 0;
+    font-size: clamp(1.35rem, 1.2rem + 0.6vw, 1.8rem);
+    line-height: 1.2;
+}
+
+#start-scanner-button {
+    min-width: 180px;
+    min-height: 48px;
+    font-size: 1.05rem;
+}
+
+#scan-result,
+#register-message {
+    margin: 0;
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.1rem);
+}
+
+#scanner-container {
+    width: min(100%, 560px);
+    margin: 0 auto;
+}
+
 h3, h4 { color: var(--clr-fff); }
 label { color: var(--clr-9fb0cd); }
 
@@ -793,6 +827,16 @@ html[data-theme="light"] .login-container .error-message {
 @media (max-width: 576px) {
     .map-canvas-modern {
         height: 280px;
+    }
+
+    #scan-section {
+        min-height: 200px;
+        padding: 20px 14px;
+    }
+
+    #start-scanner-button {
+        width: 100%;
+        max-width: 260px;
     }
 
     #records-section table {
