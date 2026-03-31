@@ -895,6 +895,7 @@ function renderAttendanceCalendar(records) {
     const grid = document.getElementById('attendance-calendar-grid');
     const title = document.getElementById('attendance-calendar-title');
     if (!grid || !title) return;
+    console.log('attendance v2 loaded', { recordsCount: Array.isArray(records) ? records.length : 0 });
 
     if (typeof Tabulator === 'undefined') {
         grid.innerHTML = '<div class="attendance-calendar-error">Tabulator local no cargó.</div>';
@@ -942,6 +943,8 @@ function renderAttendanceCalendar(records) {
     grid.innerHTML = '';
 
     const shouldUseFixedHeight = data.length > 10;
+    grid.classList.toggle('attendance-grid-compact', !shouldUseFixedHeight);
+    grid.classList.toggle('attendance-grid-scroll-y', shouldUseFixedHeight);
 
     attendanceTabulator = new Tabulator(grid, {
         data,
@@ -953,7 +956,7 @@ function renderAttendanceCalendar(records) {
         rowHeight: 36,
         headerVisible: true,
         placeholder: 'No records',
-        height: shouldUseFixedHeight ? '420px' : false
+        height: shouldUseFixedHeight ? 420 : undefined
     });
 }
 
