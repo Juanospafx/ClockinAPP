@@ -25,7 +25,7 @@
     <script src="../../assets/js/geofence.js?v=3.3"></script>
     <script src="../../assets/js/absences.js?v=3.3"></script>
     <script src="../../assets/js/manual_attendance.js?v=2.3"></script>
-    <script src="../../assets/js/script.js?v=3.3"></script>
+    <script src="../../assets/js/script.js?v=3.4"></script>
 
 </head>
 
@@ -111,10 +111,20 @@
                 <label for="attendance-table-search">Search Attendance Records:</label>
                 <input type="text" id="attendance-table-search" placeholder="Search...">
             </div>
-            <div class="table-tools">
+            <div class="table-tools attendance-tools">
                 <button id="export-attendance-csv" type="button">Export CSV</button>
+                <div class="attendance-calendar-nav">
+                    <button id="attendance-calendar-prev" type="button">←</button>
+                    <span id="attendance-calendar-title">Calendar</span>
+                    <button id="attendance-calendar-next" type="button">→</button>
+                </div>
             </div>
-            <table>
+
+            <div id="attendance-calendar-wrap" class="attendance-calendar-wrap">
+                <div id="attendance-calendar-grid" class="attendance-calendar-grid"></div>
+            </div>
+
+            <table id="attendance-table" style="display:none;">
                 <thead>
                     <tr>
                         <th>User</th>
@@ -132,7 +142,7 @@
                 </thead>
                 <tbody id="attendance-records-body"></tbody>
             </table>
-            <div class="pagination-controls">
+            <div class="pagination-controls" style="display:none;">
                 <button id="attendance-prev-page" type="button">← Prev</button>
                 <span id="attendance-page-info">Page 1</span>
                 <button id="attendance-next-page" type="button">Next →</button>

@@ -80,6 +80,7 @@ let attendanceAllRecords = [];
 let attendanceEditingRecord = null;
 let attendancePage = 1;
 let attendanceFilterText = '';
+let attendanceCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 const ATTENDANCE_PAGE_SIZE = 10;
 
 function normalizeRole(role) {
@@ -802,6 +803,16 @@ async function loadAttendanceRecords(uid = null) {
         const data = await apiFetch(endpoint);
         attendanceAllRecords = data.records || [];
         attendancePage = 1;
+        if (attendanceAllRecords.length) {
+            const withDates = attendanceAllRecords
+                .map(r => new Date(r.entry_time || r.original_time || r.created_at || Date.now()))
+                .filter(d => !Number.isNaN(d.getTime()))
+                .sort((a, b) => b - a);
+            if (withDates.length) {
+                const latest = withDates[0];
+                attendanceCalendarMonth = new Date(latest.getFullYear(), latest.getMonth(), 1);
+            }
+        }
         renderAttendancePage();
     } catch (_) {
         recordsBody.innerHTML = `<tr><td colspan="11">Error loading records.</td></tr>`;
@@ -816,9 +827,6 @@ function getAttendanceStatusBadge(record) {
 }
 
 function renderAttendancePage() {
-    const recordsBody = document.getElementById('attendance-records-body');
-    if (!recordsBody) return;
-
     let filteredRecords = attendanceAllRecords;
     if (attendanceFilterText) {
         filteredRecords = attendanceAllRecords.filter(record => {
@@ -833,61 +841,75 @@ function renderAttendancePage() {
         });
     }
 
-    const role = normalizeRole(sessionStorage.getItem('user_role'));
-    const totalPages = Math.max(1, Math.ceil(filteredRecords.length / ATTENDANCE_PAGE_SIZE));
-    if (attendancePage > totalPages) attendancePage = totalPages;
+    renderAttendanceCalendar(filteredRecords);
+}
 
-    const start = (attendancePage - 1) * ATTENDANCE_PAGE_SIZE;
-    const pageItems = filteredRecords.slice(start, start + ATTENDANCE_PAGE_SIZE);
+function getCalendarMarkForRecords(records) {
+    if (!records || !records.length) return { label: '·', cls: 'mark-empty', title: 'Sin registros' };
+    const hasAbsence = records.some(r => r.type === 'absence');
+    const hasLate = records.some(r => r.late_reason);
+    const hasManual = records.some(r => r.entry_source === 'manual');
+    if (hasAbsence) return { label: 'A', cls: 'mark-a', title: 'Ausencia' };
+    if (hasLate) return { label: 'L', cls: 'mark-l', title: 'Tardanza' };
+    if (hasManual) return { label: 'O', cls: 'mark-o', title: 'Registro manual/otro' };
+    return { label: 'G', cls: 'mark-g', title: 'Asistencia' };
+}
 
-    recordsBody.innerHTML = pageItems.map(record => {
-        const entryTimeRaw = record.entry_time || record.original_time;
-        const exitTimeRaw = record.exit_time || record.rounded_time;
-        const localEntryTime = formatRecordDateTime(record, entryTimeRaw);
-        const localExitTime = formatRecordDateTime(record, exitTimeRaw);
-        const projectNameRaw = (record.project_name ?? '').trim();
-        const projectName = projectNameRaw !== '' ? projectNameRaw : 'Sin proyecto';
+function renderAttendanceCalendar(records) {
+    const grid = document.getElementById('attendance-calendar-grid');
+    const title = document.getElementById('attendance-calendar-title');
+    if (!grid || !title) return;
 
-        const sessionDuration = (record.total_duration !== null && record.total_duration !== undefined)
-            ? formatDurationHours(record.total_duration)
-            : 'N/A';
-        const lunchDuration = (record.lunch_duration !== null && record.lunch_duration !== undefined)
-            ? formatDurationHours(record.lunch_duration)
-            : 'N/A';
+    const year = attendanceCalendarMonth.getFullYear();
+    const month = attendanceCalendarMonth.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        const manualBadge = record.entry_source === 'manual' ? ' <span class="manual-badge">✏️ Manual</span>' : '';
-        const statusBadge = getAttendanceStatusBadge(record);
+    title.textContent = attendanceCalendarMonth.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric'
+    });
 
-        const actionsHtml = role === 'admin' ? `
-            <td data-label="Actions">
-                <button data-action="edit-record" data-record-id="${Number(record.id)}" data-record='${encodeURIComponent(JSON.stringify(record))}'>Edit</button>
-                <button data-action="delete-record" data-record-id="${Number(record.id)}">Delete</button>
-            </td>
-        ` : '';
+    const users = [...new Set(records.map(r => r.username).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
-        return `
-        <tr>
-          <td data-label="User">${record.username}</td>
-          <td data-label="Date">${localEntryTime.date}</td>
-          <td data-label="Location">${record.location}</td>
-          <td data-label="Type">${record.type}${manualBadge}</td>
-          <td data-label="Status">${statusBadge}</td>
-          <td data-label="Entry Time">${localEntryTime.time}</td>
-          <td data-label="Exit Time">${localExitTime.time}</td>
-          <td data-label="Work Duration (hours)">${sessionDuration}</td>
-          <td data-label="Lunch Duration (hours)">${lunchDuration}</td>
-          <td data-label="Project">${projectName}</td>
-          ${actionsHtml}
-        </tr>
-      `;
+    const grouped = new Map();
+    records.forEach((r) => {
+        const base = r.entry_time || r.original_time || r.created_at;
+        const d = base ? new Date(base) : null;
+        if (!d || Number.isNaN(d.getTime())) return;
+        if (d.getFullYear() !== year || d.getMonth() !== month) return;
+
+        const day = d.getDate();
+        const key = `${r.username}__${day}`;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push(r);
+    });
+
+    const dayHeaders = Array.from({ length: daysInMonth }, (_, i) => {
+        const d = i + 1;
+        const date = new Date(year, month, d);
+        const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+        return `<div class="calendar-cell calendar-head">${d}<br><small>${weekday}</small></div>`;
     }).join('');
 
-    const pageInfo = document.getElementById('attendance-page-info');
-    if (pageInfo) pageInfo.textContent = `Page ${attendancePage} / ${totalPages}`;
-    const prevBtn = document.getElementById('attendance-prev-page');
-    const nextBtn = document.getElementById('attendance-next-page');
-    if (prevBtn) prevBtn.disabled = attendancePage <= 1;
-    if (nextBtn) nextBtn.disabled = attendancePage >= totalPages;
+    let html = `<div class="calendar-cell calendar-head calendar-user-head">Employee</div>${dayHeaders}`;
+
+    if (!users.length) {
+        html += `<div class="calendar-cell calendar-user">No records</div>`;
+        html += Array.from({ length: daysInMonth }, () => '<div class="calendar-cell"><span class="calendar-mark mark-empty">·</span></div>').join('');
+        grid.innerHTML = html;
+        return;
+    }
+
+    users.forEach((user) => {
+        html += `<div class="calendar-cell calendar-user">${user}</div>`;
+        for (let day = 1; day <= daysInMonth; day += 1) {
+            const list = grouped.get(`${user}__${day}`) || [];
+            const mark = getCalendarMarkForRecords(list);
+            html += `<div class="calendar-cell" title="${mark.title}"><span class="calendar-mark ${mark.cls}">${mark.label}</span></div>`;
+        }
+    });
+
+    grid.innerHTML = html;
 }
 
 function exportAttendanceCsv() {
@@ -2401,6 +2423,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const nextPageBtn = document.getElementById('attendance-next-page');
     if (nextPageBtn) nextPageBtn.addEventListener('click', () => { attendancePage += 1; renderAttendancePage(); });
+
+    const prevMonthBtn = document.getElementById('attendance-calendar-prev');
+    if (prevMonthBtn) {
+        prevMonthBtn.addEventListener('click', () => {
+            attendanceCalendarMonth = new Date(attendanceCalendarMonth.getFullYear(), attendanceCalendarMonth.getMonth() - 1, 1);
+            renderAttendancePage();
+        });
+    }
+
+    const nextMonthBtn = document.getElementById('attendance-calendar-next');
+    if (nextMonthBtn) {
+        nextMonthBtn.addEventListener('click', () => {
+            attendanceCalendarMonth = new Date(attendanceCalendarMonth.getFullYear(), attendanceCalendarMonth.getMonth() + 1, 1);
+            renderAttendancePage();
+        });
+    }
 
     const exportBtn = document.getElementById('export-attendance-csv');
     if (exportBtn) exportBtn.addEventListener('click', exportAttendanceCsv);
