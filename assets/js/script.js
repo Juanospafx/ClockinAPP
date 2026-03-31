@@ -939,7 +939,7 @@ function renderAttendanceCalendar(records) {
         attendanceScheduler = new DayPilot.Scheduler('attendance-calendar-grid', {
             locale: 'en-us',
             scale: 'Day',
-            startDate: DayPilot.Date.fromDate(monthStart),
+            startDate: new DayPilot.Date(monthStart),
             days: daysInMonth,
             timeHeaders: [
                 { groupBy: 'Cell', format: 'd/M' },
@@ -958,12 +958,15 @@ function renderAttendanceCalendar(records) {
             contextMenu: null
         });
         attendanceScheduler.init();
+        console.log('scheduler initialized');
     }
 
-    attendanceScheduler.startDate = DayPilot.Date.fromDate(monthStart);
+    attendanceScheduler.startDate = new DayPilot.Date(monthStart);
     attendanceScheduler.days = daysInMonth;
     attendanceScheduler.resources = resources;
     attendanceScheduler.events.list = events;
+    console.log('resourcesCount', resources.length);
+    console.log('eventsCount', events.length);
     attendanceScheduler.update();
 }
 
