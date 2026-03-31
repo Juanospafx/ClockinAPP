@@ -16,7 +16,7 @@
     </script>
     <link rel="stylesheet" href="../../assets/css/global_login.css?v=3.3">
     <link rel="stylesheet" href="../../assets/css/registros.css?v=3.3">
-    <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=3.5">
+    <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=3.6">
     <link rel="stylesheet" href="../../assets/css/geofence.css?v=3.3">
     <link rel="stylesheet" href="../../assets/css/absences.css?v=3.3">
     <link rel="stylesheet" href="../../assets/css/manual_attendance.css?v=2.3">
@@ -79,11 +79,23 @@
 
         <!-- Section for QR Scanning (for regular users) -->
         <section id="scan-section">
-            <h3>Scan QR Code</h3>
-            <button id="start-scanner-button">Start Scanner</button>
-            <div id="scanner-container" style="display: none;"><video id="qr-video" playsinline muted></video></div>
-            <p id="scan-result">Waiting for scan...</p>
-            <p id="register-message"></p>
+            <div class="scan-hero-content">
+                <h3>Scan QR Code</h3>
+                <button id="start-scanner-button">Start Scanner</button>
+                <div id="scanner-container" style="display: none;"><video id="qr-video" playsinline muted></video></div>
+                <p id="scan-result">Waiting for scan...</p>
+                <p id="register-message"></p>
+            </div>
+
+            <div class="scan-visual-fill" aria-hidden="true">
+                <div class="clock-widget">
+                    <div class="clock-widget-ring"></div>
+                    <div class="clock-widget-core">
+                        <div class="clock-widget-label">Current Time</div>
+                        <div id="scan-live-time" class="clock-widget-time">--:--</div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- Section for Displaying Records (for users and admins) -->
@@ -714,6 +726,22 @@
         if (sessionStorage.getItem('user_id')) {
             loadGoogleMapsApi();
         }
+
+        (function initScanClockWidget() {
+            const el = document.getElementById('scan-live-time');
+            if (!el) return;
+
+            const update = () => {
+                const now = new Date();
+                el.textContent = now.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            };
+
+            update();
+            setInterval(update, 1000);
+        })();
     </script>
 </body>
 
