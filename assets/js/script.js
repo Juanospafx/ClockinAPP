@@ -81,7 +81,7 @@ let attendanceEditingRecord = null;
 let attendancePage = 1;
 let attendanceFilterText = '';
 let attendanceCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-let attendanceTabulator = null;
+let attendanceScheduler = null;
 const ATTENDANCE_PAGE_SIZE = 10;
 
 function normalizeRole(role) {
@@ -849,62 +849,27 @@ function buildAttendanceDatesForMonth(year, month) {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const dates = [];
     for (let day = 1; day <= daysInMonth; day += 1) {
-        const d = new Date(year, month, day);
-        dates.push(d);
+        dates.push(new Date(year, month, day));
     }
     return dates;
-}
-
-function buildAttendanceColumnsFromDates(dates) {
-    const columns = [{
-        title: 'Employee',
-        field: 'employee',
-        frozen: true,
-        width: 230,
-        minWidth: 190,
-        headerSort: false,
-        hozAlign: 'left',
-        formatter: (cell) => `<div class="employee-cell">${cell.getValue() || ''}</div>`
-    }];
-
-    dates.forEach((dateObj) => {
-        const day = dateObj.getDate();
-        const month = dateObj.getMonth() + 1;
-        const weekday = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-        columns.push({
-            title: `<div class="day-header"><span class="date">${day}/${month}</span><span class="weekday">${weekday}</span></div>`,
-            field: `d_${day}`,
-            width: 52,
-            minWidth: 50,
-            maxWidth: 56,
-            hozAlign: 'center',
-            headerHozAlign: 'center',
-            headerSort: false,
-            formatter: (cell) => {
-                const value = cell.getValue();
-                if (!value || value.length === 0) return '<span class="attendance-cell-empty">&nbsp;</span>';
-                return '•';
-            }
-        });
-    });
-
-    return columns;
 }
 
 function renderAttendanceCalendar(records) {
     const grid = document.getElementById('attendance-calendar-grid');
     const title = document.getElementById('attendance-calendar-title');
     if (!grid || !title) return;
-    console.log('attendance v2 loaded', { recordsCount: Array.isArray(records) ? records.length : 0 });
+    console.log('attendance daypilot loaded', { recordsCount: Array.isArray(records) ? records.length : 0 });
 
-    if (typeof Tabulator === 'undefined') {
-        grid.innerHTML = '<div class="attendance-calendar-error">Tabulator local no cargó.</div>';
+    if (typeof DayPilot === 'undefined' || !DayPilot.Scheduler) {
+        grid.innerHTML = '<div class="attendance-calendar-error">DayPilot Lite local no cargó.</div>';
         return;
     }
 
     const year = attendanceCalendarMonth.getFullYear();
     const month = attendanceCalendarMonth.getMonth();
-    const dates = buildAttendanceDatesForMonth(year, month);
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 1);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     title.textContent = attendanceCalendarMonth.toLocaleDateString('en-US', {
         month: 'long',
@@ -912,52 +877,70 @@ function renderAttendanceCalendar(records) {
     });
 
     const users = [...new Set(records.map((r) => r.username).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const resources = users.map((u) => ({ name: u, id: u }));
 
-    const grouped = new Map();
+    const groupedEvents = new Map();
     records.forEach((r) => {
         const base = r.entry_time || r.original_time || r.created_at;
         const d = base ? new Date(base) : null;
         if (!d || Number.isNaN(d.getTime())) return;
-        if (d.getFullYear() !== year || d.getMonth() !== month) return;
-        const day = d.getDate();
-        const key = `${r.username}__${day}`;
-        if (!grouped.has(key)) grouped.set(key, []);
-        grouped.get(key).push(r);
+        if (d < monthStart || d >= monthEnd) return;
+
+        const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const key = `${r.username}__${dayStart.toISOString().slice(0, 10)}`;
+        if (!groupedEvents.has(key)) groupedEvents.set(key, []);
+        groupedEvents.get(key).push(r);
     });
 
-    const columns = buildAttendanceColumnsFromDates(dates);
-    const data = users.map((user, idx) => {
-        const row = { id: idx + 1, employee: user };
-        dates.forEach((d) => {
-            const day = d.getDate();
-            row[`d_${day}`] = grouped.get(`${user}__${day}`) || [];
+    const events = [];
+    let eventId = 1;
+    groupedEvents.forEach((list, key) => {
+        const [username, day] = key.split('__');
+        const start = `${day}T00:00:00`;
+        const endDate = new Date(`${day}T00:00:00`);
+        endDate.setDate(endDate.getDate() + 1);
+        const end = `${endDate.toISOString().slice(0, 10)}T00:00:00`;
+        const text = list.length > 1 ? `${list.length} records` : 'record';
+
+        events.push({
+            id: eventId++,
+            resource: username,
+            start,
+            end,
+            text
         });
-        return row;
     });
 
-    if (attendanceTabulator) {
-        attendanceTabulator.destroy();
-        attendanceTabulator = null;
+    if (!attendanceScheduler) {
+        attendanceScheduler = new DayPilot.Scheduler('attendance-calendar-grid', {
+            locale: 'en-us',
+            scale: 'Day',
+            startDate: DayPilot.Date.fromDate(monthStart),
+            days: daysInMonth,
+            timeHeaders: [
+                { groupBy: 'Cell', format: 'd/M' },
+                { groupBy: 'Cell', format: 'ddd' }
+            ],
+            rowHeaderColumns: [{ title: 'Employee', display: 'name' }],
+            rowHeaderWidth: 240,
+            eventHeight: 20,
+            rowMinHeight: 36,
+            cellWidth: 62,
+            treeEnabled: false,
+            durationBarVisible: false,
+            eventMoveHandling: 'Disabled',
+            eventResizeHandling: 'Disabled',
+            eventDeleteHandling: 'Disabled',
+            contextMenu: null
+        });
+        attendanceScheduler.init();
     }
 
-    grid.innerHTML = '';
-
-    const shouldUseFixedHeight = data.length > 10;
-    grid.classList.toggle('attendance-grid-compact', !shouldUseFixedHeight);
-    grid.classList.toggle('attendance-grid-scroll-y', shouldUseFixedHeight);
-
-    attendanceTabulator = new Tabulator(grid, {
-        data,
-        columns,
-        index: 'id',
-        layout: 'fitDataTable',
-        movableColumns: false,
-        resizableRows: false,
-        rowHeight: 36,
-        headerVisible: true,
-        placeholder: 'No records',
-        height: shouldUseFixedHeight ? 420 : undefined
-    });
+    attendanceScheduler.startDate = DayPilot.Date.fromDate(monthStart);
+    attendanceScheduler.days = daysInMonth;
+    attendanceScheduler.resources = resources;
+    attendanceScheduler.events.list = events;
+    attendanceScheduler.update();
 }
 
 function exportAttendanceCsv() {

@@ -796,88 +796,54 @@ html[data-theme="light"] .login-container .error-message {
 
 .attendance-calendar-wrap {
     margin-top: 12px;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: hidden;
     border: 1px solid #d9dde3;
     border-radius: 10px;
     background: #ffffff;
 }
 
 .attendance-calendar-grid {
-    min-width: 100%;
+    width: 100%;
+    min-height: 120px;
     background: #ffffff;
 }
 
-.attendance-calendar-grid .tabulator {
-    display: inline-block;
-    min-width: 100%;
-    width: max-content;
-    border: 0 !important;
-    background: #ffffff !important;
-    color: #1f2937 !important;
+/* DayPilot Lite attendance matrix */
+.attendance-calendar-grid .scheduler_default_main {
+    border: 0;
+}
+
+.attendance-calendar-grid .scheduler_default_corner,
+.attendance-calendar-grid .scheduler_default_colheader,
+.attendance-calendar-grid .scheduler_default_rowheader {
+    background: #f8fafc;
+    color: #334155;
+    border-color: #e2e8f0;
     font-size: 12px;
-    height: auto;
 }
 
-.attendance-calendar-grid .tabulator-header {
-    background: #f3f4f6 !important;
-    border-bottom: 1px solid #d9dde3 !important;
-}
-
-.attendance-calendar-grid .tabulator-header .tabulator-col,
-.attendance-calendar-grid .tabulator-row .tabulator-cell {
-    border-right: 1px solid #e6e9ee !important;
-}
-
-.attendance-calendar-grid .tabulator-tableholder {
-    height: auto !important;
-    max-height: none !important;
-    overflow-x: hidden;
-    overflow-y: hidden;
-}
-
-.attendance-calendar-grid.attendance-grid-scroll-y .tabulator-tableholder {
-    max-height: 420px !important;
-    overflow-y: auto;
-}
-
-.attendance-calendar-grid .tabulator-row {
-    min-height: 36px;
-    background: #ffffff !important;
-    border-bottom: 1px solid #eceff3 !important;
-}
-
-.attendance-calendar-grid .tabulator-row .tabulator-cell {
-    padding: 4px 6px !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.attendance-calendar-grid .tabulator-col-title {
-    white-space: normal !important;
-    line-height: 1.05;
-    text-align: center;
-    padding: 4px 2px !important;
-}
-
-.attendance-calendar-grid .tabulator-frozen,
-.attendance-calendar-grid .tabulator-frozen.tabulator-col {
-    background: #fafafa !important;
-}
-
-.day-header { display: flex; flex-direction: column; align-items: center; gap: 1px; }
-.day-header .date { font-weight: 700; color: #334155; }
-.day-header .weekday { font-size: 11px; color: #64748b; }
-
-.employee-cell {
-    width: 100%;
-    text-align: left;
+.attendance-calendar-grid .scheduler_default_rowheader_inner {
     font-weight: 600;
-    color: #0f172a;
 }
 
-.attendance-cell-empty { display: inline-block; width: 8px; }
+.attendance-calendar-grid .scheduler_default_cell,
+.attendance-calendar-grid .scheduler_default_matrix_vertical_line,
+.attendance-calendar-grid .scheduler_default_matrix_horizontal_line {
+    background: #ffffff;
+    border-color: #edf1f5;
+}
+
+.attendance-calendar-grid .scheduler_default_event {
+    background: #eef2f7;
+    border: 1px solid #d7e0ea;
+    color: #334155;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.attendance-calendar-grid .scheduler_default_event_inner {
+    padding: 2px 4px;
+}
 
 .attendance-calendar-error {
     padding: 10px 12px;
