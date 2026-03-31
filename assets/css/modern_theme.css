@@ -287,117 +287,105 @@ section,
     box-shadow: var(--shadow-soft);
 }
 
-/* Scan section: centered action + elegant filler visual */
+/* Scan section layout (mobile + desktop centered) */
 #scan-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 18px;
     width: 100%;
-    min-height: calc(100vh - 160px);
-    padding: 24px 16px 30px;
+    max-width: none;
+    min-height: calc(100vh - 86px);
+    margin: 0;
+    padding: 24px 14px;
+    display: grid;
+    place-items: center;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
 }
 
-.scan-hero-content {
-    width: 100%;
-    max-width: 540px;
+.scan-center-card {
+    width: min(90vw, 420px);
+    padding: clamp(24px, 4vw, 34px);
+    border-radius: 18px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-2);
+    box-shadow: 0 14px 34px var(--clr-rgba-6-10-22-0-35);
+    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 10px;
+    background: linear-gradient(165deg, var(--clr-rgba-39-50-78-0-94), var(--clr-rgba-29-39-63-0-96));
 }
 
-#scan-section h3 {
-    margin: 0;
-    font-size: clamp(1.75rem, 1.45rem + 1vw, 2.5rem);
-    line-height: 1.12;
-    letter-spacing: 0.25px;
-}
-
-#start-scanner-button {
-    min-width: 220px;
-    min-height: 54px;
-    font-size: clamp(1rem, 0.95rem + 0.35vw, 1.2rem);
-    padding: 12px 24px;
-    border-radius: 12px;
-}
-
-#scan-result,
-#register-message {
-    margin: 0;
-    font-size: clamp(1rem, 0.92rem + 0.3vw, 1.2rem);
-}
-
-#scanner-container {
-    width: min(100%, 560px);
-    margin: 0 auto;
-}
-
-.scan-visual-fill {
-    width: 100%;
-    flex: 1;
-    min-height: 220px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.clock-widget {
-    position: relative;
-    width: clamp(190px, 42vw, 280px);
-    aspect-ratio: 1 / 1;
-    border-radius: 999px;
+.scan-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
     display: grid;
     place-items: center;
-}
-
-.clock-widget-ring {
-    position: absolute;
-    inset: 0;
-    border-radius: 999px;
-    border: 2px solid var(--clr-rgba-92-167-255-0-35);
-    box-shadow: 0 0 28px var(--clr-rgba-92-167-255-0-15), inset 0 0 16px var(--clr-rgba-92-167-255-0-08);
-}
-
-.clock-widget::before,
-.clock-widget::after {
-    content: "";
-    position: absolute;
-    inset: 14%;
-    border-radius: 999px;
-    border: 1px dashed var(--clr-rgba-159-176-205-0-22);
-}
-
-.clock-widget::after {
-    inset: 28%;
-    border-style: solid;
-    border-color: var(--clr-rgba-255-255-255-0-15);
-}
-
-.clock-widget-core {
-    width: 62%;
-    aspect-ratio: 1 / 1;
-    border-radius: 999px;
-    display: grid;
-    place-items: center;
-    gap: 2px;
-    background: radial-gradient(circle at 35% 30%, var(--clr-rgba-255-255-255-0-15), var(--clr-rgba-20-30-50-0-55));
+    color: var(--clr-ff8d74);
+    background: var(--clr-rgba-255-98-71-0-18);
     border: 1px solid var(--clr-rgba-159-176-205-0-22);
 }
 
-.clock-widget-label {
-    font-size: 0.72rem;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-    color: var(--clr-d1dcf8);
-    opacity: 0.85;
+.scan-icon svg {
+    width: 28px;
+    height: 28px;
+    fill: currentColor;
 }
 
-.clock-widget-time {
-    font-size: clamp(1rem, 0.9rem + 0.65vw, 1.4rem);
-    font-weight: 700;
+#scan-section h3 {
+    margin: 2px 0 0;
+    font-size: clamp(1.8rem, 1.55rem + 1vw, 2.2rem);
+    line-height: 1.1;
+    font-weight: 800;
     color: var(--clr-fff);
+}
+
+#start-scanner-button {
+    width: 100%;
+    max-width: 100%;
+    min-height: 54px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+#scan-result {
+    margin: 2px 0 0;
+    font-size: 0.98rem;
+    color: var(--clr-rgba-255-255-255-0-8);
+}
+
+#register-message {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+#scanner-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 4px 0 0;
+}
+
+html[data-theme="light"] .scan-center-card {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+}
+
+html[data-theme="light"] #scan-section h3 {
+    color: #1e293b;
+}
+
+html[data-theme="light"] #scan-result,
+html[data-theme="light"] #register-message {
+    color: #64748b;
+}
+
+html[data-theme="light"] .scan-icon {
+    background: rgba(249, 115, 22, 0.12);
+    border-color: rgba(249, 115, 22, 0.26);
+    color: #f97316;
 }
 
 h3, h4 { color: var(--clr-fff); }
@@ -909,31 +897,22 @@ html[data-theme="light"] .login-container .error-message {
     }
 
     #scan-section {
-        min-height: calc(100vh - 132px);
-        padding: 14px 12px 20px;
-        gap: 12px;
+        min-height: calc(100vh - 120px);
+        padding: 12px;
     }
 
-    .scan-hero-content {
+    .scan-center-card {
+        width: min(92vw, 380px);
+        padding: 22px 18px;
         gap: 8px;
     }
 
     #scan-section h3 {
-        font-size: clamp(1.5rem, 1.25rem + 1.8vw, 2rem);
+        font-size: 1.8rem;
     }
 
     #start-scanner-button {
-        width: 100%;
-        max-width: 290px;
-        min-height: 50px;
-    }
-
-    .scan-visual-fill {
-        min-height: 180px;
-    }
-
-    .clock-widget {
-        width: clamp(170px, 62vw, 230px);
+        min-height: 52px;
     }
 
     #records-section table {
