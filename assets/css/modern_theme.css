@@ -393,6 +393,15 @@ html[data-theme="light"] .scan-icon {
     color: #f97316;
 }
 
+html[data-theme="light"] #start-scanner-button {
+    background: linear-gradient(135deg, #f97316, #fb7b5a);
+    color: #ffffff;
+}
+
+html[data-theme="light"] #start-scanner-button:hover {
+    background: linear-gradient(135deg, #ea580c, #f97316);
+}
+
 h3, h4 { color: var(--clr-fff); }
 label { color: var(--clr-9fb0cd); }
 
