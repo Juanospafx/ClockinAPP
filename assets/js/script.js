@@ -80,7 +80,8 @@ let attendanceAllRecords = [];
 let attendanceEditingRecord = null;
 let attendancePage = 1;
 let attendanceFilterText = '';
-let attendanceCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let attendanceCalendarDate = new Date();
+let attendanceCalendarViewMode = 'week';
 let attendanceScheduler = null;
 const ATTENDANCE_PAGE_SIZE = 10;
 
@@ -823,14 +824,13 @@ async function loadAttendanceRecords(uid = null) {
                 .sort((a, b) => b - a);
             if (withDates.length) {
                 const latest = withDates[0];
-                attendanceCalendarMonth = new Date(latest.getFullYear(), latest.getMonth(), 1);
+                attendanceCalendarDate = new Date(latest.getFullYear(), latest.getMonth(), latest.getDate());
             }
             renderAttendanceCalendar(attendanceAllRecords);
         } else {
             const mock = getAttendanceMockRecords();
             attendanceAllRecords = mock;
-            attendanceCalendarMonth = new Date(mock[0].entry_time);
-            attendanceCalendarMonth = new Date(attendanceCalendarMonth.getFullYear(), attendanceCalendarMonth.getMonth(), 1);
+            attendanceCalendarDate = new Date(mock[0].entry_time);
             renderAttendanceCalendar(attendanceAllRecords);
         }
         renderAttendancePage();
@@ -838,8 +838,7 @@ async function loadAttendanceRecords(uid = null) {
         recordsBody.innerHTML = `<tr><td colspan="11">Error loading records.</td></tr>`;
         const mock = getAttendanceMockRecords();
         attendanceAllRecords = mock;
-        attendanceCalendarMonth = new Date(mock[0].entry_time);
-        attendanceCalendarMonth = new Date(attendanceCalendarMonth.getFullYear(), attendanceCalendarMonth.getMonth(), 1);
+        attendanceCalendarDate = new Date(mock[0].entry_time);
         renderAttendancePage();
     }
 }
@@ -878,9 +877,62 @@ function buildAttendanceDatesForMonth(year, month) {
     return dates;
 }
 
+function getStartOfWeek(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = (day + 6) % 7; // Monday start
+    d.setDate(d.getDate() - diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+function formatRecordValue(value) {
+    if (value === null || value === undefined || value === '') return '—';
+    return String(value);
+}
+
+function openAttendanceRecordModal(records) {
+    const modal = document.getElementById('attendance-record-modal');
+    const body = document.getElementById('attendance-record-modal-body');
+    if (!modal || !body) return;
+
+    body.innerHTML = (records || []).map((record, idx) => {
+        const entry = formatRecordDateTime(record, record.entry_time || record.original_time);
+        const exit = formatRecordDateTime(record, record.exit_time || record.rounded_time);
+        const evidence = record.evidence_url || record.evidence || record.photo_url || record.image_url || '';
+
+        return `
+            <div class="attendance-record-group">
+                <h4>Record ${idx + 1}</h4>
+                <div class="attendance-record-row"><div class="attendance-record-key">Employee</div><div class="attendance-record-value">${formatRecordValue(record.username)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Date</div><div class="attendance-record-value">${formatRecordValue(entry.date)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Entry Time</div><div class="attendance-record-value">${formatRecordValue(entry.time)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Exit Time</div><div class="attendance-record-value">${formatRecordValue(exit.time)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Duration</div><div class="attendance-record-value">${formatRecordValue(record.total_duration)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Location</div><div class="attendance-record-value">${formatRecordValue(record.location)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Type</div><div class="attendance-record-value">${formatRecordValue(record.type)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Project</div><div class="attendance-record-value">${formatRecordValue(record.project_name)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Evidence</div><div class="attendance-record-value">${evidence ? `<a href="${evidence}" target="_blank" rel="noopener noreferrer">Open evidence</a>` : '—'}</div></div>
+            </div>
+        `;
+    }).join('');
+
+    modal.style.display = 'flex';
+}
+
+function getAttendanceRange() {
+    const focus = new Date(attendanceCalendarDate);
+    focus.setHours(0, 0, 0, 0);
+    if (attendanceCalendarViewMode === 'day') {
+        return { start: focus, days: 1 };
+    }
+    return { start: getStartOfWeek(focus), days: 7 };
+}
+
 function renderAttendanceCalendar(records) {
     const grid = document.getElementById('attendance-calendar-grid');
     const title = document.getElementById('attendance-calendar-title');
+    const dateInput = document.getElementById('attendance-focus-date');
     if (!grid || !title) return;
     console.log('attendance daypilot loaded', { recordsCount: Array.isArray(records) ? records.length : 0 });
 
@@ -889,16 +941,22 @@ function renderAttendanceCalendar(records) {
         return;
     }
 
-    const year = attendanceCalendarMonth.getFullYear();
-    const month = attendanceCalendarMonth.getMonth();
-    const monthStart = new Date(year, month, 1);
-    const monthEnd = new Date(year, month + 1, 1);
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const { start, days } = getAttendanceRange();
+    const end = new Date(start);
+    end.setDate(end.getDate() + days);
 
-    title.textContent = attendanceCalendarMonth.toLocaleDateString('en-US', {
-        month: 'long',
-        year: 'numeric'
-    });
+    if (dateInput) {
+        const y = attendanceCalendarDate.getFullYear();
+        const m = String(attendanceCalendarDate.getMonth() + 1).padStart(2, '0');
+        const d = String(attendanceCalendarDate.getDate()).padStart(2, '0');
+        dateInput.value = `${y}-${m}-${d}`;
+    }
+
+    const titleStart = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const titleEndBase = new Date(end);
+    titleEndBase.setDate(titleEndBase.getDate() - 1);
+    const titleEnd = titleEndBase.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    title.textContent = attendanceCalendarViewMode === 'day' ? titleStart : `${titleStart} - ${titleEnd}`;
 
     const users = [...new Set(records.map((r) => r.username).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     const resources = users.map((u) => ({ name: u, id: u }));
@@ -908,7 +966,7 @@ function renderAttendanceCalendar(records) {
         const base = r.entry_time || r.original_time || r.created_at;
         const d = base ? new Date(base) : null;
         if (!d || Number.isNaN(d.getTime())) return;
-        if (d < monthStart || d >= monthEnd) return;
+        if (d < start || d >= end) return;
 
         const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
         const key = `${r.username}__${dayStart.toISOString().slice(0, 10)}`;
@@ -920,18 +978,19 @@ function renderAttendanceCalendar(records) {
     let eventId = 1;
     groupedEvents.forEach((list, key) => {
         const [username, day] = key.split('__');
-        const start = `${day}T00:00:00`;
+        const startIso = `${day}T00:00:00`;
         const endDate = new Date(`${day}T00:00:00`);
         endDate.setDate(endDate.getDate() + 1);
-        const end = `${endDate.toISOString().slice(0, 10)}T00:00:00`;
+        const endIso = `${endDate.toISOString().slice(0, 10)}T00:00:00`;
         const text = list.length > 1 ? `${list.length} records` : 'record';
 
         events.push({
             id: eventId++,
             resource: username,
-            start,
-            end,
-            text
+            start: startIso,
+            end: endIso,
+            text,
+            records: list
         });
     });
 
@@ -939,30 +998,33 @@ function renderAttendanceCalendar(records) {
         attendanceScheduler = new DayPilot.Scheduler('attendance-calendar-grid', {
             locale: 'en-us',
             scale: 'Day',
-            startDate: new DayPilot.Date(monthStart),
-            days: daysInMonth,
+            startDate: new DayPilot.Date(start),
+            days,
             timeHeaders: [
                 { groupBy: 'Cell', format: 'd/M' },
                 { groupBy: 'Cell', format: 'ddd' }
             ],
             rowHeaderColumns: [{ title: 'Employee', display: 'name' }],
-            rowHeaderWidth: 240,
+            rowHeaderWidth: 230,
             eventHeight: 20,
             rowMinHeight: 36,
-            cellWidth: 62,
+            cellWidth: 64,
             treeEnabled: false,
             durationBarVisible: false,
             eventMoveHandling: 'Disabled',
             eventResizeHandling: 'Disabled',
             eventDeleteHandling: 'Disabled',
-            contextMenu: null
+            contextMenu: null,
+            onEventClick: (args) => {
+                openAttendanceRecordModal(args.e.data.records || []);
+            }
         });
         attendanceScheduler.init();
         console.log('scheduler initialized');
     }
 
-    attendanceScheduler.startDate = new DayPilot.Date(monthStart);
-    attendanceScheduler.days = daysInMonth;
+    attendanceScheduler.startDate = new DayPilot.Date(start);
+    attendanceScheduler.days = days;
     attendanceScheduler.resources = resources;
     attendanceScheduler.events.list = events;
     console.log('resourcesCount', resources.length);
@@ -2338,6 +2400,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Modals
+    const attendanceRecordModal = document.getElementById('attendance-record-modal');
+    if (attendanceRecordModal) {
+        const closeAttendanceModalBtn = document.getElementById('attendance-record-modal-close');
+        if (closeAttendanceModalBtn) {
+            closeAttendanceModalBtn.addEventListener('click', () => {
+                attendanceRecordModal.style.display = 'none';
+            });
+        }
+        attendanceRecordModal.addEventListener('click', (e) => {
+            if (e.target === attendanceRecordModal) {
+                attendanceRecordModal.style.display = 'none';
+            }
+        });
+    }
+
     const editModal = document.getElementById('edit-record-modal');
     if (editModal) {
         const closeBtn = editModal.querySelector('.close-button');
@@ -2485,7 +2562,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevMonthBtn = document.getElementById('attendance-calendar-prev');
     if (prevMonthBtn) {
         prevMonthBtn.addEventListener('click', () => {
-            attendanceCalendarMonth = new Date(attendanceCalendarMonth.getFullYear(), attendanceCalendarMonth.getMonth() - 1, 1);
+            const jump = attendanceCalendarViewMode === 'day' ? 1 : 7;
+            attendanceCalendarDate = new Date(attendanceCalendarDate.getFullYear(), attendanceCalendarDate.getMonth(), attendanceCalendarDate.getDate() - jump);
             renderAttendancePage();
         });
     }
@@ -2493,7 +2571,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextMonthBtn = document.getElementById('attendance-calendar-next');
     if (nextMonthBtn) {
         nextMonthBtn.addEventListener('click', () => {
-            attendanceCalendarMonth = new Date(attendanceCalendarMonth.getFullYear(), attendanceCalendarMonth.getMonth() + 1, 1);
+            const jump = attendanceCalendarViewMode === 'day' ? 1 : 7;
+            attendanceCalendarDate = new Date(attendanceCalendarDate.getFullYear(), attendanceCalendarDate.getMonth(), attendanceCalendarDate.getDate() + jump);
+            renderAttendancePage();
+        });
+    }
+
+    const attendanceFocusDateInput = document.getElementById('attendance-focus-date');
+    if (attendanceFocusDateInput) {
+        attendanceFocusDateInput.addEventListener('change', (e) => {
+            if (!e.target.value) return;
+            attendanceCalendarDate = new Date(`${e.target.value}T00:00:00`);
+            renderAttendancePage();
+        });
+    }
+
+    const attendanceViewModeSelect = document.getElementById('attendance-view-mode');
+    if (attendanceViewModeSelect) {
+        attendanceViewModeSelect.value = attendanceCalendarViewMode;
+        attendanceViewModeSelect.addEventListener('change', (e) => {
+            attendanceCalendarViewMode = e.target.value === 'day' ? 'day' : 'week';
             renderAttendancePage();
         });
     }
