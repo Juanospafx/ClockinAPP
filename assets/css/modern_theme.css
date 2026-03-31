@@ -816,6 +816,7 @@ html[data-theme="light"] .login-container .error-message {
     background: #ffffff !important;
     color: #1f2937 !important;
     font-size: 12px;
+    height: auto;
 }
 
 .attendance-calendar-grid .tabulator-header {
@@ -826,6 +827,18 @@ html[data-theme="light"] .login-container .error-message {
 .attendance-calendar-grid .tabulator-header .tabulator-col,
 .attendance-calendar-grid .tabulator-row .tabulator-cell {
     border-right: 1px solid #e6e9ee !important;
+}
+
+.attendance-calendar-grid .tabulator-tableholder {
+    height: auto !important;
+    max-height: none !important;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+.attendance-calendar-grid.attendance-grid-scroll-y .tabulator-tableholder {
+    max-height: 420px !important;
+    overflow-y: auto;
 }
 
 .attendance-calendar-grid .tabulator-row {
