@@ -796,52 +796,83 @@ html[data-theme="light"] .login-container .error-message {
 
 .attendance-calendar-wrap {
     margin-top: 12px;
-    overflow: auto;
-    border: 1px solid var(--clr-rgba-159-176-205-0-2);
-    border-radius: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid #d9dde3;
+    border-radius: 10px;
+    background: #ffffff;
 }
 
 .attendance-calendar-grid {
-    min-width: 860px;
+    min-width: max-content;
+    background: #ffffff;
 }
 
-/* Tabulator attendance matrix (light/corporate style) */
 .attendance-calendar-grid .tabulator {
-    border: 0;
-    background: #fff;
-    color: #1f2937;
+    width: max-content;
+    min-width: 100%;
+    border: 0 !important;
+    background: #ffffff !important;
+    color: #1f2937 !important;
     font-size: 12px;
 }
 
 .attendance-calendar-grid .tabulator-header {
-    background: #f3f4f6;
-    border-bottom: 1px solid #d9dde3;
+    background: #f3f4f6 !important;
+    border-bottom: 1px solid #d9dde3 !important;
 }
 
-.attendance-calendar-grid .tabulator-col,
-.attendance-calendar-grid .tabulator-cell {
-    border-right: 1px solid #e6e9ee;
+.attendance-calendar-grid .tabulator-header .tabulator-col,
+.attendance-calendar-grid .tabulator-row .tabulator-cell {
+    border-right: 1px solid #e6e9ee !important;
+}
+
+.attendance-calendar-grid .tabulator-header .tabulator-col:last-child,
+.attendance-calendar-grid .tabulator-row .tabulator-cell:last-child {
+    border-right: 0 !important;
+}
+
+.attendance-calendar-grid .tabulator-tableholder {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+}
+
+.attendance-calendar-grid .tabulator-table {
+    background: #ffffff !important;
 }
 
 .attendance-calendar-grid .tabulator-row {
-    border-bottom: 1px solid #eceff3;
-    background: #fff;
+    min-height: 34px;
+    background: #ffffff !important;
+    border-bottom: 1px solid #eceff3 !important;
+}
+
+.attendance-calendar-grid .tabulator-row:last-child {
+    border-bottom: 0 !important;
 }
 
 .attendance-calendar-grid .tabulator-row .tabulator-cell {
+    padding: 4px 6px !important;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .attendance-calendar-grid .tabulator-col-title {
-    white-space: normal;
-    line-height: 1.1;
+    white-space: normal !important;
+    line-height: 1.05;
     text-align: center;
+    padding: 4px 2px !important;
 }
 
-.day-header { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.day-header .date { font-weight: 700; }
+.attendance-calendar-grid .tabulator-frozen {
+    background: #fafafa !important;
+}
+
+.day-header { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.day-header .date { font-weight: 700; color: #334155; }
 .day-header .weekday { font-size: 11px; color: #64748b; }
 
 .employee-cell {
@@ -851,32 +882,27 @@ html[data-theme="light"] .login-container .error-message {
     color: #0f172a;
 }
 
-.calendar-mark {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
+.attendance-cell-chip {
+    font-size: 11px;
+    color: #334155;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 1px 4px;
+    line-height: 1.1;
 }
 
-.mark-g { background: var(--clr-rgba-46-204-113-0-2); color: var(--clr-46d59b); }
-.mark-l { background: var(--clr-rgba-243-156-18-0-2); color: var(--clr-f39c12); }
-.mark-a { background: var(--clr-rgba-231-76-60-0-2); color: var(--clr-e74c3c); }
-.mark-o { background: var(--clr-rgba-92-167-255-0-15); color: var(--clr-5ca7ff); }
-.mark-empty { color: var(--clr-rgba-255-255-255-0-5); }
+.attendance-cell-empty { display: inline-block; width: 8px; }
 
-html[data-theme="light"] .attendance-calendar-wrap { border-color: #e2e8f0; background: #fff; }
-html[data-theme="light"] .calendar-head { background: #f1f5f9; color: #334155; }
-html[data-theme="light"] .calendar-user-head,
-html[data-theme="light"] .calendar-user { background: #f8fafc; color: #0f172a; }
-html[data-theme="light"] .calendar-cell { border-color: #e2e8f0; color: #334155; }
+.attendance-calendar-error {
+    padding: 10px 12px;
+    color: #475569;
+    font-size: 13px;
+}
 
 @media (max-width: 768px) {
-    .attendance-calendar-grid {
-        min-width: 760px;
-        grid-template-columns: 170px repeat(31, minmax(40px, 1fr));
+    .attendance-calendar-wrap {
+        border-radius: 8px;
     }
 }
 

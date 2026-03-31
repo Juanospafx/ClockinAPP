@@ -845,15 +845,54 @@ function renderAttendancePage() {
     renderAttendanceCalendar(filteredRecords);
 }
 
-function getCalendarMarkForRecords(records) {
-    if (!records || !records.length) return { label: '·', cls: 'mark-empty', title: 'Sin registros' };
-    const hasAbsence = records.some(r => r.type === 'absence');
-    const hasLate = records.some(r => r.late_reason);
-    const hasManual = records.some(r => r.entry_source === 'manual');
-    if (hasAbsence) return { label: 'A', cls: 'mark-a', title: 'Ausencia' };
-    if (hasLate) return { label: 'L', cls: 'mark-l', title: 'Tardanza' };
-    if (hasManual) return { label: 'O', cls: 'mark-o', title: 'Registro manual/otro' };
-    return { label: 'G', cls: 'mark-g', title: 'Asistencia' };
+function buildAttendanceDatesForMonth(year, month) {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const dates = [];
+    for (let day = 1; day <= daysInMonth; day += 1) {
+        const d = new Date(year, month, day);
+        dates.push(d);
+    }
+    return dates;
+}
+
+function buildAttendanceColumnsFromDates(dates) {
+    const columns = [{
+        title: 'Employee',
+        field: 'employee',
+        frozen: true,
+        width: 230,
+        minWidth: 190,
+        headerSort: false,
+        hozAlign: 'left',
+        formatter: (cell) => `<div class="employee-cell">${cell.getValue() || ''}</div>`
+    }];
+
+    dates.forEach((dateObj) => {
+        const day = dateObj.getDate();
+        const month = dateObj.getMonth() + 1;
+        const weekday = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+        columns.push({
+            title: `<div class="day-header"><span class="date">${day}/${month}</span><span class="weekday">${weekday}</span></div>`,
+            field: `d_${day}`,
+            width: 52,
+            minWidth: 50,
+            maxWidth: 56,
+            hozAlign: 'center',
+            headerHozAlign: 'center',
+            headerSort: false,
+            formatter: (cell) => {
+                const value = cell.getValue();
+                if (!value || value.length === 0) return '<span class="attendance-cell-empty">&nbsp;</span>';
+                const first = value[0] || {};
+                const base = (first.type || first.reason || first.entry_source || 'record').toString();
+                const short = base.length > 3 ? base.slice(0, 3) : base;
+                const extra = value.length > 1 ? `+${value.length - 1}` : '';
+                return `<span class="attendance-cell-chip" title="${base}${extra ? ` (${value.length} registros)` : ''}">${short}${extra}</span>`;
+            }
+        });
+    });
+
+    return columns;
 }
 
 function renderAttendanceCalendar(records) {
@@ -862,20 +901,20 @@ function renderAttendanceCalendar(records) {
     if (!grid || !title) return;
 
     if (typeof Tabulator === 'undefined') {
-        grid.innerHTML = '<div style="padding:12px;">Tabulator no cargó. Recarga la página.</div>';
+        grid.innerHTML = '<div class="attendance-calendar-error">Tabulator local no cargó.</div>';
         return;
     }
 
     const year = attendanceCalendarMonth.getFullYear();
     const month = attendanceCalendarMonth.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const dates = buildAttendanceDatesForMonth(year, month);
 
     title.textContent = attendanceCalendarMonth.toLocaleDateString('en-US', {
         month: 'long',
         year: 'numeric'
     });
 
-    const users = [...new Set(records.map(r => r.username).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const users = [...new Set(records.map((r) => r.username).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
     const grouped = new Map();
     records.forEach((r) => {
@@ -889,56 +928,34 @@ function renderAttendanceCalendar(records) {
         grouped.get(key).push(r);
     });
 
-    const columns = [{
-        title: 'Employee',
-        field: 'employee',
-        frozen: true,
-        width: 240,
-        headerSort: false,
-        formatter: (cell) => `<div class="employee-cell">${cell.getValue() || ''}</div>`
-    }];
-
-    for (let day = 1; day <= daysInMonth; day += 1) {
-        const date = new Date(year, month, day);
-        const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
-        columns.push({
-            title: `<div class="day-header"><span class="date">${day}/${month + 1}</span><span class="weekday">${weekday}</span></div>`,
-            field: `d_${day}`,
-            width: 52,
-            hozAlign: 'center',
-            headerHozAlign: 'center',
-            headerSort: false,
-            formatter: (cell) => {
-                const mark = cell.getValue() || { label: '·', cls: 'mark-empty', title: 'Sin registros' };
-                return `<span class="calendar-mark ${mark.cls}" title="${mark.title}">${mark.label}</span>`;
-            }
-        });
-    }
-
+    const columns = buildAttendanceColumnsFromDates(dates);
     const data = users.map((user, idx) => {
         const row = { id: idx + 1, employee: user };
-        for (let day = 1; day <= daysInMonth; day += 1) {
-            const list = grouped.get(`${user}__${day}`) || [];
-            row[`d_${day}`] = getCalendarMarkForRecords(list);
-        }
+        dates.forEach((d) => {
+            const day = d.getDate();
+            row[`d_${day}`] = grouped.get(`${user}__${day}`) || [];
+        });
         return row;
     });
 
     if (attendanceTabulator) {
-        attendanceTabulator.setColumns(columns);
-        attendanceTabulator.setData(data);
-        return;
+        attendanceTabulator.destroy();
+        attendanceTabulator = null;
     }
+
+    grid.innerHTML = '';
 
     attendanceTabulator = new Tabulator(grid, {
         data,
         columns,
-        layout: 'fitDataStretch',
-        rowHeight: 38,
         index: 'id',
-        placeholder: 'No records',
+        layout: 'fitDataFill',
+        renderVertical: 'basic',
         movableColumns: false,
-        headerVisible: true
+        resizableRows: false,
+        rowHeight: 34,
+        headerVisible: true,
+        placeholder: 'No records'
     });
 }
 
