@@ -81,6 +81,7 @@ let attendanceEditingRecord = null;
 let attendancePage = 1;
 let attendanceFilterText = '';
 let attendanceCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let attendanceTabulator = null;
 const ATTENDANCE_PAGE_SIZE = 10;
 
 function normalizeRole(role) {
@@ -860,6 +861,11 @@ function renderAttendanceCalendar(records) {
     const title = document.getElementById('attendance-calendar-title');
     if (!grid || !title) return;
 
+    if (typeof Tabulator === 'undefined') {
+        grid.innerHTML = '<div style="padding:12px;">Tabulator no cargó. Recarga la página.</div>';
+        return;
+    }
+
     const year = attendanceCalendarMonth.getFullYear();
     const month = attendanceCalendarMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -877,39 +883,63 @@ function renderAttendanceCalendar(records) {
         const d = base ? new Date(base) : null;
         if (!d || Number.isNaN(d.getTime())) return;
         if (d.getFullYear() !== year || d.getMonth() !== month) return;
-
         const day = d.getDate();
         const key = `${r.username}__${day}`;
         if (!grouped.has(key)) grouped.set(key, []);
         grouped.get(key).push(r);
     });
 
-    const dayHeaders = Array.from({ length: daysInMonth }, (_, i) => {
-        const d = i + 1;
-        const date = new Date(year, month, d);
+    const columns = [{
+        title: 'Employee',
+        field: 'employee',
+        frozen: true,
+        width: 240,
+        headerSort: false,
+        formatter: (cell) => `<div class="employee-cell">${cell.getValue() || ''}</div>`
+    }];
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+        const date = new Date(year, month, day);
         const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
-        return `<div class="calendar-cell calendar-head">${d}<br><small>${weekday}</small></div>`;
-    }).join('');
+        columns.push({
+            title: `<div class="day-header"><span class="date">${day}/${month + 1}</span><span class="weekday">${weekday}</span></div>`,
+            field: `d_${day}`,
+            width: 52,
+            hozAlign: 'center',
+            headerHozAlign: 'center',
+            headerSort: false,
+            formatter: (cell) => {
+                const mark = cell.getValue() || { label: '·', cls: 'mark-empty', title: 'Sin registros' };
+                return `<span class="calendar-mark ${mark.cls}" title="${mark.title}">${mark.label}</span>`;
+            }
+        });
+    }
 
-    let html = `<div class="calendar-cell calendar-head calendar-user-head">Employee</div>${dayHeaders}`;
+    const data = users.map((user, idx) => {
+        const row = { id: idx + 1, employee: user };
+        for (let day = 1; day <= daysInMonth; day += 1) {
+            const list = grouped.get(`${user}__${day}`) || [];
+            row[`d_${day}`] = getCalendarMarkForRecords(list);
+        }
+        return row;
+    });
 
-    if (!users.length) {
-        html += `<div class="calendar-cell calendar-user">No records</div>`;
-        html += Array.from({ length: daysInMonth }, () => '<div class="calendar-cell"><span class="calendar-mark mark-empty">·</span></div>').join('');
-        grid.innerHTML = html;
+    if (attendanceTabulator) {
+        attendanceTabulator.setColumns(columns);
+        attendanceTabulator.setData(data);
         return;
     }
 
-    users.forEach((user) => {
-        html += `<div class="calendar-cell calendar-user">${user}</div>`;
-        for (let day = 1; day <= daysInMonth; day += 1) {
-            const list = grouped.get(`${user}__${day}`) || [];
-            const mark = getCalendarMarkForRecords(list);
-            html += `<div class="calendar-cell" title="${mark.title}"><span class="calendar-mark ${mark.cls}">${mark.label}</span></div>`;
-        }
+    attendanceTabulator = new Tabulator(grid, {
+        data,
+        columns,
+        layout: 'fitDataStretch',
+        rowHeight: 38,
+        index: 'id',
+        placeholder: 'No records',
+        movableColumns: false,
+        headerVisible: true
     });
-
-    grid.innerHTML = html;
 }
 
 function exportAttendanceCsv() {
