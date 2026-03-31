@@ -291,11 +291,13 @@ section,
 #scan-section {
     width: 100%;
     max-width: none;
-    min-height: calc(100vh - 86px);
+    flex: 1;
+    min-height: calc(100vh - 150px);
     margin: 0;
     padding: 24px 14px;
-    display: grid;
-    place-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     background: transparent !important;
     border: 0 !important;
     box-shadow: none !important;
@@ -547,6 +549,10 @@ table tr:hover { background-color: var(--clr-rgba-92-167-255-0-08); }
 
 .login-container button {
     background: linear-gradient(135deg, var(--accent-primary), var(--clr-ff7a5f));
+}
+
+.main-content {
+    min-height: 100vh;
 }
 
 .app-header {
@@ -897,7 +903,7 @@ html[data-theme="light"] .login-container .error-message {
     }
 
     #scan-section {
-        min-height: calc(100vh - 120px);
+        min-height: calc(100vh - 108px);
         padding: 12px;
     }
 
