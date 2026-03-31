@@ -883,11 +883,7 @@ function buildAttendanceColumnsFromDates(dates) {
             formatter: (cell) => {
                 const value = cell.getValue();
                 if (!value || value.length === 0) return '<span class="attendance-cell-empty">&nbsp;</span>';
-                const first = value[0] || {};
-                const base = (first.type || first.reason || first.entry_source || 'record').toString();
-                const short = base.length > 3 ? base.slice(0, 3) : base;
-                const extra = value.length > 1 ? `+${value.length - 1}` : '';
-                return `<span class="attendance-cell-chip" title="${base}${extra ? ` (${value.length} registros)` : ''}">${short}${extra}</span>`;
+                return '•';
             }
         });
     });
@@ -945,17 +941,19 @@ function renderAttendanceCalendar(records) {
 
     grid.innerHTML = '';
 
+    const shouldUseFixedHeight = data.length > 10;
+
     attendanceTabulator = new Tabulator(grid, {
         data,
         columns,
         index: 'id',
-        layout: 'fitDataFill',
-        renderVertical: 'basic',
+        layout: 'fitDataTable',
         movableColumns: false,
         resizableRows: false,
-        rowHeight: 34,
+        rowHeight: 36,
         headerVisible: true,
-        placeholder: 'No records'
+        placeholder: 'No records',
+        height: shouldUseFixedHeight ? '420px' : false
     });
 }
 
