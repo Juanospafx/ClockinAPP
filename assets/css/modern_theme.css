@@ -557,10 +557,9 @@ table tr:hover { background-color: var(--clr-rgba-92-167-255-0-08); }
 .main-content {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
     min-height: calc(100vh - 70px);
     width: 100%;
+    position: relative;
 }
 
 .app-header {
@@ -897,6 +896,34 @@ html[data-theme="light"] .login-container .error-message {
 .action-cancel-button.close-button {
     float: none;
     font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        min-height: calc(100vh - 70px);
+    }
+
+    .app-header {
+        width: 100%;
+        max-width: none;
+        margin: 0 0 10px 0;
+        padding-left: 56px;
+        z-index: 1200;
+    }
+
+    .open-sidebar-button {
+        position: absolute;
+        top: 16px;
+        left: 14px;
+        z-index: 1250;
+    }
+
+    #scan-section {
+        min-height: calc(100vh - 140px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 }
 
 @media (max-width: 640px) {
