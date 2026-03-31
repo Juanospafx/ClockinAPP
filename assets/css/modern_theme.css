@@ -292,7 +292,7 @@ section,
     width: 100%;
     max-width: none;
     flex: 1;
-    min-height: calc(100vh - 150px);
+    min-height: calc(100vh - 70px);
     margin: 0;
     padding: 24px 14px;
     display: flex;
@@ -304,7 +304,10 @@ section,
 }
 
 .scan-center-card {
-    width: min(90vw, 420px);
+    width: 100%;
+    max-width: 420px;
+    margin-inline: auto;
+    float: none;
     padding: clamp(24px, 4vw, 34px);
     border-radius: 18px;
     border: 1px solid var(--clr-rgba-159-176-205-0-2);
@@ -552,7 +555,12 @@ table tr:hover { background-color: var(--clr-rgba-92-167-255-0-08); }
 }
 
 .main-content {
-    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 70px);
+    width: 100%;
 }
 
 .app-header {
@@ -897,18 +905,25 @@ html[data-theme="light"] .login-container .error-message {
     }
 }
 
+@media (max-width: 480px) {
+    .scan-center-card {
+        width: 90%;
+    }
+}
+
 @media (max-width: 576px) {
     .map-canvas-modern {
         height: 280px;
     }
 
     #scan-section {
-        min-height: calc(100vh - 108px);
+        min-height: calc(100vh - 70px);
         padding: 12px;
     }
 
     .scan-center-card {
-        width: min(92vw, 380px);
+        width: 100%;
+        max-width: 420px;
         padding: 22px 18px;
         gap: 8px;
     }
