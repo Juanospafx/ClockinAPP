@@ -804,13 +804,14 @@ html[data-theme="light"] .login-container .error-message {
 }
 
 .attendance-calendar-grid {
-    min-width: max-content;
+    min-width: 100%;
     background: #ffffff;
 }
 
 .attendance-calendar-grid .tabulator {
-    width: max-content;
+    display: inline-block;
     min-width: 100%;
+    width: max-content;
     border: 0 !important;
     background: #ffffff !important;
     color: #1f2937 !important;
@@ -827,30 +828,10 @@ html[data-theme="light"] .login-container .error-message {
     border-right: 1px solid #e6e9ee !important;
 }
 
-.attendance-calendar-grid .tabulator-header .tabulator-col:last-child,
-.attendance-calendar-grid .tabulator-row .tabulator-cell:last-child {
-    border-right: 0 !important;
-}
-
-.attendance-calendar-grid .tabulator-tableholder {
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-}
-
-.attendance-calendar-grid .tabulator-table {
-    background: #ffffff !important;
-}
-
 .attendance-calendar-grid .tabulator-row {
-    min-height: 34px;
+    min-height: 36px;
     background: #ffffff !important;
     border-bottom: 1px solid #eceff3 !important;
-}
-
-.attendance-calendar-grid .tabulator-row:last-child {
-    border-bottom: 0 !important;
 }
 
 .attendance-calendar-grid .tabulator-row .tabulator-cell {
@@ -867,7 +848,8 @@ html[data-theme="light"] .login-container .error-message {
     padding: 4px 2px !important;
 }
 
-.attendance-calendar-grid .tabulator-frozen {
+.attendance-calendar-grid .tabulator-frozen,
+.attendance-calendar-grid .tabulator-frozen.tabulator-col {
     background: #fafafa !important;
 }
 
@@ -882,16 +864,6 @@ html[data-theme="light"] .login-container .error-message {
     color: #0f172a;
 }
 
-.attendance-cell-chip {
-    font-size: 11px;
-    color: #334155;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
-    padding: 1px 4px;
-    line-height: 1.1;
-}
-
 .attendance-cell-empty { display: inline-block; width: 8px; }
 
 .attendance-calendar-error {
@@ -901,9 +873,7 @@ html[data-theme="light"] .login-container .error-message {
 }
 
 @media (max-width: 768px) {
-    .attendance-calendar-wrap {
-        border-radius: 8px;
-    }
+    .attendance-calendar-wrap { border-radius: 8px; }
 }
 
 .status-pill { padding: 3px 8px; border-radius: 999px; font-size: .75rem; font-weight: 700; }
