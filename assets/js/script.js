@@ -793,6 +793,18 @@ async function generateQrCode() {
 }
 
 // --- Data Loading and Display ---
+function getAttendanceMockRecords() {
+    const now = new Date();
+    return [{
+        id: -1,
+        username: 'demo-user',
+        type: 'entry',
+        entry_time: now.toISOString(),
+        original_time: now.toISOString(),
+        created_at: now.toISOString()
+    }];
+}
+
 async function loadAttendanceRecords(uid = null) {
     const recordsBody = document.getElementById('attendance-records-body');
     if (!recordsBody) return;
@@ -802,7 +814,7 @@ async function loadAttendanceRecords(uid = null) {
 
     try {
         const data = await apiFetch(endpoint);
-        attendanceAllRecords = data.records || [];
+        attendanceAllRecords = Array.isArray(data.records) ? data.records : [];
         attendancePage = 1;
         if (attendanceAllRecords.length) {
             const withDates = attendanceAllRecords
@@ -813,10 +825,22 @@ async function loadAttendanceRecords(uid = null) {
                 const latest = withDates[0];
                 attendanceCalendarMonth = new Date(latest.getFullYear(), latest.getMonth(), 1);
             }
+            renderAttendanceCalendar(attendanceAllRecords);
+        } else {
+            const mock = getAttendanceMockRecords();
+            attendanceAllRecords = mock;
+            attendanceCalendarMonth = new Date(mock[0].entry_time);
+            attendanceCalendarMonth = new Date(attendanceCalendarMonth.getFullYear(), attendanceCalendarMonth.getMonth(), 1);
+            renderAttendanceCalendar(attendanceAllRecords);
         }
         renderAttendancePage();
     } catch (_) {
         recordsBody.innerHTML = `<tr><td colspan="11">Error loading records.</td></tr>`;
+        const mock = getAttendanceMockRecords();
+        attendanceAllRecords = mock;
+        attendanceCalendarMonth = new Date(mock[0].entry_time);
+        attendanceCalendarMonth = new Date(attendanceCalendarMonth.getFullYear(), attendanceCalendarMonth.getMonth(), 1);
+        renderAttendancePage();
     }
 }
 
@@ -2607,5 +2631,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+    }
+
+    const attendanceGrid = document.getElementById('attendance-calendar-grid');
+    if (attendanceGrid) {
+        if (!attendanceAllRecords.length) {
+            const mock = getAttendanceMockRecords();
+            renderAttendanceCalendar(mock);
+        }
+        if (userRole === 'admin') {
+            loadAttendanceRecords();
+        } else if (userId) {
+            loadAttendanceRecords(userId);
+        }
     }
 });
