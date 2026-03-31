@@ -802,6 +802,22 @@ html[data-theme="light"] .login-container .error-message {
     background: #ffffff;
 }
 
+.attendance-calendar-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#attendance-focus-date,
+#attendance-view-mode {
+    min-height: 36px;
+    border: 1px solid #d9dde3;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    padding: 6px 10px;
+}
+
 .attendance-calendar-grid {
     width: 100%;
     min-height: 120px;
@@ -811,6 +827,7 @@ html[data-theme="light"] .login-container .error-message {
 /* DayPilot Lite attendance matrix */
 .attendance-calendar-grid .scheduler_default_main {
     border: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .attendance-calendar-grid .scheduler_default_corner,
@@ -849,6 +866,58 @@ html[data-theme="light"] .login-container .error-message {
     padding: 10px 12px;
     color: #475569;
     font-size: 13px;
+}
+
+.attendance-record-modal-content {
+    max-width: 620px;
+}
+
+#attendance-record-modal-body {
+    margin-top: 8px;
+    display: grid;
+    gap: 10px;
+}
+
+.attendance-record-group {
+    border: 1px solid var(--clr-rgba-159-176-205-0-2);
+    border-radius: 10px;
+    padding: 10px;
+    background: var(--clr-rgba-255-255-255-0-05);
+}
+
+.attendance-record-group h4 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+}
+
+.attendance-record-row {
+    display: grid;
+    grid-template-columns: 170px 1fr;
+    gap: 8px;
+    padding: 3px 0;
+}
+
+.attendance-record-key {
+    color: var(--clr-9fb0cd);
+    font-weight: 600;
+}
+
+.attendance-record-value {
+    color: var(--clr-eef2ff);
+    word-break: break-word;
+}
+
+html[data-theme="light"] .attendance-record-group {
+    background: #fff;
+    border-color: #e2e8f0;
+}
+
+html[data-theme="light"] .attendance-record-key {
+    color: #64748b;
+}
+
+html[data-theme="light"] .attendance-record-value {
+    color: #1e293b;
 }
 
 @media (max-width: 768px) {
