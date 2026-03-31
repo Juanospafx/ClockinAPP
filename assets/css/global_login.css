@@ -44,18 +44,15 @@
 
 /* Botón de abrir sidebar */
 .open-sidebar-button {
-    position: fixed;
-    top: 15px;
-    left: 15px;
     background: var(--primary-color, var(--clr-e63946));
     color: white;
     border: none;
-    padding: 10px;
+    padding: 8px 12px;
     border-radius: 5px;
     font-size: 22px;
     cursor: pointer;
-    z-index: 1100;
     display: none; /* se muestra solo en móvil */
+    flex-shrink: 0;
 }
 
 /* Botón de cerrar sidebar */
