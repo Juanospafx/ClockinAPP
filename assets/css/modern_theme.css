@@ -287,33 +287,43 @@ section,
     box-shadow: var(--shadow-soft);
 }
 
-/* Scan card: centered and clearer on desktop + mobile */
+/* Scan section as a clean centered hero (no extra card box) */
 #scan-section {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    gap: 10px;
-    min-height: 220px;
+    gap: 12px;
+    width: 100%;
+    max-width: none;
+    min-height: calc(100vh - 170px);
+    margin: 0;
+    padding: 24px 16px;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
 }
 
 #scan-section h3 {
     margin: 0;
-    font-size: clamp(1.35rem, 1.2rem + 0.6vw, 1.8rem);
-    line-height: 1.2;
+    font-size: clamp(2rem, 1.5rem + 1.2vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: 0.3px;
 }
 
 #start-scanner-button {
-    min-width: 180px;
-    min-height: 48px;
-    font-size: 1.05rem;
+    min-width: 220px;
+    min-height: 56px;
+    font-size: clamp(1.05rem, 0.95rem + 0.3vw, 1.25rem);
+    padding: 12px 24px;
+    border-radius: 12px;
 }
 
 #scan-result,
 #register-message {
     margin: 0;
-    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.1rem);
+    font-size: clamp(1.05rem, 0.95rem + 0.35vw, 1.3rem);
 }
 
 #scanner-container {
@@ -830,13 +840,19 @@ html[data-theme="light"] .login-container .error-message {
     }
 
     #scan-section {
-        min-height: 200px;
-        padding: 20px 14px;
+        min-height: calc(100vh - 140px);
+        padding: 16px 12px;
+        gap: 10px;
+    }
+
+    #scan-section h3 {
+        font-size: clamp(1.6rem, 1.35rem + 1.6vw, 2.15rem);
     }
 
     #start-scanner-button {
         width: 100%;
-        max-width: 260px;
+        max-width: 290px;
+        min-height: 52px;
     }
 
     #records-section table {
