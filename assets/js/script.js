@@ -241,10 +241,32 @@ function formatRecordDateTime(record, value) {
 }
 
 function formatDurationHours(totalMinutes) {
-    if (totalMinutes === null || totalMinutes === undefined) {
+    if (totalMinutes === null || totalMinutes === undefined || totalMinutes === '') {
         return 'N/A';
     }
-    return (totalMinutes / 60).toFixed(2);
+
+    const minutesValue = Number(totalMinutes);
+    if (!Number.isFinite(minutesValue)) {
+        return 'N/A';
+    }
+
+    const safeMinutes = Math.max(0, Math.round(minutesValue));
+    if (safeMinutes === 0) {
+        return '0m';
+    }
+
+    const hours = Math.floor(safeMinutes / 60);
+    const minutes = safeMinutes % 60;
+
+    if (hours === 0) {
+        return `${minutes}m`;
+    }
+
+    if (minutes === 0) {
+        return `${hours}h`;
+    }
+
+    return `${hours}h ${minutes}m`;
 }
 
 function formatLocalDateTime(date) {
@@ -974,7 +996,7 @@ function openAttendanceRecordModal(records) {
                 <div class="attendance-record-row"><div class="attendance-record-key">Date</div><div class="attendance-record-value">${formatRecordValue(entry.date)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Entry Time</div><div class="attendance-record-value">${formatRecordValue(entry.time)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Exit Time</div><div class="attendance-record-value">${formatRecordValue(exit.time)}</div></div>
-                <div class="attendance-record-row"><div class="attendance-record-key">Duration</div><div class="attendance-record-value">${formatRecordValue(record.total_duration)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Duration</div><div class="attendance-record-value">${formatDurationHours(record.total_duration)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Location</div><div class="attendance-record-value">${formatRecordValue(record.location)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Type</div><div class="attendance-record-value">${formatRecordValue(record.type)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Project</div><div class="attendance-record-value">${formatRecordValue(record.project_name)}</div></div>
