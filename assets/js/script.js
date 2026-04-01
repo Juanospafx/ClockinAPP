@@ -83,6 +83,8 @@ let attendanceFilterText = '';
 let attendanceCalendarDate = new Date();
 let attendanceCalendarViewMode = 'week';
 let attendanceMatrixCache = [];
+let attendanceModalRecordsById = new Map();
+let attendancePendingDeleteRecordId = null;
 const ATTENDANCE_PAGE_SIZE = 10;
 
 function normalizeRole(role) {
@@ -894,15 +896,29 @@ function formatRecordValue(value) {
 function openAttendanceRecordModal(records) {
     const modal = document.getElementById('attendance-record-modal');
     const body = document.getElementById('attendance-record-modal-body');
+    const feedback = document.getElementById('attendance-record-modal-feedback');
     if (!modal || !body) return;
+
+    attendanceModalRecordsById = new Map();
+    (records || []).forEach((record) => {
+        if (record && record.id !== undefined && record.id !== null) {
+            attendanceModalRecordsById.set(String(record.id), record);
+        }
+    });
+
+    if (feedback) {
+        feedback.textContent = '';
+        feedback.className = 'attendance-modal-feedback';
+    }
 
     body.innerHTML = (records || []).map((record, idx) => {
         const entry = formatRecordDateTime(record, record.entry_time || record.original_time);
         const exit = formatRecordDateTime(record, record.exit_time || record.rounded_time);
         const evidence = record.evidence_url || record.evidence || record.photo_url || record.image_url || '';
+        const recordId = record?.id !== undefined && record?.id !== null ? String(record.id) : '';
 
         return `
-            <div class="attendance-record-group">
+            <div class="attendance-record-group" data-record-id="${recordId}">
                 <h4>Record ${idx + 1}</h4>
                 <div class="attendance-record-row"><div class="attendance-record-key">Employee</div><div class="attendance-record-value">${formatRecordValue(record.username)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Date</div><div class="attendance-record-value">${formatRecordValue(entry.date)}</div></div>
@@ -913,6 +929,10 @@ function openAttendanceRecordModal(records) {
                 <div class="attendance-record-row"><div class="attendance-record-key">Type</div><div class="attendance-record-value">${formatRecordValue(record.type)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Project</div><div class="attendance-record-value">${formatRecordValue(record.project_name)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Evidence</div><div class="attendance-record-value">${evidence ? `<a href="${evidence}" target="_blank" rel="noopener noreferrer">Open evidence</a>` : '—'}</div></div>
+                <div class="attendance-record-actions">
+                    <button type="button" class="attendance-action-btn attendance-action-edit" data-action="edit-record-modal" data-record-id="${recordId}" ${recordId ? '' : 'disabled'}>Edit</button>
+                    <button type="button" class="attendance-action-btn attendance-action-delete" data-action="delete-record-modal" data-record-id="${recordId}" ${recordId ? '' : 'disabled'}>Delete</button>
+                </div>
             </div>
         `;
     }).join('');
@@ -1719,6 +1739,56 @@ async function deleteRecord(recordId) {
     }
 }
 
+function openAttendanceDeleteConfirm(recordId) {
+    const confirmModal = document.getElementById('attendance-delete-confirm-modal');
+    const message = document.getElementById('attendance-delete-confirm-message');
+    if (!confirmModal) return;
+
+    attendancePendingDeleteRecordId = String(recordId || '');
+    const record = attendanceModalRecordsById.get(attendancePendingDeleteRecordId);
+    if (message) {
+        const user = record?.username || 'this employee';
+        message.textContent = `Delete record #${attendancePendingDeleteRecordId} for ${user}? This action cannot be undone.`;
+    }
+
+    confirmModal.style.display = 'flex';
+}
+
+function closeAttendanceDeleteConfirm() {
+    const confirmModal = document.getElementById('attendance-delete-confirm-modal');
+    if (confirmModal) confirmModal.style.display = 'none';
+    attendancePendingDeleteRecordId = null;
+}
+
+async function confirmDeleteAttendanceRecord() {
+    const feedback = document.getElementById('attendance-record-modal-feedback');
+    const recordId = attendancePendingDeleteRecordId;
+    if (!recordId) return;
+
+    try {
+        await apiFetch(`attendance/${recordId}`, 'DELETE');
+        closeAttendanceDeleteConfirm();
+
+        const detailModal = document.getElementById('attendance-record-modal');
+        if (detailModal) detailModal.style.display = 'none';
+
+        const uid = sessionStorage.getItem('user_id');
+        const role = normalizeRole(sessionStorage.getItem('user_role'));
+        await loadAttendanceRecords(role === 'admin' ? null : uid);
+
+        if (feedback) {
+            feedback.textContent = 'Record deleted successfully.';
+            feedback.className = 'attendance-modal-feedback success';
+        }
+    } catch (error) {
+        closeAttendanceDeleteConfirm();
+        if (feedback) {
+            feedback.textContent = `Error deleting record: ${error.message}`;
+            feedback.className = 'attendance-modal-feedback error';
+        }
+    }
+}
+
 async function openEditModal(recordData) {
     attendanceEditingRecord = recordData || null;
     if (!attendanceEditingRecord) return;
@@ -2471,9 +2541,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 attendanceRecordModal.style.display = 'none';
             });
         }
+
+        const attendanceModalBody = document.getElementById('attendance-record-modal-body');
+        if (attendanceModalBody) {
+            attendanceModalBody.addEventListener('click', (e) => {
+                const actionBtn = e.target.closest('button[data-action]');
+                if (!actionBtn) return;
+
+                const action = actionBtn.dataset.action;
+                const recordId = actionBtn.dataset.recordId;
+                if (!recordId) return;
+
+                if (action === 'edit-record-modal') {
+                    const selectedRecord = attendanceModalRecordsById.get(String(recordId));
+                    if (!selectedRecord) return;
+                    attendanceRecordModal.style.display = 'none';
+                    openEditModal(selectedRecord);
+                } else if (action === 'delete-record-modal') {
+                    openAttendanceDeleteConfirm(recordId);
+                }
+            });
+        }
+
         attendanceRecordModal.addEventListener('click', (e) => {
             if (e.target === attendanceRecordModal) {
                 attendanceRecordModal.style.display = 'none';
+            }
+        });
+    }
+
+    const attendanceDeleteConfirmModal = document.getElementById('attendance-delete-confirm-modal');
+    if (attendanceDeleteConfirmModal) {
+        const cancelDeleteBtn = document.getElementById('attendance-delete-cancel');
+        const confirmDeleteBtn = document.getElementById('attendance-delete-confirm');
+        const closeDeleteBtn = document.getElementById('attendance-delete-close');
+
+        if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeAttendanceDeleteConfirm);
+        if (closeDeleteBtn) closeDeleteBtn.addEventListener('click', closeAttendanceDeleteConfirm);
+        if (confirmDeleteBtn) confirmDeleteBtn.addEventListener('click', confirmDeleteAttendanceRecord);
+
+        attendanceDeleteConfirmModal.addEventListener('click', (e) => {
+            if (e.target === attendanceDeleteConfirmModal) {
+                closeAttendanceDeleteConfirm();
             }
         });
     }

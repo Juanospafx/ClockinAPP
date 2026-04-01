@@ -715,7 +715,20 @@
         <div class="modal-content attendance-record-modal-content">
             <span id="attendance-record-modal-close" class="close-button">×</span>
             <h3>Attendance Record Details</h3>
+            <p id="attendance-record-modal-feedback" class="attendance-modal-feedback"></p>
             <div id="attendance-record-modal-body"></div>
+        </div>
+    </div>
+
+    <div id="attendance-delete-confirm-modal" class="modal" style="display:none;">
+        <div class="modal-content attendance-confirm-modal-content">
+            <span id="attendance-delete-close" class="close-button">×</span>
+            <h3>Delete Attendance Record</h3>
+            <p id="attendance-delete-confirm-message" class="attendance-confirm-message">Are you sure you want to delete this record?</p>
+            <div class="attendance-confirm-actions">
+                <button type="button" id="attendance-delete-cancel" class="attendance-action-btn attendance-action-cancel">Cancel</button>
+                <button type="button" id="attendance-delete-confirm" class="attendance-action-btn attendance-action-delete">Delete</button>
+            </div>
         </div>
     </div>
 
