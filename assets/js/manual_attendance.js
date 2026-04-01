@@ -129,7 +129,7 @@
 
         employeeList.innerHTML = '';
         users.forEach((u) => {
-            const row = document.createElement('div');
+            const row = document.createElement('label');
             row.className = 'manual-employee-item';
             row.dataset.userId = String(u.id);
             row.dataset.username = (u.username || '').toLowerCase();
@@ -146,13 +146,6 @@
             const text = document.createElement('span');
             text.className = 'manual-employee-name';
             text.textContent = u.username;
-
-            row.addEventListener('click', (e) => {
-                if (e.target === checkbox) return;
-                checkbox.checked = !checkbox.checked;
-                row.classList.toggle('is-selected', checkbox.checked);
-                updateSelectedCount();
-            });
 
             row.appendChild(checkbox);
             row.appendChild(text);
