@@ -825,138 +825,144 @@ html[data-theme="light"] .login-container .error-message {
     background: transparent;
 }
 
-/* DayPilot Lite attendance matrix - full dark restyle */
-.attendance-calendar-grid .scheduler_default_main {
-    border: 0 !important;
-    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(180deg, var(--clr-rgba-29-39-63-0-96), var(--clr-rgba-20-30-50-0-55)) !important;
-    color: var(--text-color);
-}
-
-.attendance-calendar-grid .scheduler_default_rowheader_scroll,
-.attendance-calendar-grid .scheduler_default_timeheader_scroll,
-.attendance-calendar-grid .scheduler_default_matrix {
-    background: transparent !important;
-}
-
-.attendance-calendar-grid .scheduler_default_corner,
-.attendance-calendar-grid .scheduler_default_corner_inner,
-.attendance-calendar-grid .scheduler_default_timeheadergroup,
-.attendance-calendar-grid .scheduler_default_timeheadercol,
-.attendance-calendar-grid .scheduler_default_timeheadergroup_inner,
-.attendance-calendar-grid .scheduler_default_timeheadercol_inner {
-    background: var(--clr-rgba-29-39-63-0-96) !important;
-    color: var(--clr-eef2ff) !important;
-    border-color: var(--clr-rgba-159-176-205-0-2) !important;
-    font-size: 12px;
-}
-
-.attendance-calendar-grid .scheduler_default_timeheadergroup_inner,
-.attendance-calendar-grid .scheduler_default_timeheadercol_inner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.attendance-calendar-grid .scheduler_default_timeheadergroup.date-header .scheduler_default_timeheadergroup_inner,
-.attendance-calendar-grid .scheduler_default_timeheadercol.date-header .scheduler_default_timeheadercol_inner {
-    font-weight: 700;
-    color: var(--clr-eef2ff) !important;
-    letter-spacing: 0.02em;
-}
-
-.attendance-calendar-grid .scheduler_default_timeheadergroup.weekday-header .scheduler_default_timeheadergroup_inner,
-.attendance-calendar-grid .scheduler_default_timeheadercol.weekday-header .scheduler_default_timeheadercol_inner {
-    font-size: 11px;
-    color: var(--clr-9fb0cd) !important;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
-
-.attendance-calendar-grid .scheduler_default_rowheader,
-.attendance-calendar-grid .scheduler_default_rowheader_inner,
-.attendance-calendar-grid .scheduler_default_rowheadercol2 {
-    background: linear-gradient(180deg, var(--clr-rgba-39-50-78-0-94), var(--clr-rgba-29-39-63-0-96)) !important;
-    border-color: var(--clr-rgba-159-176-205-0-2) !important;
-}
-
-.attendance-calendar-grid .scheduler_default_rowheader_inner {
-    font-weight: 600;
-    padding-left: 14px;
-}
-
-.attendance-calendar-grid .scheduler_default_rowheader_inner_text {
-    color: var(--clr-eef2ff) !important;
-    letter-spacing: 0.01em;
-}
-
-.attendance-calendar-grid .scheduler_default_cell {
-    background: rgba(18, 27, 49, 0.62) !important;
-    transition: background-color 0.14s ease;
-}
-
-.attendance-calendar-grid .scheduler_default_cell:hover {
-    background: rgba(35, 51, 85, 0.68) !important;
-}
-
-.attendance-calendar-grid .scheduler_default_cell_business {
-    background: rgba(22, 33, 58, 0.8) !important;
-}
-
-.attendance-calendar-grid .scheduler_default_matrix_vertical_line,
-.attendance-calendar-grid .scheduler_default_matrix_horizontal_line,
-.attendance-calendar-grid .scheduler_default_resourcedivider,
-.attendance-calendar-grid .scheduler_default_divider,
-.attendance-calendar-grid .scheduler_default_divider_horizontal,
-.attendance-calendar-grid .scheduler_default_splitter {
-    border-color: var(--clr-rgba-159-176-205-0-16) !important;
-}
-
-.attendance-calendar-grid .scheduler_default_event,
-.attendance-calendar-grid .scheduler_default_event_inner {
-    border-radius: 999px !important;
-}
-
-.attendance-calendar-grid .scheduler_default_event {
-    border: 1px solid var(--clr-rgba-255-98-71-0-18) !important;
-    color: var(--clr-eef2ff) !important;
-    background: linear-gradient(135deg, var(--primary-color), var(--clr-ff7b62)) !important;
-    box-shadow: 0 6px 14px rgba(255, 98, 71, 0.28);
-    font-size: 11px;
-    transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
-}
-
-.attendance-calendar-grid .scheduler_default_event:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 16px rgba(255, 98, 71, 0.34);
-    filter: saturate(1.06);
-}
-
-.attendance-calendar-grid .scheduler_default_event_inner {
-    padding: 3px 10px;
-    border-color: transparent !important;
-    background: transparent !important;
-    font-weight: 600;
-}
-
-.attendance-calendar-grid .scheduler_default_scrollable {
-    background: transparent !important;
+/* Custom attendance matrix */
+.attendance-calendar-grid {
+    overflow: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--clr-rgba-159-176-205-0-35) transparent;
 }
 
-.attendance-calendar-grid .scheduler_default_scrollable::-webkit-scrollbar {
+.attendance-calendar-grid::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
-.attendance-calendar-grid .scheduler_default_scrollable::-webkit-scrollbar-thumb {
+.attendance-calendar-grid::-webkit-scrollbar-thumb {
     background: var(--clr-rgba-159-176-205-0-35);
     border-radius: 999px;
 }
 
-.attendance-calendar-grid .scheduler_default_scrollable::-webkit-scrollbar-track {
+.attendance-calendar-grid::-webkit-scrollbar-track {
     background: transparent;
+}
+
+.attendance-matrix {
+    min-width: 680px;
+    background: linear-gradient(180deg, var(--clr-rgba-29-39-63-0-96), var(--clr-rgba-20-30-50-0-55));
+}
+
+.attendance-matrix-row {
+    display: grid;
+    grid-template-columns: 240px repeat(var(--attendance-days, 7), minmax(110px, 1fr));
+}
+
+.attendance-matrix-head {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+}
+
+.attendance-matrix-col {
+    min-height: 52px;
+    border-right: 1px solid var(--clr-rgba-159-176-205-0-16);
+    border-bottom: 1px solid var(--clr-rgba-159-176-205-0-16);
+}
+
+.attendance-matrix-col-header {
+    text-align: center;
+    padding: 8px 6px;
+    background: var(--clr-rgba-29-39-63-0-96);
+}
+
+.attendance-matrix-date {
+    font-weight: 700;
+    color: var(--clr-eef2ff);
+    letter-spacing: 0.02em;
+}
+
+.attendance-matrix-day {
+    margin-top: 2px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--clr-9fb0cd);
+}
+
+.attendance-matrix-employee,
+.attendance-matrix-employee-head {
+    position: sticky;
+    left: 0;
+    z-index: 7;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-weight: 600;
+    color: var(--clr-eef2ff);
+    background: linear-gradient(180deg, var(--clr-rgba-39-50-78-0-94), var(--clr-rgba-29-39-63-0-96));
+}
+
+.attendance-matrix-employee-head {
+    z-index: 9;
+}
+
+.attendance-matrix-body .attendance-matrix-row:hover .attendance-matrix-employee {
+    background: linear-gradient(180deg, rgba(52, 71, 111, 0.92), var(--clr-rgba-29-39-63-0-96));
+}
+
+.attendance-matrix-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: rgba(18, 27, 49, 0.62);
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color 0.14s ease;
+}
+
+.attendance-matrix-cell:hover:not(:disabled) {
+    background: rgba(35, 51, 85, 0.68);
+}
+
+.attendance-matrix-cell.is-empty {
+    cursor: default;
+}
+
+.attendance-matrix-cell.is-empty:disabled {
+    opacity: 0.8;
+}
+
+.attendance-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 72px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--clr-rgba-255-98-71-0-18);
+    color: var(--clr-eef2ff);
+    background: linear-gradient(135deg, var(--primary-color), var(--clr-ff7b62));
+    box-shadow: 0 6px 14px rgba(255, 98, 71, 0.2);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.attendance-chip-empty {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    color: var(--clr-rgba-255-255-255-0-5);
+}
+
+.attendance-matrix-col.is-today,
+.attendance-matrix-cell.is-today {
+    background-image: linear-gradient(0deg, var(--clr-rgba-92-167-255-0-08), var(--clr-rgba-92-167-255-0-08));
+}
+
+.attendance-calendar-empty {
+    padding: 18px;
+    color: var(--clr-9fb0cd);
 }
 
 html[data-theme="light"] .attendance-calendar-wrap {
@@ -972,48 +978,32 @@ html[data-theme="light"] #attendance-view-mode {
     color: #334155;
 }
 
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_main {
-    background: linear-gradient(180deg, #f8fbff, #f1f6ff) !important;
+html[data-theme="light"] .attendance-matrix {
+    background: linear-gradient(180deg, #f8fbff, #f1f6ff);
 }
 
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_corner,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_corner_inner,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadergroup,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadercol,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadergroup_inner,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadercol_inner,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_rowheader,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_rowheader_inner,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_rowheadercol2 {
-    background: #f8fafc !important;
-    color: #334155 !important;
-    border-color: #e2e8f0 !important;
+html[data-theme="light"] .attendance-matrix-col {
+    border-right-color: #edf1f5;
+    border-bottom-color: #edf1f5;
 }
 
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_rowheader {
-    background: linear-gradient(180deg, #ffffff, #f6f9ff) !important;
+html[data-theme="light"] .attendance-matrix-col-header,
+html[data-theme="light"] .attendance-matrix-employee,
+html[data-theme="light"] .attendance-matrix-employee-head {
+    color: #1f2937;
+    background: #f8fafc;
 }
 
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_rowheader_inner_text {
-    color: #1f2937 !important;
+html[data-theme="light"] .attendance-matrix-day {
+    color: #64748b;
 }
 
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_cell {
-    background: #ffffff !important;
+html[data-theme="light"] .attendance-matrix-cell {
+    background: #ffffff;
 }
 
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadergroup.weekday-header .scheduler_default_timeheadergroup_inner,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadercol.weekday-header .scheduler_default_timeheadercol_inner {
-    color: #64748b !important;
-}
-
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_matrix_vertical_line,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_matrix_horizontal_line,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_resourcedivider,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_divider,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_divider_horizontal,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_splitter {
-    border-color: #edf1f5 !important;
+html[data-theme="light"] .attendance-matrix-cell:hover:not(:disabled) {
+    background: #f6f9ff;
 }
 
 .attendance-calendar-error {
