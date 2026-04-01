@@ -82,7 +82,7 @@ let attendancePage = 1;
 let attendanceFilterText = '';
 let attendanceCalendarDate = new Date();
 let attendanceCalendarViewMode = 'week';
-let attendanceScheduler = null;
+let attendanceMatrixCache = [];
 const ATTENDANCE_PAGE_SIZE = 10;
 
 function normalizeRole(role) {
@@ -929,27 +929,97 @@ function getAttendanceRange() {
     return { start: getStartOfWeek(focus), days: 7 };
 }
 
+function attendanceDateKey(dateObj) {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function getVisibleAttendanceDates(start, days) {
+    const dates = [];
+    for (let i = 0; i < days; i += 1) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        d.setHours(0, 0, 0, 0);
+        dates.push(d);
+    }
+    return dates;
+}
+
+function transformAttendanceRecordsToMatrix(records, visibleDates) {
+    const validRecords = Array.isArray(records) ? records : [];
+    const dayKeys = visibleDates.map((d) => attendanceDateKey(d));
+    const dayKeySet = new Set(dayKeys);
+    const mapByEmployee = new Map();
+
+    validRecords.forEach((record) => {
+        const employeeName = (record.username || 'Unknown').trim() || 'Unknown';
+        const employeeId = record.user_id || employeeName;
+        const base = record.entry_time || record.original_time || record.created_at || record.date;
+        const d = base ? new Date(base) : null;
+        if (!d || Number.isNaN(d.getTime())) return;
+        const dayKey = attendanceDateKey(d);
+        if (!dayKeySet.has(dayKey)) return;
+
+        if (!mapByEmployee.has(employeeId)) {
+            const dayBucket = {};
+            dayKeys.forEach((k) => { dayBucket[k] = []; });
+            mapByEmployee.set(employeeId, {
+                employeeId,
+                employeeName,
+                days: dayBucket
+            });
+        }
+
+        mapByEmployee.get(employeeId).days[dayKey].push(record);
+    });
+
+    const matrix = Array.from(mapByEmployee.values())
+        .sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+
+    matrix.forEach((row) => {
+        dayKeys.forEach((k) => {
+            row.days[k].sort((a, b) => {
+                const da = new Date(a.entry_time || a.original_time || a.created_at || 0).getTime();
+                const db = new Date(b.entry_time || b.original_time || b.created_at || 0).getTime();
+                return da - db;
+            });
+        });
+    });
+
+    return matrix;
+}
+
+function attendanceCellSummary(records) {
+    const count = Array.isArray(records) ? records.length : 0;
+    if (!count) return '';
+    if (count === 1) return 'record';
+    return `${count} records`;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function renderAttendanceCalendar(records) {
     const grid = document.getElementById('attendance-calendar-grid');
     const title = document.getElementById('attendance-calendar-title');
     const dateInput = document.getElementById('attendance-focus-date');
     if (!grid || !title) return;
-    console.log('attendance daypilot loaded', { recordsCount: Array.isArray(records) ? records.length : 0 });
-
-    if (typeof DayPilot === 'undefined' || !DayPilot.Scheduler) {
-        grid.innerHTML = '<div class="attendance-calendar-error">DayPilot Lite local no cargó.</div>';
-        return;
-    }
 
     const { start, days } = getAttendanceRange();
+    const visibleDates = getVisibleAttendanceDates(start, days);
     const end = new Date(start);
     end.setDate(end.getDate() + days);
 
     if (dateInput) {
-        const y = attendanceCalendarDate.getFullYear();
-        const m = String(attendanceCalendarDate.getMonth() + 1).padStart(2, '0');
-        const d = String(attendanceCalendarDate.getDate()).padStart(2, '0');
-        dateInput.value = `${y}-${m}-${d}`;
+        dateInput.value = attendanceDateKey(attendanceCalendarDate);
     }
 
     const titleStart = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -958,81 +1028,71 @@ function renderAttendanceCalendar(records) {
     const titleEnd = titleEndBase.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     title.textContent = attendanceCalendarViewMode === 'day' ? titleStart : `${titleStart} - ${titleEnd}`;
 
-    const users = [...new Set(records.map((r) => r.username).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-    const resources = users.map((u) => ({ name: u, id: u }));
+    attendanceMatrixCache = transformAttendanceRecordsToMatrix(records, visibleDates);
 
-    const groupedEvents = new Map();
-    records.forEach((r) => {
-        const base = r.entry_time || r.original_time || r.created_at;
-        const d = base ? new Date(base) : null;
-        if (!d || Number.isNaN(d.getTime())) return;
-        if (d < start || d >= end) return;
-
-        const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        const key = `${r.username}__${dayStart.toISOString().slice(0, 10)}`;
-        if (!groupedEvents.has(key)) groupedEvents.set(key, []);
-        groupedEvents.get(key).push(r);
-    });
-
-    const events = [];
-    let eventId = 1;
-    groupedEvents.forEach((list, key) => {
-        const [username, day] = key.split('__');
-        const startIso = `${day}T00:00:00`;
-        const endDate = new Date(`${day}T00:00:00`);
-        endDate.setDate(endDate.getDate() + 1);
-        const endIso = `${endDate.toISOString().slice(0, 10)}T00:00:00`;
-        const text = list.length > 1 ? `${list.length} records` : 'record';
-
-        events.push({
-            id: eventId++,
-            resource: username,
-            start: startIso,
-            end: endIso,
-            text,
-            records: list
-        });
-    });
-
-    if (!attendanceScheduler) {
-        attendanceScheduler = new DayPilot.Scheduler('attendance-calendar-grid', {
-            locale: 'en-us',
-            scale: 'Day',
-            startDate: new DayPilot.Date(start),
-            days,
-            timeHeaders: [
-                { groupBy: 'Cell', format: 'd/M' },
-                { groupBy: 'Cell', format: 'ddd' }
-            ],
-            onBeforeTimeHeaderRender: (args) => {
-                args.header.cssClass = args.header.level === 0 ? 'date-header' : 'weekday-header';
-            },
-            rowHeaderColumns: [{ title: 'Employee', display: 'name' }],
-            rowHeaderWidth: 230,
-            eventHeight: 20,
-            rowMinHeight: 36,
-            cellWidth: 64,
-            treeEnabled: false,
-            durationBarVisible: false,
-            eventMoveHandling: 'Disabled',
-            eventResizeHandling: 'Disabled',
-            eventDeleteHandling: 'Disabled',
-            contextMenu: null,
-            onEventClick: (args) => {
-                openAttendanceRecordModal(args.e.data.records || []);
-            }
-        });
-        attendanceScheduler.init();
-        console.log('scheduler initialized');
+    if (!attendanceMatrixCache.length) {
+        grid.innerHTML = '<div class="attendance-calendar-empty">No records for selected range.</div>';
+        return;
     }
 
-    attendanceScheduler.startDate = new DayPilot.Date(start);
-    attendanceScheduler.days = days;
-    attendanceScheduler.resources = resources;
-    attendanceScheduler.events.list = events;
-    console.log('resourcesCount', resources.length);
-    console.log('eventsCount', events.length);
-    attendanceScheduler.update();
+    const todayKey = attendanceDateKey(new Date());
+    const headers = visibleDates.map((d) => {
+        const key = attendanceDateKey(d);
+        const isToday = key === todayKey;
+        const shortDate = d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+        const shortDay = d.toLocaleDateString('en-US', { weekday: 'short' });
+        return `
+            <div class="attendance-matrix-col attendance-matrix-col-header ${isToday ? 'is-today' : ''}" data-day-key="${key}">
+                <div class="attendance-matrix-date">${shortDate}</div>
+                <div class="attendance-matrix-day">${shortDay}</div>
+            </div>
+        `;
+    }).join('');
+
+    const rows = attendanceMatrixCache.map((employee) => {
+        const cells = visibleDates.map((d) => {
+            const dayKey = attendanceDateKey(d);
+            const dayRecords = employee.days[dayKey] || [];
+            const summary = attendanceCellSummary(dayRecords);
+            const isToday = dayKey === todayKey;
+            const cls = [
+                'attendance-matrix-col',
+                'attendance-matrix-cell',
+                isToday ? 'is-today' : '',
+                dayRecords.length ? 'has-records' : 'is-empty'
+            ].filter(Boolean).join(' ');
+
+            return `
+                <button
+                    type="button"
+                    class="${cls}"
+                    data-attendance-cell="1"
+                    data-employee-id="${escapeHtml(employee.employeeId)}"
+                    data-day-key="${dayKey}"
+                    ${dayRecords.length ? '' : 'disabled'}
+                >
+                    ${summary ? `<span class="attendance-chip">${summary}</span>` : '<span class="attendance-chip attendance-chip-empty">—</span>'}
+                </button>
+            `;
+        }).join('');
+
+        return `
+            <div class="attendance-matrix-row" data-employee-id="${escapeHtml(employee.employeeId)}">
+                <div class="attendance-matrix-col attendance-matrix-employee">${escapeHtml(employee.employeeName)}</div>
+                ${cells}
+            </div>
+        `;
+    }).join('');
+
+    grid.innerHTML = `
+        <div class="attendance-matrix" role="grid" aria-label="Attendance matrix" style="--attendance-days:${days};">
+            <div class="attendance-matrix-row attendance-matrix-head">
+                <div class="attendance-matrix-col attendance-matrix-employee attendance-matrix-employee-head">Employee</div>
+                ${headers}
+            </div>
+            <div class="attendance-matrix-body">${rows}</div>
+        </div>
+    `;
 }
 
 function exportAttendanceCsv() {
@@ -2580,6 +2640,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const attendanceTodayBtn = document.getElementById('attendance-calendar-today');
+    if (attendanceTodayBtn) {
+        attendanceTodayBtn.addEventListener('click', () => {
+            const now = new Date();
+            attendanceCalendarDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            renderAttendancePage();
+        });
+    }
+
     const attendanceFocusDateInput = document.getElementById('attendance-focus-date');
     if (attendanceFocusDateInput) {
         attendanceFocusDateInput.addEventListener('change', (e) => {
@@ -2705,6 +2774,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
+        });
+    }
+
+    const attendanceMatrixGrid = document.getElementById('attendance-calendar-grid');
+    if (attendanceMatrixGrid) {
+        attendanceMatrixGrid.addEventListener('click', (e) => {
+            const cell = e.target.closest('[data-attendance-cell="1"]');
+            if (!cell || cell.disabled) return;
+
+            const employeeId = cell.dataset.employeeId;
+            const dayKey = cell.dataset.dayKey;
+            if (!employeeId || !dayKey) return;
+
+            const row = attendanceMatrixCache.find((item) => String(item.employeeId) === String(employeeId));
+            if (!row) return;
+
+            const dayRecords = row.days[dayKey] || [];
+            if (!dayRecords.length) return;
+
+            openAttendanceRecordModal(dayRecords);
         });
     }
 
