@@ -1,72 +1,200 @@
 /* Manual Attendance Styles */
 .manual-attendance-form {
-    max-width: 700px;
+    max-width: 920px;
     margin-bottom: 20px;
 }
+
 .manual-attendance-form .form-row {
     display: flex;
     gap: 16px;
     flex-wrap: wrap;
 }
+
 .manual-attendance-form .form-group {
     flex: 1;
-    min-width: 180px;
+    min-width: 220px;
 }
+
+.manual-mode-switch {
+    display: inline-flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-2);
+    background: var(--clr-rgba-255-255-255-0-05);
+}
+
+.manual-mode-btn {
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.manual-mode-btn.active {
+    background: var(--clr-rgba-92-167-255-0-08);
+    border-color: var(--clr-rgba-159-176-205-0-35);
+}
+
+.manual-employee-search-input {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
 .manual-employee-list {
-    border: 1px solid var(--clr-ccc);
-    border-radius: 8px;
-    max-height: 220px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-22);
+    border-radius: 12px;
+    height: 260px;
     overflow: auto;
-    padding: 8px;
+    padding: 6px;
     background: var(--clr-rgba-255-255-255-0-04);
 }
+
+.manual-employee-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.manual-employee-list::-webkit-scrollbar-thumb {
+    background: var(--clr-rgba-159-176-205-0-35);
+    border-radius: 999px;
+}
+
 .manual-employee-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 4px;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
     cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color 0.16s ease, border-color 0.16s ease;
 }
+
 .manual-employee-item:hover {
     background: var(--clr-rgba-255-255-255-0-06);
 }
-.manual-selected-count {
-    display: inline-block;
-    margin-top: 6px;
-    opacity: 0.85;
+
+.manual-employee-item.is-selected {
+    background: var(--clr-rgba-92-167-255-0-08);
+    border-color: var(--clr-rgba-159-176-205-0-35);
 }
-.manual-user-actions {
+
+.manual-employee-item[hidden] {
+    display: none;
+}
+
+.manual-employee-checkbox {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-35);
+    background: transparent;
+    position: relative;
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.manual-employee-checkbox:checked {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.manual-employee-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    width: 4px;
+    height: 8px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.manual-employee-name {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.manual-selector-footer {
     margin-top: 8px;
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.manual-selected-count {
+    display: inline-block;
+    opacity: 0.9;
+}
+
+.manual-user-actions {
+    display: inline-flex;
     gap: 8px;
 }
-.manual-user-actions .submit-btn {
+
+.manual-secondary-btn {
     margin-top: 0;
     padding: 6px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-22);
+    background: var(--clr-rgba-255-255-255-0-05);
+    color: var(--text-color);
     font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
 }
+
+.manual-sub-label {
+    display: block;
+    margin-top: 10px;
+}
+
+.manual-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-width: 190px;
+}
+
+.manual-checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
 .manual-attendance-form .required {
     color: var(--clr-dc3545);
 }
+
 .manual-attendance-form textarea {
     width: 100%;
     box-sizing: border-box;
-    padding: 8px;
-    border: 1px solid var(--clr-ccc);
-    border-radius: 4px;
+    padding: 10px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-35);
+    border-radius: 10px;
     font-family: inherit;
     resize: vertical;
 }
+
 .manual-attendance-form .submit-btn {
     margin-top: 12px;
     padding: 10px 24px;
     background: var(--clr-007bff);
     color: var(--clr-fff);
     border: none;
-    border-radius: 4px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 14px;
 }
+
 .manual-attendance-form .submit-btn:hover {
     background: var(--clr-0056b3);
 }
@@ -85,6 +213,7 @@
     margin-left: 6px;
     white-space: nowrap;
 }
+
 .badge-manual::before {
     content: '✏️';
     font-size: 11px;
@@ -95,6 +224,7 @@
     margin-top: 10px;
     font-weight: 500;
 }
+
 #manual-attendance-message.success { color: var(--clr-28a745); }
 #manual-attendance-message.error { color: var(--clr-dc3545); }
 #manual-attendance-message.warning { color: var(--clr-856404); }
@@ -104,6 +234,7 @@
     position: relative;
     cursor: help;
 }
+
 .manual-tooltip .tooltip-text {
     visibility: hidden;
     background: var(--clr-333);
@@ -120,7 +251,23 @@
     opacity: 0;
     transition: opacity 0.2s;
 }
+
 .manual-tooltip:hover .tooltip-text {
     visibility: visible;
     opacity: 1;
+}
+
+html[data-theme="light"] .manual-employee-name {
+    color: #1f2937;
+}
+
+html[data-theme="light"] .manual-employee-item.is-selected {
+    background: #eef6ff;
+    border-color: #cddff7;
+}
+
+html[data-theme="light"] .manual-secondary-btn {
+    background: #fff;
+    color: #334155;
+    border-color: #d9dde3;
 }

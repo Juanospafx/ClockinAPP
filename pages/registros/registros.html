@@ -542,14 +542,22 @@
             <p id="manual-section-subtitle">Register attendance entries manually for employees who forgot to clock in/out.</p>
 
             <form id="manual-attendance-form" class="manual-attendance-form">
+                <div class="manual-mode-switch" role="group" aria-label="Entry mode">
+                    <button type="button" id="manual-mode-single" class="manual-mode-btn active" data-mode="single">Single Day</button>
+                    <button type="button" id="manual-mode-multi" class="manual-mode-btn" data-mode="multi">Multiple Days</button>
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label>Employees: <span class="required">*</span></label>
-                        <div id="manual-employee-list" class="manual-employee-list"></div>
-                        <small id="manual-selected-count" class="manual-selected-count">0 selected</small>
-                        <div class="manual-user-actions">
-                            <button type="button" id="manual-select-all-users" class="submit-btn">Select all</button>
-                            <button type="button" id="manual-clear-users" class="submit-btn">Clear</button>
+                        <input type="text" id="manual-employee-search" placeholder="Search employee..." class="manual-employee-search-input">
+                        <div id="manual-employee-list" class="manual-employee-list" role="listbox" aria-multiselectable="true"></div>
+                        <div class="manual-selector-footer">
+                            <small id="manual-selected-count" class="manual-selected-count">0 selected</small>
+                            <div class="manual-user-actions">
+                                <button type="button" id="manual-select-all-users" class="manual-secondary-btn">Select all</button>
+                                <button type="button" id="manual-clear-users" class="manual-secondary-btn">Clear</button>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -557,9 +565,15 @@
                         <select id="manual-project">
                             <option value="">— Select project —</option>
                         </select>
+                        <label for="manual-conflict-strategy" class="manual-sub-label">On conflicts:</label>
+                        <select id="manual-conflict-strategy">
+                            <option value="skip" selected>Skip existing records</option>
+                            <option value="overwrite">Overwrite existing records</option>
+                        </select>
                     </div>
                 </div>
-                <div class="form-row">
+
+                <div id="manual-single-date-block" class="form-row">
                     <div class="form-group">
                         <label for="manual-date">Date: <span class="required">*</span></label>
                         <input type="date" id="manual-date" required>
@@ -573,6 +587,22 @@
                         <input type="time" id="manual-exit-time" required>
                     </div>
                 </div>
+
+                <div id="manual-range-date-block" class="form-row" style="display:none;">
+                    <div class="form-group">
+                        <label for="manual-date-start">Start date: <span class="required">*</span></label>
+                        <input type="date" id="manual-date-start">
+                    </div>
+                    <div class="form-group">
+                        <label for="manual-date-end">End date: <span class="required">*</span></label>
+                        <input type="date" id="manual-date-end">
+                    </div>
+                    <div class="form-group manual-checkbox-group">
+                        <label for="manual-exclude-weekends">Exclude weekends</label>
+                        <input type="checkbox" id="manual-exclude-weekends">
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="manual-reason">Reason for manual entry: <span class="required">*</span></label>
                     <textarea id="manual-reason" rows="2" placeholder="e.g., Employee forgot to clock in, Device malfunction..." required></textarea>
@@ -629,6 +659,18 @@
 
             <p id="manual-attendance-message"></p>
         </section>
+
+        <div id="manual-batch-confirm-modal" class="modal" style="display:none;">
+            <div class="modal-content attendance-confirm-modal-content">
+                <span id="manual-batch-confirm-close" class="close-button">×</span>
+                <h3>Confirm Manual Batch</h3>
+                <div id="manual-batch-summary" class="attendance-record-group"></div>
+                <div class="attendance-confirm-actions">
+                    <button type="button" id="manual-batch-cancel" class="attendance-action-btn attendance-action-cancel">Cancel</button>
+                    <button type="button" id="manual-batch-submit" class="attendance-action-btn attendance-action-edit">Create records</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Edit Record Modal -->
