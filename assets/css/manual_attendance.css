@@ -49,7 +49,8 @@
     border: 1px solid var(--clr-rgba-159-176-205-0-22);
     border-radius: 12px;
     height: 260px;
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: 6px;
     background: var(--clr-rgba-255-255-255-0-04);
 }
@@ -66,8 +67,9 @@
 .manual-employee-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
     border-radius: 10px;
     cursor: pointer;
     border: 1px solid transparent;
@@ -88,33 +90,12 @@
 }
 
 .manual-employee-checkbox {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 6px;
-    border: 1px solid var(--clr-rgba-159-176-205-0-35);
-    background: transparent;
-    position: relative;
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px;
     margin: 0;
     flex: 0 0 auto;
-}
-
-.manual-employee-checkbox:checked {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.manual-employee-checkbox:checked::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 5px;
-    width: 4px;
-    height: 8px;
-    border: solid #fff;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
+    accent-color: var(--primary-color);
 }
 
 .manual-employee-name {
