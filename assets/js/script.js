@@ -1004,6 +1004,9 @@ function renderAttendanceCalendar(records) {
                 { groupBy: 'Cell', format: 'd/M' },
                 { groupBy: 'Cell', format: 'ddd' }
             ],
+            onBeforeTimeHeaderRender: (args) => {
+                args.header.cssClass = args.header.level === 0 ? 'date-header' : 'weekday-header';
+            },
             rowHeaderColumns: [{ title: 'Employee', display: 'name' }],
             rowHeaderWidth: 230,
             eventHeight: 20,
