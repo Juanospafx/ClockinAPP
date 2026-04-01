@@ -825,66 +825,102 @@ html[data-theme="light"] .login-container .error-message {
     background: transparent;
 }
 
-/* DayPilot Lite attendance matrix */
+/* DayPilot Lite attendance matrix - full dark restyle */
 .attendance-calendar-grid .scheduler_default_main {
-    border: 0;
+    border: 0 !important;
     font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: transparent;
+    background: linear-gradient(180deg, var(--clr-rgba-29-39-63-0-96), var(--clr-rgba-20-30-50-0-55)) !important;
+    color: var(--text-color);
+}
+
+.attendance-calendar-grid .scheduler_default_rowheader_scroll,
+.attendance-calendar-grid .scheduler_default_timeheader_scroll,
+.attendance-calendar-grid .scheduler_default_matrix {
+    background: transparent !important;
 }
 
 .attendance-calendar-grid .scheduler_default_corner,
+.attendance-calendar-grid .scheduler_default_corner_inner,
 .attendance-calendar-grid .scheduler_default_timeheadergroup,
 .attendance-calendar-grid .scheduler_default_timeheadercol,
-.attendance-calendar-grid .scheduler_default_rowheader {
-    background: var(--clr-rgba-29-39-63-0-96);
-    color: var(--text-color);
-    border-color: var(--clr-rgba-159-176-205-0-2);
+.attendance-calendar-grid .scheduler_default_timeheadergroup_inner,
+.attendance-calendar-grid .scheduler_default_timeheadercol_inner {
+    background: var(--clr-rgba-29-39-63-0-96) !important;
+    color: var(--clr-eef2ff) !important;
+    border-color: var(--clr-rgba-159-176-205-0-2) !important;
     font-size: 12px;
+}
+
+.attendance-calendar-grid .scheduler_default_timeheadergroup_inner,
+.attendance-calendar-grid .scheduler_default_timeheadercol_inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .attendance-calendar-grid .scheduler_default_timeheadergroup.date-header .scheduler_default_timeheadergroup_inner,
 .attendance-calendar-grid .scheduler_default_timeheadercol.date-header .scheduler_default_timeheadercol_inner {
     font-weight: 700;
-    color: var(--clr-eef2ff);
+    color: var(--clr-eef2ff) !important;
     letter-spacing: 0.02em;
 }
 
 .attendance-calendar-grid .scheduler_default_timeheadergroup.weekday-header .scheduler_default_timeheadergroup_inner,
 .attendance-calendar-grid .scheduler_default_timeheadercol.weekday-header .scheduler_default_timeheadercol_inner {
     font-size: 11px;
-    color: var(--clr-9fb0cd);
+    color: var(--clr-9fb0cd) !important;
     text-transform: uppercase;
     letter-spacing: 0.08em;
 }
 
-.attendance-calendar-grid .scheduler_default_rowheader {
-    background: linear-gradient(180deg, var(--clr-rgba-39-50-78-0-94), var(--clr-rgba-29-39-63-0-96));
+.attendance-calendar-grid .scheduler_default_rowheader,
+.attendance-calendar-grid .scheduler_default_rowheader_inner,
+.attendance-calendar-grid .scheduler_default_rowheadercol2 {
+    background: linear-gradient(180deg, var(--clr-rgba-39-50-78-0-94), var(--clr-rgba-29-39-63-0-96)) !important;
+    border-color: var(--clr-rgba-159-176-205-0-2) !important;
 }
 
 .attendance-calendar-grid .scheduler_default_rowheader_inner {
     font-weight: 600;
-    padding-left: 12px;
+    padding-left: 14px;
 }
 
 .attendance-calendar-grid .scheduler_default_rowheader_inner_text {
-    color: var(--clr-eef2ff);
+    color: var(--clr-eef2ff) !important;
+    letter-spacing: 0.01em;
 }
 
 .attendance-calendar-grid .scheduler_default_cell {
-    background: rgba(17, 26, 46, 0.45);
+    background: rgba(18, 27, 49, 0.62) !important;
+    transition: background-color 0.14s ease;
+}
+
+.attendance-calendar-grid .scheduler_default_cell:hover {
+    background: rgba(35, 51, 85, 0.68) !important;
+}
+
+.attendance-calendar-grid .scheduler_default_cell_business {
+    background: rgba(22, 33, 58, 0.8) !important;
 }
 
 .attendance-calendar-grid .scheduler_default_matrix_vertical_line,
 .attendance-calendar-grid .scheduler_default_matrix_horizontal_line,
-.attendance-calendar-grid .scheduler_default_resourcedivider {
-    border-color: var(--clr-rgba-159-176-205-0-16);
+.attendance-calendar-grid .scheduler_default_resourcedivider,
+.attendance-calendar-grid .scheduler_default_divider,
+.attendance-calendar-grid .scheduler_default_divider_horizontal,
+.attendance-calendar-grid .scheduler_default_splitter {
+    border-color: var(--clr-rgba-159-176-205-0-16) !important;
+}
+
+.attendance-calendar-grid .scheduler_default_event,
+.attendance-calendar-grid .scheduler_default_event_inner {
+    border-radius: 999px !important;
 }
 
 .attendance-calendar-grid .scheduler_default_event {
-    border: 1px solid var(--clr-rgba-255-98-71-0-18);
-    border-radius: 999px;
-    color: var(--clr-eef2ff);
-    background: linear-gradient(135deg, var(--primary-color), var(--clr-ff7b62));
+    border: 1px solid var(--clr-rgba-255-98-71-0-18) !important;
+    color: var(--clr-eef2ff) !important;
+    background: linear-gradient(135deg, var(--primary-color), var(--clr-ff7b62)) !important;
     box-shadow: 0 6px 14px rgba(255, 98, 71, 0.28);
     font-size: 11px;
     transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
@@ -898,12 +934,13 @@ html[data-theme="light"] .login-container .error-message {
 
 .attendance-calendar-grid .scheduler_default_event_inner {
     padding: 3px 10px;
-    border-radius: inherit;
-    border-color: transparent;
+    border-color: transparent !important;
+    background: transparent !important;
     font-weight: 600;
 }
 
 .attendance-calendar-grid .scheduler_default_scrollable {
+    background: transparent !important;
     scrollbar-width: thin;
     scrollbar-color: var(--clr-rgba-159-176-205-0-35) transparent;
 }
@@ -935,36 +972,48 @@ html[data-theme="light"] #attendance-view-mode {
     color: #334155;
 }
 
+html[data-theme="light"] .attendance-calendar-grid .scheduler_default_main {
+    background: linear-gradient(180deg, #f8fbff, #f1f6ff) !important;
+}
+
 html[data-theme="light"] .attendance-calendar-grid .scheduler_default_corner,
+html[data-theme="light"] .attendance-calendar-grid .scheduler_default_corner_inner,
 html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadergroup,
 html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadercol,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_rowheader {
-    background: #f8fafc;
-    color: #334155;
-    border-color: #e2e8f0;
+html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadergroup_inner,
+html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadercol_inner,
+html[data-theme="light"] .attendance-calendar-grid .scheduler_default_rowheader,
+html[data-theme="light"] .attendance-calendar-grid .scheduler_default_rowheader_inner,
+html[data-theme="light"] .attendance-calendar-grid .scheduler_default_rowheadercol2 {
+    background: #f8fafc !important;
+    color: #334155 !important;
+    border-color: #e2e8f0 !important;
 }
 
 html[data-theme="light"] .attendance-calendar-grid .scheduler_default_rowheader {
-    background: linear-gradient(180deg, #ffffff, #f6f9ff);
+    background: linear-gradient(180deg, #ffffff, #f6f9ff) !important;
 }
 
 html[data-theme="light"] .attendance-calendar-grid .scheduler_default_rowheader_inner_text {
-    color: #1f2937;
+    color: #1f2937 !important;
 }
 
 html[data-theme="light"] .attendance-calendar-grid .scheduler_default_cell {
-    background: #ffffff;
+    background: #ffffff !important;
 }
 
 html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadergroup.weekday-header .scheduler_default_timeheadergroup_inner,
 html[data-theme="light"] .attendance-calendar-grid .scheduler_default_timeheadercol.weekday-header .scheduler_default_timeheadercol_inner {
-    color: #64748b;
+    color: #64748b !important;
 }
 
 html[data-theme="light"] .attendance-calendar-grid .scheduler_default_matrix_vertical_line,
 html[data-theme="light"] .attendance-calendar-grid .scheduler_default_matrix_horizontal_line,
-html[data-theme="light"] .attendance-calendar-grid .scheduler_default_resourcedivider {
-    border-color: #edf1f5;
+html[data-theme="light"] .attendance-calendar-grid .scheduler_default_resourcedivider,
+html[data-theme="light"] .attendance-calendar-grid .scheduler_default_divider,
+html[data-theme="light"] .attendance-calendar-grid .scheduler_default_divider_horizontal,
+html[data-theme="light"] .attendance-calendar-grid .scheduler_default_splitter {
+    border-color: #edf1f5 !important;
 }
 
 .attendance-calendar-error {
