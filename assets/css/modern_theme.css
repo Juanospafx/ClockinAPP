@@ -1059,6 +1059,25 @@ html[data-theme="light"] .attendance-matrix-cell:hover:not(:disabled) {
     max-width: 620px;
 }
 
+.attendance-confirm-modal-content {
+    max-width: 460px;
+}
+
+.attendance-modal-feedback {
+    margin: 6px 0 0;
+    min-height: 18px;
+    font-size: 0.84rem;
+    color: var(--clr-9fb0cd);
+}
+
+.attendance-modal-feedback.success {
+    color: var(--success-color);
+}
+
+.attendance-modal-feedback.error {
+    color: var(--danger-color);
+}
+
 #attendance-record-modal-body {
     margin-top: 8px;
     display: grid;
@@ -1094,6 +1113,56 @@ html[data-theme="light"] .attendance-matrix-cell:hover:not(:disabled) {
     word-break: break-word;
 }
 
+.attendance-record-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.attendance-action-btn {
+    min-height: 34px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-22);
+    background: var(--clr-rgba-255-255-255-0-05);
+    color: var(--text-color);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.attendance-action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.attendance-action-edit {
+    background: var(--clr-rgba-92-167-255-0-08);
+    border-color: var(--clr-rgba-159-176-205-0-35);
+}
+
+.attendance-action-delete {
+    background: rgba(220, 53, 69, 0.16);
+    border-color: rgba(220, 53, 69, 0.45);
+    color: #ffdbe0;
+}
+
+.attendance-action-cancel {
+    background: var(--clr-rgba-255-255-255-0-05);
+}
+
+.attendance-confirm-message {
+    margin: 10px 0 0;
+    color: var(--text-color);
+}
+
+.attendance-confirm-actions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 html[data-theme="light"] .attendance-record-group {
     background: #fff;
     border-color: #e2e8f0;
@@ -1105,6 +1174,28 @@ html[data-theme="light"] .attendance-record-key {
 
 html[data-theme="light"] .attendance-record-value {
     color: #1e293b;
+}
+
+html[data-theme="light"] .attendance-action-btn {
+    background: #ffffff;
+    color: #334155;
+    border-color: #d9dde3;
+}
+
+html[data-theme="light"] .attendance-action-edit {
+    background: #eef6ff;
+    border-color: #cddff7;
+    color: #1e3a8a;
+}
+
+html[data-theme="light"] .attendance-action-delete {
+    background: #fff1f2;
+    border-color: #f5b3bc;
+    color: #b42318;
+}
+
+html[data-theme="light"] .attendance-confirm-message {
+    color: #334155;
 }
 
 @media (max-width: 768px) {
