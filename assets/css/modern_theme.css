@@ -428,6 +428,38 @@ textarea:focus {
     box-shadow: var(--shadow-focus);
 }
 
+/* Ensure native date/time picker icons are visible in both themes */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+    color-scheme: light;
+}
+
+html[data-theme="dark"] input[type="date"],
+html[data-theme="dark"] input[type="time"],
+html[data-theme="dark"] input[type="datetime-local"] {
+    color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    opacity: 0.9;
+    cursor: pointer;
+}
+
+html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+html[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator,
+html[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.95) brightness(1.15) contrast(1.05);
+}
+
+html[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
+html[data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator,
+html[data-theme="light"] input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: none;
+}
+
 button {
     background: var(--accent-primary);
     border-radius: 10px;
