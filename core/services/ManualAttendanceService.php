@@ -218,19 +218,28 @@ class ManualAttendanceService
         $lunchDuration = null;
 
         if ($type === 'exit') {
-            $metrics = self::calculateManualExitDurations(
-                $pdo,
-                $userId,
-                $date,
-                $datetimeStr,
-                $projectId,
-                $schedule,
-                $lunchStart,
-                $lunchEnd,
-                $entryDateTimeStr
-            );
-            $totalDuration = $metrics['total_duration_minutes'];
-            $lunchDuration = $metrics['lunch_duration_minutes'];
+            if ($isRangeMode && $entryTime !== '' && $exitTime !== '') {
+                $manualMetrics = self::calculateDurationFromProvidedTimes($date, $entryTime, $exitTime, $lunchStart, $lunchEnd);
+                if (isset($manualMetrics['error'])) {
+                    return ['error' => ['code' => 'validation_error', 'message' => $manualMetrics['error']], 'status' => 400];
+                }
+                $totalDuration = $manualMetrics['total_duration_minutes'];
+                $lunchDuration = $manualMetrics['lunch_duration_minutes'];
+            } else {
+                $metrics = self::calculateManualExitDurations(
+                    $pdo,
+                    $userId,
+                    $date,
+                    $datetimeStr,
+                    $projectId,
+                    $schedule,
+                    $lunchStart,
+                    $lunchEnd,
+                    $entryDateTimeStr
+                );
+                $totalDuration = $metrics['total_duration_minutes'];
+                $lunchDuration = $metrics['lunch_duration_minutes'];
+            }
         }
 
         $storeOriginal = $isRangeMode && $entryDateTimeStr ? $entryDateTimeStr : $datetimeStr;
@@ -376,6 +385,57 @@ class ManualAttendanceService
             }
         }
 
+        $workedMinutes = max(0, $grossMinutes - $lunchMinutes);
+
+        return [
+            'total_duration_minutes' => $workedMinutes,
+            'lunch_duration_minutes' => $lunchMinutes,
+        ];
+    }
+
+    private static function calculateDurationFromProvidedTimes(string $date, string $entryTime, string $exitTime, string $lunchStart, string $lunchEnd): array
+    {
+        if (!preg_match('/^\d{2}:\d{2}$/', $entryTime) || !preg_match('/^\d{2}:\d{2}$/', $exitTime)) {
+            return ['error' => 'Entry/exit time must be HH:MM format.'];
+        }
+
+        $entryDateTime = $date . ' ' . $entryTime . ':00';
+        $exitDateTime = $date . ' ' . $exitTime . ':00';
+
+        $entryTs = strtotime($entryDateTime);
+        $exitTs = strtotime($exitDateTime);
+
+        if ($entryTs === false || $exitTs === false || $exitTs <= $entryTs) {
+            return ['error' => 'Exit time must be greater than entry time.'];
+        }
+
+        if (($lunchStart !== '' && $lunchEnd === '') || ($lunchStart === '' && $lunchEnd !== '')) {
+            return ['error' => 'Provide both lunch start and lunch end, or leave both empty.'];
+        }
+
+        $lunchMinutes = 0;
+        if ($lunchStart !== '' && $lunchEnd !== '') {
+            if (!preg_match('/^\d{2}:\d{2}$/', $lunchStart) || !preg_match('/^\d{2}:\d{2}$/', $lunchEnd)) {
+                return ['error' => 'Lunch start/end must be HH:MM format.'];
+            }
+
+            $lunchStartDateTime = $date . ' ' . $lunchStart . ':00';
+            $lunchEndDateTime = $date . ' ' . $lunchEnd . ':00';
+            $lunchStartTs = strtotime($lunchStartDateTime);
+            $lunchEndTs = strtotime($lunchEndDateTime);
+
+            if ($lunchStartTs === false || $lunchEndTs === false || $lunchEndTs <= $lunchStartTs) {
+                return ['error' => 'Lunch end must be greater than lunch start.'];
+            }
+
+            if ($lunchStartTs < $entryTs || $lunchEndTs > $exitTs) {
+                return ['error' => 'Lunch interval must be within entry and exit time.'];
+            }
+
+            $lunchMinutes = (int)round(($lunchEndTs - $lunchStartTs) / 60);
+        }
+
+        $grossMinutes = (int)round(($exitTs - $entryTs) / 60);
         $workedMinutes = max(0, $grossMinutes - $lunchMinutes);
 
         return [
