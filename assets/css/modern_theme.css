@@ -599,19 +599,62 @@ table tr:hover { background-color: var(--clr-rgba-92-167-255-0-08); }
     background: var(--clr-rgba-255-255-255-0-1);
 }
 
-[data-tooltip] { position: relative; }
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:hover::before {
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    z-index: 30;
+}
+
 [data-tooltip]:hover::after {
     content: attr(data-tooltip);
-    position: absolute;
-    top: 110%;
-    right: 0;
+    top: calc(100% + 9px);
     white-space: nowrap;
-    padding: 6px 8px;
-    border-radius: 8px;
-    background: var(--clr-212529);
-    color: var(--clr-fff);
-    border: 1px solid var(--clr-rgba-159-176-205-0-2);
-    z-index: 20;
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    box-shadow: 0 10px 20px var(--clr-rgba-0-0-0-0-2);
+}
+
+[data-tooltip]:hover::before {
+    content: "";
+    top: calc(100% + 4px);
+    width: 9px;
+    height: 9px;
+    transform: rotate(45deg);
+    border: 1px solid transparent;
+    border-right: 0;
+    border-bottom: 0;
+}
+
+html[data-theme="dark"] [data-tooltip]:hover::after {
+    background: var(--clr-1b243a);
+    color: var(--clr-eef2ff);
+    border-color: var(--clr-rgba-159-176-205-0-22);
+}
+
+html[data-theme="dark"] [data-tooltip]:hover::before {
+    background: var(--clr-1b243a);
+    border-color: var(--clr-rgba-159-176-205-0-22);
+}
+
+html[data-theme="light"] [data-tooltip]:hover::after {
+    background: #1f2937;
+    color: #f8fafc;
+    border-color: rgba(15, 23, 42, 0.22);
+    box-shadow: 0 10px 18px rgba(15, 23, 42, 0.22);
+}
+
+html[data-theme="light"] [data-tooltip]:hover::before {
+    background: #1f2937;
+    border-color: rgba(15, 23, 42, 0.22);
 }
 
 /* Hard override layer for readability across legacy CSS files */
