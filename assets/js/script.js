@@ -96,6 +96,56 @@ function normalizeRole(role) {
     return lower;
 }
 
+function enhanceTemporalInputIcons() {
+    const inputs = document.querySelectorAll('input[type="date"], input[type="time"], input[type="datetime-local"]');
+    if (!inputs.length) return;
+
+    const calendarSvg = `
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="3.5" y1="9.5" x2="20.5" y2="9.5" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="8" y1="3.5" x2="8" y2="7.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="16" y1="3.5" x2="16" y2="7.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <rect x="7.2" y="12" width="2.2" height="2.2" rx="0.5" fill="currentColor"/>
+            <rect x="11" y="12" width="2.2" height="2.2" rx="0.5" fill="currentColor"/>
+            <rect x="14.8" y="12" width="2.2" height="2.2" rx="0.5" fill="currentColor"/>
+        </svg>`;
+
+    const clockSvg = `
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="12" y1="12" x2="12" y2="7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="12" y1="12" x2="15.5" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>`;
+
+    inputs.forEach((input) => {
+        if (input.dataset.iconEnhanced === '1') return;
+        const parent = input.parentElement;
+        if (!parent) return;
+
+        const wrapper = document.createElement('span');
+        wrapper.className = 'temporal-input-wrap';
+
+        parent.insertBefore(wrapper, input);
+        wrapper.appendChild(input);
+
+        const icon = document.createElement('span');
+        icon.className = 'temporal-input-icon';
+
+        const type = input.getAttribute('type');
+        if (type === 'date') {
+            icon.classList.add('icon-calendar');
+            icon.innerHTML = calendarSvg;
+        } else {
+            icon.classList.add('icon-clock');
+            icon.innerHTML = clockSvg;
+        }
+
+        wrapper.appendChild(icon);
+        input.dataset.iconEnhanced = '1';
+    });
+}
+
 // Timer key dinámico (antes era constante con userId nulo)
 function getTimerKey() {
     const uid = sessionStorage.getItem('user_id');
@@ -2316,6 +2366,7 @@ function startLocationTracking() {
 // --- Page Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     checkAuthAndRedirect();
+    enhanceTemporalInputIcons();
 
     const path = window.location.pathname.toLowerCase();
 

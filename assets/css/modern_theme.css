@@ -428,35 +428,62 @@ textarea:focus {
     box-shadow: var(--shadow-focus);
 }
 
-/* Ensure native date/time picker icons are visible in both themes */
-input[type="date"],
-input[type="time"],
-input[type="datetime-local"] {
-    color-scheme: light;
+/* Custom SVG icons for temporal inputs (date/time/datetime-local) */
+.temporal-input-wrap {
+    position: relative;
+    display: block;
+    width: 100%;
 }
 
-html[data-theme="dark"] input[type="date"],
-html[data-theme="dark"] input[type="time"],
-html[data-theme="dark"] input[type="datetime-local"] {
-    color-scheme: dark;
+.temporal-input-wrap > input[type="date"],
+.temporal-input-wrap > input[type="time"],
+.temporal-input-wrap > input[type="datetime-local"] {
+    width: 100%;
+    padding-right: 42px;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-    opacity: 0.9;
+.temporal-input-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translateY(-50%);
+    color: var(--clr-rgba-255-255-255-0-6);
+    pointer-events: none;
+    transition: color 0.18s ease, filter 0.18s ease;
+}
+
+.temporal-input-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.temporal-input-wrap:hover .temporal-input-icon,
+.temporal-input-wrap:focus-within .temporal-input-icon {
+    color: var(--clr-eef2ff);
+    filter: drop-shadow(0 0 5px rgba(92, 167, 255, 0.35));
+}
+
+.temporal-input-wrap > input[type="date"]::-webkit-calendar-picker-indicator,
+.temporal-input-wrap > input[type="time"]::-webkit-calendar-picker-indicator,
+.temporal-input-wrap > input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
     cursor: pointer;
+    position: absolute;
+    right: 0;
+    width: 42px;
+    height: 100%;
 }
 
-html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
-html[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator,
-html[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-    filter: invert(0.95) brightness(1.15) contrast(1.05);
+html[data-theme="light"] .temporal-input-icon {
+    color: #64748b;
 }
 
-html[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
-html[data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator,
-html[data-theme="light"] input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+html[data-theme="light"] .temporal-input-wrap:hover .temporal-input-icon,
+html[data-theme="light"] .temporal-input-wrap:focus-within .temporal-input-icon {
+    color: #1f2937;
     filter: none;
 }
 
