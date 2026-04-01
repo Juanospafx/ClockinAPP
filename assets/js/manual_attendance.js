@@ -133,22 +133,42 @@
             row.className = 'manual-employee-item';
             row.dataset.userId = String(u.id);
             row.dataset.username = (u.username || '').toLowerCase();
+            row.setAttribute('role', 'option');
+            row.setAttribute('aria-selected', 'false');
+            row.tabIndex = 0;
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.className = 'manual-employee-checkbox';
             checkbox.value = String(u.id);
-            checkbox.addEventListener('change', () => {
+
+            const syncRowState = () => {
                 row.classList.toggle('is-selected', checkbox.checked);
+                row.setAttribute('aria-selected', checkbox.checked ? 'true' : 'false');
                 updateSelectedCount();
+            };
+
+            checkbox.addEventListener('change', syncRowState);
+
+            row.addEventListener('keydown', (e) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    checkbox.checked = !checkbox.checked;
+                    syncRowState();
+                }
             });
 
             const text = document.createElement('span');
             text.className = 'manual-employee-name';
             text.textContent = u.username;
 
+            const indicator = document.createElement('span');
+            indicator.className = 'manual-employee-indicator';
+            indicator.setAttribute('aria-hidden', 'true');
+
             row.appendChild(checkbox);
             row.appendChild(text);
+            row.appendChild(indicator);
             employeeList.appendChild(row);
         });
 
@@ -229,6 +249,7 @@
             if (!cb) return;
             cb.checked = true;
             row.classList.add('is-selected');
+            row.setAttribute('aria-selected', 'true');
         });
         updateSelectedCount();
     }
@@ -239,6 +260,7 @@
             if (!cb) return;
             cb.checked = false;
             row.classList.remove('is-selected');
+            row.setAttribute('aria-selected', 'false');
         });
         updateSelectedCount();
     }

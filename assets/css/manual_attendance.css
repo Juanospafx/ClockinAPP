@@ -67,17 +67,23 @@
 .manual-employee-item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
     width: 100%;
     padding: 10px 12px;
     border-radius: 10px;
     cursor: pointer;
     border: 1px solid transparent;
-    transition: background-color 0.16s ease, border-color 0.16s ease;
+    transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .manual-employee-item:hover {
     background: var(--clr-rgba-255-255-255-0-06);
+}
+
+.manual-employee-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--clr-rgba-92-167-255-0-08);
 }
 
 .manual-employee-item.is-selected {
@@ -90,17 +96,53 @@
 }
 
 .manual-employee-checkbox {
-    width: 16px !important;
-    height: 16px !important;
-    min-width: 16px;
-    margin: 0;
-    flex: 0 0 auto;
-    accent-color: var(--primary-color);
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .manual-employee-name {
     color: var(--text-color);
     font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.manual-employee-indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 1px solid var(--clr-rgba-159-176-205-0-35);
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity 0.16s ease, transform 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.manual-employee-item.is-selected .manual-employee-indicator {
+    opacity: 1;
+    transform: scale(1);
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    position: relative;
+}
+
+.manual-employee-item.is-selected .manual-employee-indicator::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 6px;
+    width: 4px;
+    height: 8px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
 }
 
 .manual-selector-footer {
