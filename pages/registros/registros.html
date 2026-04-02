@@ -80,17 +80,19 @@
 
         <!-- Section for QR Scanning (for regular users) -->
         <section id="scan-section">
-            <div class="scan-center-card">
-                <div class="scan-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" role="img" focusable="false">
-                        <path d="M4 4h5v2H6v3H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4zM8 8h3v3H8V8zm5 0h3v3h-3V8zm-5 5h3v3H8v-3zm5 0h3v3h-3v-3z"/>
-                    </svg>
+            <div class="scan-content-wrap">
+                <div class="scan-center-card card-box">
+                    <div class="scan-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" role="img" focusable="false">
+                            <path d="M4 4h5v2H6v3H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4zM8 8h3v3H8V8zm5 0h3v3h-3V8zm-5 5h3v3H8v-3zm5 0h3v3h-3v-3z"/>
+                        </svg>
+                    </div>
+                    <h3>Scan QR Code</h3>
+                    <button id="start-scanner-button">Start Scanner</button>
+                    <div id="scanner-container" style="display: none;"><video id="qr-video" playsinline muted></video></div>
+                    <p id="scan-result">Waiting for scan...</p>
+                    <p id="register-message"></p>
                 </div>
-                <h3>Scan QR Code</h3>
-                <button id="start-scanner-button">Start Scanner</button>
-                <div id="scanner-container" style="display: none;"><video id="qr-video" playsinline muted></video></div>
-                <p id="scan-result">Waiting for scan...</p>
-                <p id="register-message"></p>
             </div>
         </section>
 
