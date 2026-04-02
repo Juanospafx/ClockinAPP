@@ -662,6 +662,11 @@ table tr:hover { background-color: var(--clr-rgba-92-167-255-0-08); }
     margin-inline: auto;
 }
 
+.main-content > #scan-section {
+    max-width: var(--content-max);
+    margin-inline: auto;
+}
+
 .app-header {
     display: flex;
     justify-content: flex-end;
