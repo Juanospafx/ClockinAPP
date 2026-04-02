@@ -222,6 +222,8 @@ html[data-theme="light"] {
     --radius-lg: 18px;
     --shadow-soft: 0 10px 25px var(--clr-rgba-6-10-22-0-35);
     --shadow-focus: 0 0 0 3px var(--clr-rgba-92-167-255-0-35);
+    --content-max: 1100px;
+    --scan-max: 700px;
     --bg-app: var(--clr-121a2f);
     --bg-panel: var(--clr-rgba-29-39-63-0-96);
     --border-subtle: var(--clr-rgba-159-176-205-0-2);
@@ -319,7 +321,7 @@ section,
 
 .scan-content-wrap {
     width: 100%;
-    max-width: 700px;
+    max-width: var(--scan-max);
     margin-inline: auto;
     display: flex;
     justify-content: center;
@@ -328,7 +330,8 @@ section,
 }
 
 .card-box.scan-center-card {
-    width: min(100%, 700px);
+    width: 100%;
+    max-width: var(--scan-max);
     margin-inline: auto;
     padding: clamp(24px, 4vw, 34px);
     border-radius: 1rem;
@@ -653,13 +656,19 @@ table tr:hover { background-color: var(--clr-rgba-92-167-255-0-08); }
     position: relative;
 }
 
+.main-content > section {
+    width: 100%;
+    max-width: var(--content-max);
+    margin-inline: auto;
+}
+
 .app-header {
     display: flex;
     justify-content: flex-end;
     align-items: center;
     gap: 12px;
     width: 100%;
-    max-width: 1100px;
+    max-width: var(--content-max);
     align-self: center;
     margin: 0 auto 12px auto;
     padding: 10px 14px;
