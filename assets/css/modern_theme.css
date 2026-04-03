@@ -1324,8 +1324,12 @@ html[data-theme="light"] .attendance-confirm-message {
 
     .attendance-matrix-employee,
     .attendance-matrix-employee-head {
+        position: static;
         padding: 0 10px;
         font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .attendance-chip {
@@ -1345,7 +1349,7 @@ html[data-theme="light"] .attendance-confirm-message {
     }
 
     .attendance-matrix-row {
-        grid-template-columns: 150px repeat(var(--attendance-days, 7), minmax(84px, 1fr));
+        grid-template-columns: 120px repeat(var(--attendance-days, 7), minmax(84px, 1fr));
     }
 
     .attendance-matrix-col-header {
