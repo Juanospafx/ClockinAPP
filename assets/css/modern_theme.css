@@ -1296,6 +1296,74 @@ html[data-theme="light"] .attendance-confirm-message {
 
 @media (max-width: 768px) {
     .attendance-calendar-wrap { border-radius: 8px; }
+
+    .attendance-tools {
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .attendance-calendar-nav,
+    .attendance-calendar-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    #attendance-calendar-title {
+        min-width: 0;
+        flex: 1;
+        font-size: 0.95rem;
+    }
+
+    .attendance-matrix {
+        min-width: 560px;
+    }
+
+    .attendance-matrix-row {
+        grid-template-columns: 180px repeat(var(--attendance-days, 7), minmax(96px, 1fr));
+    }
+
+    .attendance-matrix-employee,
+    .attendance-matrix-employee-head {
+        padding: 0 10px;
+        font-size: 0.9rem;
+    }
+
+    .attendance-chip {
+        min-width: 64px;
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 576px) {
+    .attendance-calendar-grid {
+        border-top: 1px solid var(--clr-rgba-159-176-205-0-16);
+    }
+
+    .attendance-matrix {
+        min-width: 500px;
+    }
+
+    .attendance-matrix-row {
+        grid-template-columns: 150px repeat(var(--attendance-days, 7), minmax(84px, 1fr));
+    }
+
+    .attendance-matrix-col-header {
+        padding: 6px 4px;
+    }
+
+    .attendance-matrix-date {
+        font-size: 0.78rem;
+    }
+
+    .attendance-matrix-day {
+        font-size: 10px;
+    }
+
+    .attendance-matrix-employee,
+    .attendance-matrix-employee-head {
+        font-size: 0.82rem;
+    }
 }
 
 .status-pill { padding: 3px 8px; border-radius: 999px; font-size: .75rem; font-weight: 700; }
@@ -1497,6 +1565,65 @@ html[data-theme="light"] .attendance-confirm-message {
         min-height: 52px;
     }
 
+    #special-tools-section table,
+    #report-absence-section table,
+    #absence-records-section table,
+    #records-section table,
+    #special-user-records-section table {
+        table-layout: auto;
+    }
+
+    #special-tools-section thead,
+    #report-absence-section thead,
+    #absence-records-section thead,
+    #special-user-records-section thead {
+        display: none;
+    }
+
+    #special-tools-section tbody,
+    #report-absence-section tbody,
+    #absence-records-section tbody,
+    #special-user-records-section tbody {
+        display: grid;
+        gap: 10px;
+    }
+
+    #special-tools-section tr,
+    #report-absence-section tr,
+    #absence-records-section tr,
+    #special-user-records-section tr {
+        display: grid;
+        gap: 6px;
+        padding: 10px;
+        border: 1px solid var(--clr-rgba-159-176-205-0-2);
+        border-radius: 10px;
+        background: var(--clr-rgba-255-255-255-0-05);
+    }
+
+    #special-tools-section td,
+    #report-absence-section td,
+    #absence-records-section td,
+    #special-user-records-section td {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 8px;
+        align-items: start;
+        border-bottom: 0;
+        padding: 2px 0;
+    }
+
+    #special-tools-section td::before,
+    #report-absence-section td::before,
+    #absence-records-section td::before,
+    #special-user-records-section td::before {
+        content: attr(data-label);
+        color: var(--clr-9fb0cd);
+        font-weight: 700;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
     #records-section table {
         table-layout: auto;
     }
@@ -1520,5 +1647,25 @@ html[data-theme="light"] .attendance-confirm-message {
     #records-section td[data-label="Actions"] button {
         width: 100%;
         margin: 6px 0 0;
+    }
+
+    #special-tools-section td[data-label="Actions"],
+    #report-absence-section td[data-label="Acciones"],
+    #absence-records-section td[data-label="Acciones"],
+    #special-user-records-section td[data-label="Actions"] {
+        display: block;
+    }
+
+    #special-tools-section td[data-label="Actions"] button,
+    #report-absence-section td[data-label="Acciones"] button,
+    #absence-records-section td[data-label="Acciones"] button,
+    #special-user-records-section td[data-label="Actions"] button {
+        width: 100%;
+        margin: 6px 0 0;
+    }
+
+    #absence-records-section .absence-actions-cell {
+        display: grid;
+        gap: 6px;
     }
 }
