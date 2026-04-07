@@ -27,11 +27,6 @@ class UserService {
 
         $pdo = get_pdo();
 
-        // En soft-delete solo validamos colisión contra usuarios activos.
-        if (self::activeUsernameExists($pdo, $username)) {
-            return ['error' => ['code' => 'conflict', 'message' => 'Username already exists for an active user.'], 'status' => 409];
-        }
-
         if ($roleId === null && $role !== null) {
             $stmtRole = $pdo->prepare('SELECT id FROM roles WHERE name = ?');
             $stmtRole->execute([$role]);
@@ -44,16 +39,102 @@ class UserService {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         try {
-            $stmt = $pdo->prepare('INSERT INTO users (username, password, role_id) VALUES (?, ?, ?)');
-            $stmt->execute([$username, $hashedPassword, $roleId]);
+            $pdo->beginTransaction();
+
+            // Busca por username incluyendo soft-deleted y bloquea fila(s) para evitar carreras.
+            $existingStmt = $pdo->prepare(
+                'SELECT id, deleted_at
+                 FROM users
+                 WHERE username = ?
+                 ORDER BY (deleted_at IS NULL) DESC, deleted_at DESC, id DESC
+                 FOR UPDATE'
+            );
+            $existingStmt->execute([$username]);
+            $matches = $existingStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($matches as $row) {
+                if ($row['deleted_at'] === null) {
+                    $pdo->rollBack();
+                    return ['error' => ['code' => 'conflict', 'message' => 'Username already exists for an active user.'], 'status' => 409];
+                }
+            }
+
+            // Restore on recreate: reutiliza ID si existe al menos un usuario eliminado con ese username.
+            if (!empty($matches)) {
+                $target = $matches[0]; // más reciente según ORDER BY
+                $restoreId = (int)$target['id'];
+
+                $updates = [
+                    'deleted_at = NULL',
+                    'password = ?',
+                    'role_id = ?',
+                ];
+                $params = [$hashedPassword, $roleId];
+
+                // Campos opcionales comunes del formulario de creación.
+                if (array_key_exists('profile_pic_url', $data)) {
+                    $updates[] = 'profile_pic_url = ?';
+                    $params[] = $data['profile_pic_url'];
+                }
+
+                // Cualquier otro campo editable enviado y existente en tabla users.
+                $allowedColumns = self::getEditableCreateColumns($pdo);
+                foreach ($allowedColumns as $column) {
+                    if (!array_key_exists($column, $data)) {
+                        continue;
+                    }
+                    $updates[] = "{$column} = ?";
+                    $params[] = $data[$column];
+                }
+
+                $params[] = $restoreId;
+                $restoreSql = 'UPDATE users SET ' . implode(', ', $updates) . ' WHERE id = ?';
+                $restoreStmt = $pdo->prepare($restoreSql);
+                $restoreStmt->execute($params);
+
+                $pdo->commit();
+                return ['data' => ['message' => 'User restored successfully.', 'action' => 'restored', 'id' => $restoreId]];
+            }
+
+            $insertColumns = ['username', 'password', 'role_id'];
+            $insertValues = [$username, $hashedPassword, $roleId];
+
+            if (array_key_exists('profile_pic_url', $data)) {
+                $insertColumns[] = 'profile_pic_url';
+                $insertValues[] = $data['profile_pic_url'];
+            }
+
+            $editableColumns = self::getEditableCreateColumns($pdo);
+            foreach ($editableColumns as $column) {
+                if (!array_key_exists($column, $data)) {
+                    continue;
+                }
+                $insertColumns[] = $column;
+                $insertValues[] = $data[$column];
+            }
+
+            $placeholders = implode(', ', array_fill(0, count($insertColumns), '?'));
+            $sql = 'INSERT INTO users (' . implode(', ', $insertColumns) . ') VALUES (' . $placeholders . ')';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($insertValues);
+
+            $newId = (int)$pdo->lastInsertId();
+            $pdo->commit();
+            return ['data' => ['message' => 'User created successfully.', 'action' => 'created', 'id' => $newId]];
         } catch (PDOException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             if (self::isDuplicateKeyException($e)) {
                 return ['error' => ['code' => 'conflict', 'message' => 'Username already exists for an active user.'], 'status' => 409];
             }
             throw $e;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
         }
-
-        return ['data' => ['message' => 'User created successfully.']];
     }
 
     public static function updateUser(int $id, array $data): array {
@@ -157,10 +238,36 @@ class UserService {
         return ['data' => ['message' => "User deactivated. {$recordCount} attendance records preserved."]];
     }
 
-    private static function activeUsernameExists(PDO $pdo, string $username): bool {
-        $stmt = $pdo->prepare('SELECT 1 FROM users WHERE username = ? AND deleted_at IS NULL LIMIT 1');
-        $stmt->execute([$username]);
-        return (bool)$stmt->fetchColumn();
+    private static function getEditableCreateColumns(PDO $pdo): array {
+        static $cache = null;
+        if (is_array($cache)) {
+            return $cache;
+        }
+
+        $stmt = $pdo->query('SHOW COLUMNS FROM users');
+        $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $protected = [
+            'id',
+            'username',
+            'password',
+            'role_id',
+            'deleted_at',
+            'username_active',
+            'created_at',
+            'updated_at',
+            'profile_pic_url',
+        ];
+
+        $cache = [];
+        foreach ($columns as $column) {
+            $name = (string)($column['Field'] ?? '');
+            if ($name === '' || in_array($name, $protected, true)) {
+                continue;
+            }
+            $cache[] = $name;
+        }
+
+        return $cache;
     }
 
     private static function isDuplicateKeyException(PDOException $e): bool {
