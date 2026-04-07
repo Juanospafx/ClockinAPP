@@ -19,6 +19,13 @@ class AuthService {
         return isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
     }
 
+    public static function isUserActive(int $userId): bool {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare('SELECT 1 FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1');
+        $stmt->execute([$userId]);
+        return (bool)$stmt->fetchColumn();
+    }
+
     public static function getCurrentUserRole(): ?string {
         static $cachedRole = null;
         if ($cachedRole !== null) {
