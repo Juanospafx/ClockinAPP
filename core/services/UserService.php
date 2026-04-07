@@ -16,16 +16,22 @@ class UserService {
     }
 
     public static function createUser(array $data): array {
-        $username = $data['username'] ?? null;
-        $password = $data['password'] ?? null;
+        $username = trim((string)($data['username'] ?? ''));
+        $password = (string)($data['password'] ?? '');
         $role = $data['role'] ?? null;
         $roleId = $data['role_id'] ?? null;
 
-        if (!$username || !$password) {
+        if ($username === '' || $password === '') {
             return ['error' => ['code' => 'validation_error', 'message' => 'Username and password are required.'], 'status' => 400];
         }
 
         $pdo = get_pdo();
+
+        // En soft-delete solo validamos colisión contra usuarios activos.
+        if (self::activeUsernameExists($pdo, $username)) {
+            return ['error' => ['code' => 'conflict', 'message' => 'Username already exists for an active user.'], 'status' => 409];
+        }
+
         if ($roleId === null && $role !== null) {
             $stmtRole = $pdo->prepare('SELECT id FROM roles WHERE name = ?');
             $stmtRole->execute([$role]);
@@ -36,33 +42,65 @@ class UserService {
         }
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare('INSERT INTO users (username, password, role_id) VALUES (?, ?, ?)');
-        $stmt->execute([$username, $hashedPassword, $roleId]);
+
+        try {
+            $stmt = $pdo->prepare('INSERT INTO users (username, password, role_id) VALUES (?, ?, ?)');
+            $stmt->execute([$username, $hashedPassword, $roleId]);
+        } catch (PDOException $e) {
+            if (self::isDuplicateKeyException($e)) {
+                return ['error' => ['code' => 'conflict', 'message' => 'Username already exists for an active user.'], 'status' => 409];
+            }
+            throw $e;
+        }
+
         return ['data' => ['message' => 'User created successfully.']];
     }
 
     public static function updateUser(int $id, array $data): array {
-        $username = $data['username'] ?? null;
-        $password = $data['password'] ?? null;
+        $username = array_key_exists('username', $data) ? trim((string)$data['username']) : null;
+        $password = array_key_exists('password', $data) ? (string)$data['password'] : null;
         $role = $data['role'] ?? null;
         $roleId = $data['role_id'] ?? null;
 
-        if (!$id || (!$username && !$password && !$role && !$roleId)) {
+        if (!$id || ($username === null && $password === null && !$role && !$roleId)) {
             return ['error' => ['code' => 'validation_error', 'message' => 'Missing ID or data to update.'], 'status' => 400];
         }
 
         $pdo = get_pdo();
+
+        $existsStmt = $pdo->prepare('SELECT id FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1');
+        $existsStmt->execute([$id]);
+        if (!$existsStmt->fetchColumn()) {
+            return ['error' => ['code' => 'not_found', 'message' => 'User not found or deleted.'], 'status' => 404];
+        }
+
         $updates = [];
         $params = [];
 
-        if ($username) {
+        if ($username !== null) {
+            if ($username === '') {
+                return ['error' => ['code' => 'validation_error', 'message' => 'Username cannot be empty.'], 'status' => 400];
+            }
+
+            // Evita choque consigo mismo y con otros activos.
+            $checkStmt = $pdo->prepare('SELECT id FROM users WHERE username = ? AND deleted_at IS NULL AND id <> ? LIMIT 1');
+            $checkStmt->execute([$username, $id]);
+            if ($checkStmt->fetchColumn()) {
+                return ['error' => ['code' => 'conflict', 'message' => 'Username already exists for an active user.'], 'status' => 409];
+            }
+
             $updates[] = 'username = ?';
             $params[] = $username;
         }
-        if ($password) {
+
+        if ($password !== null) {
+            if ($password === '') {
+                return ['error' => ['code' => 'validation_error', 'message' => 'Password cannot be empty.'], 'status' => 400];
+            }
             $updates[] = 'password = ?';
             $params[] = password_hash($password, PASSWORD_DEFAULT);
         }
+
         if ($roleId !== null) {
             $updates[] = 'role_id = ?';
             $params[] = $roleId;
@@ -80,10 +118,19 @@ class UserService {
             return ['data' => ['message' => 'No changes to apply.']];
         }
 
-        $sql = 'UPDATE users SET ' . implode(', ', $updates) . ' WHERE id = ?';
+        $sql = 'UPDATE users SET ' . implode(', ', $updates) . ' WHERE id = ? AND deleted_at IS NULL';
         $params[] = $id;
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
+
+        try {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+        } catch (PDOException $e) {
+            if (self::isDuplicateKeyException($e)) {
+                return ['error' => ['code' => 'conflict', 'message' => 'Username already exists for an active user.'], 'status' => 409];
+            }
+            throw $e;
+        }
+
         return ['data' => ['message' => 'User updated successfully.']];
     }
 
@@ -99,7 +146,7 @@ class UserService {
         $countStmt->execute([$id]);
         $recordCount = (int)$countStmt->fetchColumn();
 
-        // Soft delete
+        // Soft delete (se mantiene username intacto; la unicidad la controla username_active en DB)
         $stmt = $pdo->prepare('UPDATE users SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL');
         $stmt->execute([$id]);
 
@@ -108,5 +155,17 @@ class UserService {
         }
 
         return ['data' => ['message' => "User deactivated. {$recordCount} attendance records preserved."]];
+    }
+
+    private static function activeUsernameExists(PDO $pdo, string $username): bool {
+        $stmt = $pdo->prepare('SELECT 1 FROM users WHERE username = ? AND deleted_at IS NULL LIMIT 1');
+        $stmt->execute([$username]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    private static function isDuplicateKeyException(PDOException $e): bool {
+        $sqlState = (string)($e->errorInfo[0] ?? '');
+        $driverCode = (int)($e->errorInfo[1] ?? 0);
+        return $sqlState === '23000' || $driverCode === 1062;
     }
 }

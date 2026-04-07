@@ -6,7 +6,13 @@ require_once __DIR__ . '/../response.php';
 
 function require_login(): int {
     $userId = AuthService::getCurrentUserId();
-    if (!$userId) {
+    if (!$userId || !AuthService::isUserActive($userId)) {
+        // Si el usuario fue soft-deleted, se invalida la sesión inmediatamente.
+        $_SESSION = [];
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
+
         json_error('unauthorized', 'Unauthorized', 401);
         exit;
     }
