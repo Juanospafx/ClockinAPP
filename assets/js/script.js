@@ -304,6 +304,36 @@ function formatDurationHours(totalMinutes) {
     return `${hours}h ${minutes}m`;
 }
 
+function parseRecordDateTimeToMs(record, value) {
+    if (!value) return null;
+
+    const raw = String(value).trim();
+    if (!raw) return null;
+
+    if (record && record.entry_source === 'manual') {
+        const normalized = raw.replace(' ', 'T');
+        const ts = Date.parse(normalized);
+        return Number.isFinite(ts) ? ts : null;
+    }
+
+    const ts = Date.parse(raw);
+    return Number.isFinite(ts) ? ts : null;
+}
+
+function resolveRecordDurationMinutes(record) {
+    const entryRaw = record?.entry_time || record?.original_time || '';
+    const exitRaw = record?.exit_time || record?.rounded_time || '';
+
+    const entryTs = parseRecordDateTimeToMs(record, entryRaw);
+    const exitTs = parseRecordDateTimeToMs(record, exitRaw);
+
+    if (Number.isFinite(entryTs) && Number.isFinite(exitTs) && exitTs > entryTs) {
+        return Math.round((exitTs - entryTs) / 60000);
+    }
+
+    return record?.total_duration;
+}
+
 function formatLocalDateTime(date) {
     const pad = (value) => String(value).padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
@@ -1021,6 +1051,7 @@ function openAttendanceRecordModal(records) {
     body.innerHTML = (records || []).map((record, idx) => {
         const entry = formatRecordDateTime(record, record.entry_time || record.original_time);
         const exit = formatRecordDateTime(record, record.exit_time || record.rounded_time);
+        const durationMinutes = resolveRecordDurationMinutes(record);
         const evidence = record.evidence_url || record.evidence || record.photo_url || record.image_url || '';
         const recordId = record?.id !== undefined && record?.id !== null ? String(record.id) : '';
 
@@ -1031,7 +1062,7 @@ function openAttendanceRecordModal(records) {
                 <div class="attendance-record-row"><div class="attendance-record-key">Date</div><div class="attendance-record-value">${formatRecordValue(entry.date)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Entry Time</div><div class="attendance-record-value">${formatRecordValue(entry.time)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Exit Time</div><div class="attendance-record-value">${formatRecordValue(exit.time)}</div></div>
-                <div class="attendance-record-row"><div class="attendance-record-key">Duration</div><div class="attendance-record-value">${formatDurationHours(record.total_duration)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Duration</div><div class="attendance-record-value">${formatDurationHours(durationMinutes)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Location</div><div class="attendance-record-value">${formatRecordValue(record.location)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Type</div><div class="attendance-record-value">${formatRecordValue(record.type)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Project</div><div class="attendance-record-value">${formatRecordValue(record.project_name)}</div></div>
