@@ -78,6 +78,41 @@ let username = null;
 let specialUsersLoaded = false;
 let attendanceAllRecords = [];
 let attendanceEditingRecord = null;
+
+function syncEditDurationsFromDateTimes() {
+    const entryInput = document.getElementById('edit-entry-time');
+    const exitInput = document.getElementById('edit-exit-time');
+    const totalInput = document.getElementById('edit-total-duration');
+    const lunchInput = document.getElementById('edit-lunch-duration');
+    if (!entryInput || !exitInput || !totalInput || !lunchInput) return;
+
+    const entryTs = Date.parse(entryInput.value || '');
+    const exitTs = Date.parse(exitInput.value || '');
+
+    if (!Number.isFinite(entryTs) || !Number.isFinite(exitTs) || exitTs <= entryTs) {
+        totalInput.value = '';
+        lunchInput.value = '';
+        return;
+    }
+
+    const grossMinutes = Math.round((exitTs - entryTs) / 60000);
+
+    let lunchMinutes = 0;
+    const entryDate = new Date(entryTs);
+    if (grossMinutes >= 360) {
+        const lunchStart = new Date(entryDate);
+        lunchStart.setHours(12, 0, 0, 0);
+        const lunchEnd = new Date(entryDate);
+        lunchEnd.setHours(13, 0, 0, 0);
+
+        if (entryTs <= lunchStart.getTime() && exitTs >= lunchEnd.getTime()) {
+            lunchMinutes = 60;
+        }
+    }
+
+    totalInput.value = ((grossMinutes - lunchMinutes) / 60).toFixed(2);
+    lunchInput.value = (lunchMinutes / 60).toFixed(2);
+}
 let attendancePage = 1;
 let attendanceFilterText = '';
 let attendanceCalendarDate = new Date();
@@ -1873,8 +1908,7 @@ async function openEditModal(recordData) {
     const exitTimeEdit = (attendanceEditingRecord.exit_time || attendanceEditingRecord.rounded_time || '');
     document.getElementById('edit-entry-time').value = entryTimeEdit.replace(' ', 'T').slice(0, 16);
     document.getElementById('edit-exit-time').value = exitTimeEdit.replace(' ', 'T').slice(0, 16);
-    document.getElementById('edit-total-duration').value = ((Number(attendanceEditingRecord.total_duration || 0)) / 60).toFixed(2);
-    document.getElementById('edit-lunch-duration').value = ((Number(attendanceEditingRecord.lunch_duration || 0)) / 60).toFixed(2);
+    syncEditDurationsFromDateTimes();
 
     await Promise.all([
         populateEditUserSelect(attendanceEditingRecord.user_id),
@@ -2665,6 +2699,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const closeBtn = editModal.querySelector('.close-button');
         if (closeBtn) closeBtn.addEventListener('click', () => editModal.style.display = 'none');
 
+        const editEntryInput = document.getElementById('edit-entry-time');
+        const editExitInput = document.getElementById('edit-exit-time');
+        if (editEntryInput) editEntryInput.addEventListener('input', syncEditDurationsFromDateTimes);
+        if (editExitInput) editExitInput.addEventListener('input', syncEditDurationsFromDateTimes);
+
         const editForm = document.getElementById('edit-record-form');
         if (editForm) {
             editForm.addEventListener('submit', async (e) => {
@@ -2675,9 +2714,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const locationEdit = document.getElementById('edit-location').value;
                 const entryTimeEdit = document.getElementById('edit-entry-time').value;
                 const exitTimeEdit = document.getElementById('edit-exit-time').value;
-                const totalDurationMinutes = parseFloat(document.getElementById('edit-total-duration').value) * 60;
-                const lunchDurationMinutes = parseFloat(document.getElementById('edit-lunch-duration').value) * 60;
-                const isExitType = typeEdit === 'exit';
                 const selectedProjectIdRaw = document.getElementById('edit-project-id')?.value || '';
                 const selectedProjectId = selectedProjectIdRaw ? parseInt(selectedProjectIdRaw, 10) : null;
 
@@ -2690,8 +2726,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         rounded_time: exitTimeEdit.replace('T', ' '),
                         entry_time: entryTimeEdit.replace('T', ' '),
                         exit_time: exitTimeEdit.replace('T', ' '),
-                        total_duration: isExitType ? null : (Number.isFinite(totalDurationMinutes) ? totalDurationMinutes : null),
-                        lunch_duration: isExitType ? null : (Number.isFinite(lunchDurationMinutes) ? lunchDurationMinutes : null),
+                        total_duration: null,
+                        lunch_duration: null,
                         project_qr_id: null,
                         project_id: selectedProjectId
                     });
