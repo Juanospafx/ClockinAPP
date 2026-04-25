@@ -1,10 +1,19 @@
 <?php
 declare(strict_types=1);
 
+ob_start(); // Capturar cualquier output accidental (warnings, notices)
+
 require_once __DIR__ . '/../../core/bootstrap.php';
 require_once __DIR__ . '/../../core/response.php';
 apply_cors();
 header('Content-Type: application/json');
+
+// Descartar cualquier output que haya escapado antes de esta línea
+$strayOutput = ob_get_clean();
+ob_start(); // Nuevo buffer limpio para el JSON real
+if ($strayOutput && trim($strayOutput) !== '') {
+    error_log('Stray output detected in API router: ' . $strayOutput);
+}
 
 require_once __DIR__ . '/../../core/services/CsrfService.php';
 
