@@ -30,13 +30,13 @@ define('APP_TIMEZONE', $_ENV['APP_TIMEZONE'] ?? 'UTC');
 
 // --- Configuración Original (Producción / .env) ---
 // Comentada temporalmente para evitar choques en local
-// define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
-// define('DB_PORT', $_ENV['DB_PORT'] ?? '3306');
-// define('DB_USER', $_ENV['DB_USER'] ?? '');
-// define('DB_PASS', $_ENV['DB_PASS'] ?? '');
-// define('DB_NAME', $_ENV['DB_NAME'] ?? '');
+ define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
+ define('DB_PORT', $_ENV['DB_PORT'] ?? '3306');
+ define('DB_USER', $_ENV['DB_USER'] ?? '');
+ define('DB_PASS', $_ENV['DB_PASS'] ?? '');
+ define('DB_NAME', $_ENV['DB_NAME'] ?? '');
 
-/*
+
 if (DB_USER === '' || DB_PASS === '' || DB_NAME === '') {
     error_log('FATAL: Missing database credentials in .env file');
     if (php_sapi_name() !== 'cli') {
@@ -44,8 +44,8 @@ if (DB_USER === '' || DB_PASS === '' || DB_NAME === '') {
         echo json_encode(['ok' => false, 'error' => ['code' => 'config_error', 'message' => 'Server configuration error.']]);
         exit;
     }
-} */
-
+} 
+/*
 // --- CONFIGURACIÓN LOCAL XAMPP ---
 define('DB_HOST', '127.0.0.1');
 define('DB_PORT', '3306');
@@ -61,7 +61,7 @@ if (DB_USER === '' || DB_NAME === '') {
         echo json_encode(['ok' => false, 'error' => ['code' => 'config_error', 'message' => 'Server configuration error.']]);
         exit;
     }
-}
+}*/
    
 
 
