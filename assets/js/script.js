@@ -52,8 +52,8 @@ function appUrl(path) {
 }
 
 
-// Base API URL (compatible con XAMPP local)
-const API_BASE_URL = `${window.location.origin}/ClockinAPP/api/v1`;
+// Base API URL — usa APP_BASE para funcionar en cualquier entorno
+const API_BASE_URL = `${window.location.origin}${APP_BASE}/api/v1`;
 
 // --- Custom Alerts System ---
 let appConfirmCallback = null;
