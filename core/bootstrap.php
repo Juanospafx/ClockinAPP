@@ -19,6 +19,8 @@ ini_set('session.cookie_samesite', 'Lax');
 ini_set('session.use_strict_mode', '1');
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
+    // Asegurar que la cookie de sesión funcione en toda la app desde cualquier path
+    ini_set('session.cookie_path', '/');
     session_start();
 }
 
