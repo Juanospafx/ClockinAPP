@@ -245,9 +245,12 @@ async function apiFetch(endpoint, method = 'GET', data = null, contentType = 'js
     try {
         const response = await fetch(url, options);
         let payload = null;
+        let rawText = '';
         try {
-            payload = await response.json();
+            rawText = await response.text();
+            payload = JSON.parse(rawText);
         } catch (_) {
+            console.error('Failed to parse JSON. Raw response:', rawText.substring(0, 500));
             payload = null;
         }
         if (!response.ok || !payload || payload.ok !== true) {
@@ -260,6 +263,8 @@ async function apiFetch(endpoint, method = 'GET', data = null, contentType = 'js
         return { ...payload.data, success: true };
     } catch (error) {
         console.error('API Fetch Error:', error);
+        console.error('API Fetch URL was:', url);
+        console.error('API Fetch method:', method);
         throw error;
     }
 }
@@ -1000,8 +1005,11 @@ async function loadAttendanceRecords(uid = null) {
             renderAttendanceCalendar(attendanceAllRecords);
         }
         renderAttendancePage();
-    } catch (_) {
-        recordsBody.innerHTML = `<tr><td colspan="11">Error loading records.</td></tr>`;
+    } catch (err) {
+        console.error('[loadAttendanceRecords] Error:', err);
+        console.error('[loadAttendanceRecords] Message:', err.message);
+        console.error('[loadAttendanceRecords] Code:', err.code);
+        recordsBody.innerHTML = `<tr><td colspan="11">Error: ${err.message || 'Unknown error'}</td></tr>`;
         const mock = getAttendanceMockRecords();
         attendanceAllRecords = mock;
         attendanceCalendarDate = new Date(mock[0].entry_time);
