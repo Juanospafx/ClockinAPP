@@ -11,8 +11,11 @@ ini_set('error_log', APP_ROOT . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPA
 error_reporting(E_ALL);
 
 ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_secure', '1');
-ini_set('session.cookie_samesite', 'Strict');
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+    || (($_SERVER['SERVER_PORT'] ?? 80) == 443);
+ini_set('session.cookie_secure', $isHttps ? '1' : '0');
+ini_set('session.cookie_samesite', 'Lax');
 ini_set('session.use_strict_mode', '1');
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
