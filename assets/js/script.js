@@ -51,12 +51,11 @@ function appUrl(path) {
     return `${APP_BASE}${normalized}`;
 }
 
-agent/clockinapp-stage1
+
 // Configuración dinámica (Producción y local)
+// Configuración dinámica (producción y local)
+
 const API_BASE_URL = appUrl('/api/v1');
-// --- CONFIGURACIÓN LOCAL (XAMPP) ---
-// Solo descomentar si appUrl falla en XAMPP:
-//const API_BASE_URL = 'http://localhost/ClockinAPP/api/v1';
 
 // --- Custom Alerts System ---
 let appConfirmCallback = null;

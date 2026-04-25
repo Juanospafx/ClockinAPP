@@ -37,8 +37,8 @@ define('APP_TIMEZONE', $_ENV['APP_TIMEZONE'] ?? 'UTC');
  define('DB_NAME', $_ENV['DB_NAME'] ?? '');
 
 
-if (DB_USER === '' || DB_PASS === '' || DB_NAME === '') {
-    error_log('FATAL: Missing database credentials in .env file');
+if (DB_USER === '' || DB_NAME === '') {
+    error_log('FATAL: Missing required database settings in .env file (DB_USER/DB_NAME)');
     if (php_sapi_name() !== 'cli') {
         http_response_code(500);
         echo json_encode(['ok' => false, 'error' => ['code' => 'config_error', 'message' => 'Server configuration error.']]);
