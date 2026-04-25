@@ -20,25 +20,22 @@ function applyTheme(theme) {
 }
 
 function updateThemeToggleIcon(theme) {
-    const toggle = document.getElementById('theme-toggle');
+    const toggle = document.getElementById('globalThemeToggle') || document.getElementById('theme-toggle');
     if (!toggle) return;
     const dark = theme === 'dark';
-    toggle.textContent = dark ? '☀️' : '🌙';
+    toggle.innerHTML = dark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
     toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
 }
 
 function initThemeToggle() {
     const currentTheme = resolveInitialTheme();
     applyTheme(currentTheme);
-
-    const toggle = document.getElementById('theme-toggle');
-    if (!toggle) return;
-
-    toggle.addEventListener('click', () => {
-        const active = document.documentElement.getAttribute('data-theme') || 'dark';
-        applyTheme(active === 'dark' ? 'light' : 'dark');
-    });
 }
+
+window.toggleAppTheme = function() {
+    const active = document.documentElement.getAttribute('data-theme') || 'dark';
+    applyTheme(active === 'dark' ? 'light' : 'dark');
+};
 
 // --- Base API Configuration ---
 const APP_BASE = (() => {
@@ -54,7 +51,43 @@ function appUrl(path) {
     return `${APP_BASE}${normalized}`;
 }
 
-const API_BASE_URL = appUrl('/api/v1');
+// --- Custom Alerts System ---
+let appConfirmCallback = null;
+
+window.appAlert = function(message, title = 'Alert', type = 'info') {
+    document.getElementById('appAlertTitle').textContent = title;
+    document.getElementById('appAlertMessage').textContent = message;
+    
+    const iconEl = document.getElementById('appAlertIcon');
+    if (type === 'error') { iconEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color: var(--danger);"></i>'; }
+    else if (type === 'warning') { iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i>'; }
+    else if (type === 'success') { iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i>'; }
+    else { iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #3b82f6;"></i>'; }
+
+    document.getElementById('appAlertButtons').innerHTML = '<button type="button" class="btn" style="min-width: 100px;" onclick="document.getElementById(\'customAppAlert\').style.display = \'none\'">OK</button>';
+    document.getElementById('customAppAlert').style.display = 'flex';
+}
+
+window.appConfirm = function(message, title = 'Confirm Action', callback) {
+    document.getElementById('appAlertTitle').textContent = title;
+    document.getElementById('appAlertMessage').textContent = message;
+    
+    document.getElementById('appAlertIcon').innerHTML = '<i class="fas fa-question-circle" style="color: #f59e0b;"></i>';
+    appConfirmCallback = callback;
+
+    document.getElementById('appAlertButtons').innerHTML = `
+        <button type="button" class="btn-secondary" onclick="document.getElementById('customAppAlert').style.display = 'none'">Cancel</button>
+        <button type="button" class="btn" onclick="document.getElementById('customAppAlert').style.display = 'none'; if(typeof appConfirmCallback === 'function') { appConfirmCallback(); appConfirmCallback = null; }">Confirm</button>
+    `;
+    document.getElementById('customAppAlert').style.display = 'flex';
+}
+
+// Configuración original (Producción)
+//const API_BASE_URL = appUrl('/api/v1');
+
+// --- CONFIGURACIÓN LOCAL (XAMPP) ---
+// Descomenta la siguiente línea y comenta la original si la ruta dinámica falla:
+const API_BASE_URL = 'http://localhost/ClockinAPP/api/v1';
 
 // --- Global State ---
 let qrScanner = null;
@@ -478,7 +511,7 @@ function showSection(sectionId) {
         target = 'dashboard-section';
     }
 
-    ['scan-section', 'records-section', 'special-user-records-section', 'dashboard-section', 'admin-tools-section', 'users-section', 'projects-section', 'special-tools-section', 'report-absence-section', 'absence-records-section', 'manual-attendance-section']
+    ['scan-section', 'records-section', 'special-user-records-section', 'dashboard-section', 'admin-tools-section', 'users-section', 'report-absence-section', 'absence-records-section', 'manual-attendance-section']
         .forEach((id) => {
             const section = document.getElementById(id);
             if (section) section.style.display = (id === target) ? 'block' : 'none';
@@ -497,11 +530,9 @@ function showSection(sectionId) {
         'scan-section': role === 'special' ? 'nav-scan-special' : 'nav-scan',
         'records-section': role === 'special' ? 'nav-my-records-special' : (role === 'admin' ? 'nav-all-records' : 'nav-my-records'),
         'special-user-records-section': 'nav-user-records-special',
-        'dashboard-section': 'nav-dashboard',
+        'dashboard-section': role === 'special' ? 'nav-dashboard-special' : 'nav-dashboard',
         'admin-tools-section': 'nav-admin-tools',
         'users-section': 'nav-users',
-        'projects-section': 'nav-projects',
-        'special-tools-section': role === 'admin' ? 'nav-timer-control' : 'nav-special-tools',
         'report-absence-section': role === 'special' ? 'nav-report-absence-special' : 'nav-report-absence',
         'absence-records-section': 'nav-absence-records',
         'manual-attendance-section': 'nav-manual-attendance'
@@ -510,19 +541,17 @@ function showSection(sectionId) {
     if (activeNav) activeNav.classList.add('active');
 
     if (target === 'dashboard-section') {
-        loadDashboardData();
+        if (role === 'admin') loadDashboardData();
+        loadActiveTimers();
+        startActiveTimersPolling();
     } else if (target === 'records-section') {
         if (role === 'admin') loadUsersForAdminFilter();
     } else if (target === 'users-section') {
         loadUsers();
-    } else if (target === 'projects-section') {
-        loadProjects();
     } else if (target === 'admin-tools-section') {
+        loadProjects();
         loadProjectsForQrGeneration();
         loadGeneratedQRs();
-    } else if (target === 'special-tools-section') {
-        loadActiveTimers();
-        startActiveTimersPolling();
     } else if (target === 'special-user-records-section') {
         prepareSpecialUserRecordsView();
     } else if (target === 'report-absence-section') {
@@ -794,7 +823,7 @@ async function registerAttendance(action) {
             showLocationRequiredError();
         }
         if (messageEl) {
-            messageEl.textContent = 'La ubicación es obligatoria para registrar asistencia. Activa la geolocalización e intenta de nuevo.';
+            messageEl.textContent = 'Location is required to register attendance. Enable geolocation and try again.';
             messageEl.className = 'error-message';
         }
         return;
@@ -837,10 +866,10 @@ async function registerAttendance(action) {
             response = await apiFetch('attendance', 'POST', payload);
         } catch (error) {
             if (action === 'entry' && error.code === 'late_reason_required') {
-                const reason = prompt('Llegaste tarde. Escribe una justificación para continuar:');
+                const reason = prompt('You arrived late. Write a justification to continue:');
                 if (!reason || !reason.trim()) {
                     if (messageEl) {
-                        messageEl.textContent = 'Debes escribir una justificación para registrar una entrada tardía.';
+                        messageEl.textContent = 'You must write a justification to register a late entry.';
                         messageEl.className = 'error-message';
                     }
                     return;
@@ -926,7 +955,7 @@ async function generateQrCode() {
         });
         if (qrMessage) qrMessage.textContent = 'QR code generated successfully!';
         const projectName = projectSelectElement.options[projectSelectElement.selectedIndex].text;
-        downloadSpecificQr(response.qr_content, `${projectName}_QR`);
+            downloadSpecificQr(response.qr_content, `${projectName}_QR`, entryTimeRequired, exitTimeOptional);
     } catch (error) {
         if (qrMessage) qrMessage.textContent = `Connection error: ${error.message}`;
     }
@@ -983,10 +1012,10 @@ async function loadAttendanceRecords(uid = null) {
 }
 
 function getAttendanceStatusBadge(record) {
-    if (record.type === 'absence') return '<span class="status-pill status-absence">Ausencia</span>';
+    if (record.type === 'absence') return '<span class="status-pill status-absence">Absence</span>';
     if (record.type !== 'entry') return '<span class="status-pill status-neutral">—</span>';
-    if (record.late_reason) return '<span class="status-pill status-late">Tardanza</span>';
-    return '<span class="status-pill status-ontime">A tiempo</span>';
+    if (record.late_reason) return '<span class="status-pill status-late">Late</span>';
+    return '<span class="status-pill status-ontime">On time</span>';
 }
 
 function renderAttendancePage() {
@@ -1068,8 +1097,8 @@ function openAttendanceRecordModal(records) {
                 <div class="attendance-record-row"><div class="attendance-record-key">Project</div><div class="attendance-record-value">${formatRecordValue(record.project_name)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Evidence</div><div class="attendance-record-value">${evidence ? `<a href="${evidence}" target="_blank" rel="noopener noreferrer">Open evidence</a>` : '—'}</div></div>
                 <div class="attendance-record-actions">
-                    <button type="button" class="attendance-action-btn attendance-action-edit" data-action="edit-record-modal" data-record-id="${recordId}" ${recordId ? '' : 'disabled'}>Edit</button>
-                    <button type="button" class="attendance-action-btn attendance-action-delete" data-action="delete-record-modal" data-record-id="${recordId}" ${recordId ? '' : 'disabled'}>Delete</button>
+                    <button type="button" class="attendance-action-btn attendance-action-edit btn-secondary" data-action="edit-record-modal" data-record-id="${recordId}" ${recordId ? '' : 'disabled'}><i class="fas fa-edit"></i></button>
+                    <button type="button" class="attendance-action-btn attendance-action-delete btn-danger" data-action="delete-record-modal" data-record-id="${recordId}" ${recordId ? '' : 'disabled'}><i class="fas fa-trash-alt"></i></button>
                 </div>
             </div>
         `;
@@ -1152,8 +1181,13 @@ function transformAttendanceRecordsToMatrix(records, visibleDates) {
 function attendanceCellSummary(records) {
     const count = Array.isArray(records) ? records.length : 0;
     if (!count) return '';
-    if (count === 1) return 'record';
-    return `${count} records`;
+    let totalMins = 0;
+    records.forEach(r => {
+        totalMins += Number(resolveRecordDurationMinutes(r) || 0);
+    });
+    const durationStr = formatDurationHours(totalMins);
+    const countStr = count === 1 ? '1 record' : `${count} records`;
+    return `${countStr}<span style="font-size: 0.85em; opacity: 0.85; font-weight: 500;">${durationStr}</span>`;
 }
 
 function escapeHtml(value) {
@@ -1207,6 +1241,12 @@ function renderAttendanceCalendar(records) {
         `;
     }).join('');
 
+    const monthColors = [
+        '#0dcaf0', '#198754', '#ffc107', '#6f42c1', 
+        '#d63384', '#fd7e14', '#20c997', '#0d6efd', 
+        '#dc3545', '#6610f2', '#fb5a3a', '#adb5bd'
+    ];
+
     const rows = attendanceMatrixCache.map((employee) => {
         const cells = visibleDates.map((d) => {
             const dayKey = attendanceDateKey(d);
@@ -1234,9 +1274,13 @@ function renderAttendanceCalendar(records) {
             `;
         }).join('');
 
+        const nameStr = String(employee.employeeName || '');
+        const nameHash = Array.from(nameStr).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const nameColor = monthColors[nameHash % monthColors.length];
+
         return `
             <div class="attendance-matrix-row" data-employee-id="${escapeHtml(employee.employeeId)}">
-                <div class="attendance-matrix-col attendance-matrix-employee">${escapeHtml(employee.employeeName)}</div>
+                <div class="attendance-matrix-col attendance-matrix-employee" style="color: ${nameColor}; border-left: 4px solid ${nameColor};">${escapeHtml(employee.employeeName)}</div>
                 ${cells}
             </div>
         `;
@@ -1263,7 +1307,7 @@ function exportAttendanceCsv() {
         const exitTimeRaw = record.exit_time || record.rounded_time;
         const localEntryTime = formatRecordDateTime(record, entryTimeRaw);
         const localExitTime = formatRecordDateTime(record, exitTimeRaw);
-        const statusText = record.type === 'entry' ? (record.late_reason ? 'Tardanza' : 'A tiempo') : (record.type === 'absence' ? 'Ausencia' : '-');
+        const statusText = record.type === 'entry' ? (record.late_reason ? 'Late' : 'On time') : (record.type === 'absence' ? 'Absence' : '-');
         return [
             record.username,
             localEntryTime.date,
@@ -1274,7 +1318,7 @@ function exportAttendanceCsv() {
             localExitTime.time,
             formatDurationHours(record.total_duration),
             formatDurationHours(record.lunch_duration),
-            record.project_name || 'Sin proyecto'
+            record.project_name || 'No project'
         ];
     });
 
@@ -1324,15 +1368,19 @@ async function loadActiveTimers() {
             row.dataset.timerRow = timerId;
 
             const localStartTime = formatUtcAsLocal(timer.start_time_display);
-            const projectName = (timer.project_name || '').trim() || 'Sin proyecto';
+            const projectName = (timer.project_name || '').trim() || 'No project';
             const statusCode = Number(timer.status);
-            const statusLabel = statusCode === 1 ? 'Running' : statusCode === 2 ? 'Paused' : 'Stopped';
+            
+            let statusBadge = '';
+            if (statusCode === 1) statusBadge = '<span class="badge-type badge-entry"><i class="fas fa-play-circle"></i> Running</span>';
+            else if (statusCode === 2) statusBadge = '<span class="badge-type badge-general"><i class="fas fa-pause-circle"></i> Paused</span>';
+            else statusBadge = '<span class="badge-type badge-exit"><i class="fas fa-stop-circle"></i> Stopped</span>';
 
             row.querySelector('[data-label="User"]').textContent = timer.username;
             row.querySelector('[data-label="Project"]').textContent = projectName;
             row.querySelector('[data-label="Start Time"]').textContent = `${localStartTime.date} ${localStartTime.time}`;
             row.querySelector('[data-label="Duration"]').textContent = timer.duration_display;
-            row.querySelector('[data-label="Status"]').textContent = statusLabel;
+            row.querySelector('[data-label="Status"]').innerHTML = statusBadge;
 
             const pauseButton = row.querySelector('button[data-action="paused"]');
             const resumeButton = row.querySelector('button[data-action="resumed"]');
@@ -1482,7 +1530,7 @@ async function loadSpecialUserRecords(userId) {
             const localEntryTime = formatRecordDateTime(record, entryTimeRaw);
             const localExitTime = formatRecordDateTime(record, exitTimeRaw);
             const projectNameRaw = (record.project_name ?? '').trim();
-            const projectName = projectNameRaw !== '' ? projectNameRaw : 'Sin proyecto';
+            const projectName = projectNameRaw !== '' ? projectNameRaw : 'No project';
             return `
         <tr>
           <td data-label="User">${record.username}</td>
@@ -1515,7 +1563,7 @@ async function loadUsersForHistoryFilter() {
     if (!selectElement) return;
     try {
         const data = await apiFetch('users');
-        selectElement.innerHTML = '<option value="">Select User</option><option value="__all__">All Users</option>' + data.users.map(user => `<option value="${user.id}">${user.username}</option>`).join('');
+        selectElement.innerHTML = '<option value="__all__" selected>All Users</option>' + data.users.map(user => `<option value="${user.id}">${user.username}</option>`).join('');
     } catch (_) { }
 }
 
@@ -1588,14 +1636,15 @@ async function loadHoursChart(uid = null) {
         if (data.success) {
             if (hoursChart) hoursChart.destroy();
             const styles = getComputedStyle(document.documentElement);
-            const chartStroke = styles.getPropertyValue('--clr-e63946').trim() || '#e63946';
             const chartText = styles.getPropertyValue('--clr-d8e0f4').trim() || '#d8e0f4';
             const chartGrid = styles.getPropertyValue('--clr-rgba-159-176-205-0-2').trim() || 'rgba(159,176,205,0.2)';
-            const chartSurface = styles.getPropertyValue('--clr-rgba-255-255-255-0-05').trim() || 'rgba(255,255,255,0.05)';
 
-            const gradient = ctx.createLinearGradient(0, 0, 0, 280);
-            gradient.addColorStop(0, chartStroke);
-            gradient.addColorStop(1, chartSurface);
+            const monthColors = [
+                '#0dcaf0', '#198754', '#ffc107', '#6f42c1', 
+                '#d63384', '#fd7e14', '#20c997', '#0d6efd', 
+                '#dc3545', '#6610f2', '#fb5a3a', '#adb5bd'
+            ];
+            const bgColors = (data.summary.labels || []).map((_, index) => monthColors[index % 12]);
 
             hoursChart = new Chart(ctx, {
                 type: 'bar',
@@ -1604,9 +1653,9 @@ async function loadHoursChart(uid = null) {
                     datasets: [{
                         label: 'Hours Worked',
                         data: data.summary.data,
-                        backgroundColor: gradient,
-                        borderColor: chartStroke,
-                        borderWidth: 1.5,
+                        backgroundColor: bgColors,
+                        borderColor: bgColors,
+                        borderWidth: 0,
                         borderRadius: 10,
                         borderSkipped: false,
                         maxBarThickness: 46
@@ -1700,10 +1749,10 @@ function initQrCodeMap() {
                             qrLocationMap.setCenter(pos);
                             qrLocationMap.setZoom(15);
                         },
-                        () => { alert('Error: Geolocation service failed.'); }
+                        () => { appAlert('Error: Geolocation service failed.', 'Geolocation Error', 'error'); }
                     );
                 } else {
-                    alert('Error: Your browser does not support geolocation.');
+                    appAlert('Error: Your browser does not support geolocation.', 'Unsupported', 'error');
                 }
             });
         }
@@ -1745,7 +1794,7 @@ async function loadAllAttendanceLocationsOnMap() {
 
         if (!points.length) {
             const msg = document.getElementById('map-message');
-            if (msg) msg.textContent = 'No hay ubicaciones de entradas/salidas para mostrar aún.';
+            if (msg) msg.textContent = 'No entry/exit locations to show yet.';
             return;
         }
 
@@ -1812,7 +1861,7 @@ async function displayUserLocationHistory(uid, startDate, endDate) {
 
             if (!points.length) {
                 const msg = document.getElementById('map-message');
-                if (msg) msg.textContent = 'No hay coordenadas válidas para mostrar.';
+                if (msg) msg.textContent = 'No valid coordinates to show.';
                 return;
             }
 
@@ -1852,7 +1901,7 @@ async function displayUserLocationHistory(uid, startDate, endDate) {
             if (msg) msg.textContent = '';
         } else {
             const msg = document.getElementById('map-message');
-            if (msg) msg.textContent = 'Sin historial para ese filtro. Mostrando todas las entradas/salidas recientes.';
+            if (msg) msg.textContent = 'No history for that filter. Showing all recent entries/exits.';
             loadAllAttendanceLocationsOnMap();
         }
     } catch (error) {
@@ -1863,18 +1912,19 @@ async function displayUserLocationHistory(uid, startDate, endDate) {
 }
 
 async function deleteRecord(recordId) {
-    if (!confirm('Are you sure you want to delete this record?')) return;
-    try {
-        const response = await apiFetch(`attendance/${recordId}`, 'DELETE');
-        alert(response.message);
-        if (response.success) {
-            const uid = sessionStorage.getItem('user_id');
-            const role = normalizeRole(sessionStorage.getItem('user_role'));
-            loadAttendanceRecords(role === 'admin' ? null : uid);
+    appConfirm('Are you sure you want to delete this record?', 'Delete Record', async () => {
+        try {
+            const response = await apiFetch(`attendance/${recordId}`, 'DELETE');
+            appAlert(response.message, 'Success', 'success');
+            if (response.success) {
+                const uid = sessionStorage.getItem('user_id');
+                const role = normalizeRole(sessionStorage.getItem('user_role'));
+                loadAttendanceRecords(role === 'admin' ? null : uid);
+            }
+        } catch (error) {
+            appAlert(`Error deleting: ${error.message}`, 'Error', 'error');
         }
-    } catch (error) {
-        alert(`Error deleting: ${error.message}`);
-    }
+    });
 }
 
 function openAttendanceDeleteConfirm(recordId) {
@@ -1947,6 +1997,7 @@ async function openEditModal(recordData) {
     ]);
 
     document.getElementById('edit-record-modal').style.display = 'block';
+    if (typeof initCustomCalendars === 'function') initCustomCalendars();
 }
 
 async function populateEditUserSelect(selectedUserId = null) {
@@ -1973,7 +2024,7 @@ async function populateEditProjectSelect(selectedProjectId = null) {
     const projectSelect = document.getElementById('edit-project-id');
     if (!projectSelect) return;
 
-    projectSelect.innerHTML = '<option value="">— Sin proyecto —</option>';
+    projectSelect.innerHTML = '<option value="">— No project —</option>';
 
     try {
         const data = await apiFetch('projects');
@@ -2007,14 +2058,25 @@ async function loadUsers() {
                 const roleId = (user.role_id !== undefined && user.role_id !== null)
                     ? String(user.role_id)
                     : '';
+
+                const roleLower = (user.role || '').toLowerCase();
+                let roleClass = 'badge-general';
+                let icon = 'fa-user';
+                if (roleLower.includes('admin')) { roleClass = 'badge-general'; icon = 'fa-user-shield'; }
+                else if (roleLower.includes('special')) { roleClass = 'badge-exit'; icon = 'fa-user-astronaut'; }
+                else { roleClass = 'badge-entry'; icon = 'fa-user'; }
+                const roleBadge = `<span class="badge-type ${roleClass}"><i class="fas ${icon}"></i> ${user.role}</span>`;
+
                 return `
         <tr>
           <td data-label="ID">${userId}</td>
-          <td data-label="Username">${user.username}</td>
-          <td data-label="Role">${user.role}</td>
+          <td data-label="Username" style="font-weight: 600; color: var(--text-white);">${user.username}</td>
+          <td data-label="Role">${roleBadge}</td>
           <td data-label="Actions">
-            <button data-action="edit-user" data-id="${userId}" data-username="${encodedUsername}" data-role-id="${roleId}">Edit</button>
-            <button data-action="delete-user" data-id="${userId}">Delete</button>
+            <div class="table-actions">
+                <button class="edit-btn" data-action="edit-user" data-id="${userId}" data-username="${encodedUsername}" data-role-id="${roleId}"><i class="fas fa-edit"></i></button>
+                <button class="delete-btn" data-action="delete-user" data-id="${userId}"><i class="fas fa-trash-alt"></i></button>
+            </div>
           </td>
         </tr>
         `;
@@ -2110,21 +2172,22 @@ async function saveUser(e) {
 }
 
 async function deleteUser(id) {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    const messageEl = document.getElementById('user-form-message');
-    try {
-        const response = await apiFetch(`users/${id}`, 'DELETE');
-        if (messageEl) {
-            messageEl.textContent = response.message;
-            messageEl.className = response.success ? 'success-message' : 'error-message';
+    appConfirm('Are you sure you want to delete this user?', 'Delete User', async () => {
+        const messageEl = document.getElementById('user-form-message');
+        try {
+            const response = await apiFetch(`users/${id}`, 'DELETE');
+            if (messageEl) {
+                messageEl.textContent = response.message;
+                messageEl.className = response.success ? 'success-message' : 'error-message';
+            }
+            if (response.success) loadUsers();
+        } catch (error) {
+            if (messageEl) {
+                messageEl.textContent = `Error: ${error.message}`;
+                messageEl.className = 'error-message';
+            }
         }
-        if (response.success) loadUsers();
-    } catch (error) {
-        if (messageEl) {
-            messageEl.textContent = `Error: ${error.message}`;
-            messageEl.className = 'error-message';
-        }
-    }
+    });
 }
 
 // --- Project Management Functions ---
@@ -2153,12 +2216,14 @@ async function loadProjects() {
                 return `
         <tr>
           <td data-label="ID">${project.id}</td>
-          <td data-label="Name">${project.name}</td>
+          <td data-label="Name" style="font-weight: 600; color: var(--text-white);">${project.name}</td>
           <td data-label="Geofence">${geoStatus}</td>
           <td data-label="Creation Date">${new Date(project.created_at).toLocaleDateString()}</td>
           <td data-label="Actions">
-            <button data-action="edit-project" data-project-data="${projectData}">Edit</button>
-            <button data-action="delete-project" data-project-id="${project.id}">Delete</button>
+            <div class="table-actions">
+                <button class="edit-btn" data-action="edit-project" data-project-data="${projectData}"><i class="fas fa-edit"></i></button>
+                <button class="delete-btn" data-action="delete-project" data-project-id="${project.id}"><i class="fas fa-trash-alt"></i></button>
+            </div>
           </td>
         </tr>
       `;
@@ -2252,24 +2317,25 @@ async function saveProject(e) {
 }
 
 async function deleteProject(id) {
-    if (!confirm('Are you sure you want to delete this project? This will also delete associated QRs.')) return;
-    const messageEl = document.getElementById('project-form-message');
-    try {
-        const response = await apiFetch(`projects/${id}`, 'DELETE');
-        if (messageEl) {
-            messageEl.textContent = response.message;
-            messageEl.className = response.success ? 'success-message' : 'error-message';
+    appConfirm('Are you sure you want to delete this project? This will also delete associated QRs.', 'Delete Project', async () => {
+        const messageEl = document.getElementById('project-form-message');
+        try {
+            const response = await apiFetch(`projects/${id}`, 'DELETE');
+            if (messageEl) {
+                messageEl.textContent = response.message;
+                messageEl.className = response.success ? 'success-message' : 'error-message';
+            }
+            if (response.success) {
+                loadProjects();
+                loadProjectsForQrGeneration();
+            }
+        } catch (error) {
+            if (messageEl) {
+                messageEl.textContent = `Error: ${error.message}`;
+                messageEl.className = 'error-message';
+            }
         }
-        if (response.success) {
-            loadProjects();
-            loadProjectsForQrGeneration();
-        }
-    } catch (error) {
-        if (messageEl) {
-            messageEl.textContent = `Error: ${error.message}`;
-            messageEl.className = 'error-message';
-        }
-    }
+    });
 }
 
 async function loadProjectsForQrGeneration() {
@@ -2287,15 +2353,16 @@ async function loadProjectsForQrGeneration() {
 }
 
 async function deleteQr(qrId) {
-    if (!confirm('Are you sure you want to delete this QR?')) return;
-    try {
-        const response = await apiFetch(`qrs/${qrId}`, 'DELETE');
-        alert(response.message);
-        if (response.success) loadGeneratedQRs();
-    } catch (error) {
-        console.error('Error deleting QR:', error);
-        alert(`Error deleting QR: ${error.message}`);
-    }
+    appConfirm('Are you sure you want to delete this QR?', 'Delete QR', async () => {
+        try {
+            const response = await apiFetch(`qrs/${qrId}`, 'DELETE');
+            appAlert(response.message, 'Success', 'success');
+            if (response.success) loadGeneratedQRs();
+        } catch (error) {
+            console.error('Error deleting QR:', error);
+            appAlert(`Error deleting QR: ${error.message}`, 'Error', 'error');
+        }
+    });
 }
 
 async function loadGeneratedQRs() {
@@ -2305,19 +2372,28 @@ async function loadGeneratedQRs() {
     try {
         const data = await apiFetch('qrs');
         if (data.success) {
-            qrsTableBody.innerHTML = data.qrs.map(qr => `
+            qrsTableBody.innerHTML = data.qrs.map(qr => {
+                const actionTypeLower = (qr.action_type || 'general').toLowerCase();
+                let icon = 'fa-qrcode';
+                if (actionTypeLower === 'entry') icon = 'fa-sign-in-alt';
+                if (actionTypeLower === 'exit') icon = 'fa-sign-out-alt';
+                const actionBadge = `<span class="badge-type badge-${actionTypeLower}"><i class="fas ${icon}"></i> ${qr.action_type || 'General'}</span>`;
+                
+                return `
         <tr>
-          <td data-label="Project Name">${qr.project_name}</td>
-          <td data-label="Action Type">${qr.action_type}</td>
-          <td data-label="Location">${qr.location}</td>
+          <td data-label="Project Name" style="font-weight: 600; color: var(--text-white);">${qr.project_name}</td>
+          <td data-label="Action Type">${actionBadge}</td>
+          <td data-label="Location">${qr.location || '—'}</td>
           <td data-label="Generated At">${new Date(qr.created_at).toLocaleString()}</td>
           <td data-label="Actions">
-            <button class="small-button copy-qr-btn" data-qr-content='${encodeURIComponent(qr.qr_content)}'>Copy</button>
-            <button class="small-button download-qr-btn" data-qr-content='${encodeURIComponent(qr.qr_content)}' data-project-name='${qr.project_name}' data-action-type='${qr.action_type}'>Download</button>
-            <button class="small-button delete-qr-btn" data-qr-id="${qr.id}">Delete</button>
+            <div class="table-actions">
+                <button class="copy-btn copy-qr-btn" data-qr-content='${encodeURIComponent(qr.qr_content)}'><i class="fas fa-copy"></i></button>
+                <button class="download-btn download-qr-btn" data-qr-content='${encodeURIComponent(qr.qr_content)}' data-project-name='${qr.project_name}' data-action-type='${qr.action_type}'><i class="fas fa-download"></i></button>
+                <button class="delete-btn delete-qr-btn" data-qr-id="${qr.id}"><i class="fas fa-trash-alt"></i></button>
+            </div>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
         } else {
             qrsTableBody.innerHTML = `<tr><td colspan="5">Error loading generated QRs: ${data.message}</td></tr>`;
         }
@@ -2328,46 +2404,102 @@ async function loadGeneratedQRs() {
 
 function copyQrContent(content) {
     navigator.clipboard.writeText(content).then(() => {
-        alert('QR Content copied to clipboard!');
+        appAlert('QR Content copied to clipboard!', 'Success', 'success');
     }).catch(err => {
         console.error('Failed to copy QR content: ', err);
-        alert('Failed to copy QR content.');
+        appAlert('Failed to copy QR content.', 'Error', 'error');
     });
 }
 
-async function downloadSpecificQr(qrContent, filename) {
+async function downloadSpecificQr(qrContent, filename, providedEntry = null, providedExit = null) {
     const tempQrDiv = document.createElement('div');
     tempQrDiv.style.position = 'absolute';
     tempQrDiv.style.left = '-9999px';
     document.body.appendChild(tempQrDiv);
 
     if (typeof QRCode === 'undefined') {
-        alert('QR Code library not loaded. Please try again.');
+        appAlert('QR Code library not loaded. Please try again.', 'Error', 'error');
         tempQrDiv.remove();
         return;
     }
 
-    new QRCode(tempQrDiv, { text: qrContent, width: 256, height: 256 });
+    // Renderizado en Alta Resolución (1024x1024) para que no se pixele al estirarse a 6x6 pulgadas
+    new QRCode(tempQrDiv, { text: qrContent, width: 1024, height: 1024, correctLevel: QRCode.CorrectLevel.H });
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
     const qrCanvas = tempQrDiv.querySelector('canvas');
 
     if (!qrCanvas) {
         console.error('QR code canvas not found in temp div.');
-        alert('Error generating QR for download.');
+        appAlert('Error generating QR for download.', 'Error', 'error');
         tempQrDiv.remove();
         return;
     }
 
+    // Intentar leer las horas directo del JSON en caso de venir del historial de la tabla
+    let parsed = {};
+    try { parsed = JSON.parse(qrContent); } catch(e){}
+    const entry = providedEntry || parsed.entry_time_required || parsed.entry_time || 'N/A';
+    const exit = providedExit || parsed.exit_time_optional || parsed.exit_time || 'N/A';
+
+    // Cargar el Logo de Brightronix
+    const logoImg = new Image();
+    logoImg.src = appUrl('/assets/logo-text.png');
+    await new Promise(r => {
+        logoImg.onload = r;
+        logoImg.onerror = r;
+    });
+
     try {
         const imgData = qrCanvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.addImage(imgData, 'PNG', 10, 10, 60, 60);
+        
+        // Configuración de lienzo 11" x 8" en formato Horizontal (Landscape)
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'in', format: [11, 8] });
+
+        // Limpiar el nombre de archivo para usarlo como Título
+        const projectName = filename.replace('_QR', '').replace(/_/g, ' ');
+
+        // 1. Título Arriba (Nombre del proyecto centrado con auto-escalado dinámico)
+        doc.setFont('helvetica', 'bold');
+        let fontSize = 48;
+        doc.setFontSize(fontSize);
+        
+        // Medir el texto. Si sobrepasa 10 pulgadas de ancho (dejando 0.5" de margen a cada lado), reducimos la fuente.
+        let textWidth = doc.getTextWidth(projectName);
+        if (textWidth > 10) {
+            fontSize = Math.floor((10 / textWidth) * 48);
+            doc.setFontSize(fontSize);
+        }
+
+        doc.setTextColor(0, 0, 0); // Color Negro
+        doc.text(projectName, 5.5, 0.8, { align: 'center' });
+
+        // 2. El Código QR (5.5" x 5.5" centrado matemáticamente: X=2.75, Y=1.2)
+        doc.addImage(imgData, 'PNG', 2.75, 1.2, 5.5, 5.5);
+
+        // 3. Información del Proyecto (Debajo del QR)
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(20);
+        doc.setTextColor(0, 0, 0); // Color Negro
+        doc.text(`Entry Time: ${entry}   |   Exit Time: ${exit}`, 5.5, 7.0, { align: 'center' });
+
+        // 4. Logotipo pequeño Brightronix al final (Sin fondo oscuro)
+        if (logoImg.complete && logoImg.naturalWidth > 0) {
+            const aspect = logoImg.naturalHeight / logoImg.naturalWidth;
+            const logoWidth = 2.5;
+            const logoHeight = logoWidth * aspect;
+            doc.addImage(logoImg, 'PNG', 5.5 - (logoWidth/2), 7.25, logoWidth, logoHeight);
+        } else {
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0); // Color Negro
+            doc.text("Brightronix", 5.5, 7.5, { align: 'center' });
+        }
+
         doc.save(`${filename}.pdf`);
     } catch (error) {
         console.error('Error during specific QR PDF generation:', error);
-        alert('Error generating PDF: ' + error.message);
+        appAlert('Error generating PDF: ' + error.message, 'Error', 'error');
     } finally {
         tempQrDiv.remove();
     }
@@ -2478,10 +2610,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 window.location.href = appUrl('/pages/registros/registros.html');
             } else {
-                if (messageEl) messageEl.textContent = 'Login failed.';
+                if (messageEl) messageEl.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i> Login failed.';
             }
         } catch (error) {
-            if (messageEl) messageEl.textContent = error.message;
+            if (messageEl) messageEl.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i> ${error.message}`;
         }
         });
         return;
@@ -2553,10 +2685,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (adminToolsLink) adminToolsLink.addEventListener('click', (e) => { e.preventDefault(); showSection('admin-tools-section'); });
     const usersLink = document.getElementById('nav-users');
     if (usersLink) usersLink.addEventListener('click', (e) => { e.preventDefault(); showSection('users-section'); });
-    const projectsLink = document.getElementById('nav-projects');
-    if (projectsLink) projectsLink.addEventListener('click', (e) => { e.preventDefault(); showSection('projects-section'); });
-    const timerControlLink = document.getElementById('nav-timer-control');
-    if (timerControlLink) timerControlLink.addEventListener('click', (e) => { e.preventDefault(); showSection('special-tools-section'); });
 
     const scanSpecialLink = document.getElementById('nav-scan-special');
     if (scanSpecialLink) scanSpecialLink.addEventListener('click', (e) => { e.preventDefault(); showSection('scan-section'); });
@@ -2567,8 +2695,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const userRecordsSpecialLink = document.getElementById('nav-user-records-special');
     if (userRecordsSpecialLink) userRecordsSpecialLink.addEventListener('click', (e) => { e.preventDefault(); showSection('special-user-records-section'); });
 
-    const specialToolsLink = document.getElementById('nav-special-tools');
-    if (specialToolsLink) specialToolsLink.addEventListener('click', (e) => { e.preventDefault(); showSection('special-tools-section'); });
+    const dashboardSpecialLink = document.getElementById('nav-dashboard-special');
+    if (dashboardSpecialLink) dashboardSpecialLink.addEventListener('click', (e) => { e.preventDefault(); showSection('dashboard-section'); });
 
     const scanLink = document.getElementById('nav-scan');
     if (scanLink) scanLink.addEventListener('click', (e) => { e.preventDefault(); showSection('scan-section'); });
@@ -2643,30 +2771,61 @@ document.addEventListener('DOMContentLoaded', () => {
             const uidSel = document.getElementById('admin-user-filter').value;
             const date = document.getElementById('recalculate-date').value;
             if (!uidSel || !date) {
-                alert('Please select a user and a date for recalculation.');
+                appAlert('Please select a user and a date for recalculation.', 'Missing Info', 'warning');
                 return;
             }
             try {
                 const response = await apiFetch('attendance/recalculate', 'POST', { user_id: uidSel, date });
-                alert(response.message);
+                appAlert(response.message, 'Success', 'success');
                 if (response.success) loadAttendanceRecords(uidSel);
             } catch (error) {
-                alert(`Error during recalculation: ${error.message}`);
+                appAlert(`Error during recalculation: ${error.message}`, 'Error', 'error');
             }
         });
     }
 
-    const viewHistoryBtn = document.getElementById('view-history-button');
-    if (viewHistoryBtn) {
-        viewHistoryBtn.addEventListener('click', () => {
-            const uidSel = document.getElementById('history-user-filter').value;
-            const startDate = document.getElementById('history-start-date').value;
-            const endDate = document.getElementById('history-end-date').value;
-            if (!uidSel) {
-                alert('Please select a user (or All Users).');
-                return;
-            }
-            displayUserLocationHistory(uidSel, startDate, endDate);
+    function reloadMapHistory() {
+        const uidSel = document.getElementById('history-user-filter')?.value;
+        const dateInput = document.getElementById('map-focus-date');
+        if (!uidSel || !dateInput || !dateInput.value) return;
+        const dateStr = dateInput.value;
+        displayUserLocationHistory(uidSel, dateStr, dateStr);
+    }
+
+    const historyUserFilter = document.getElementById('history-user-filter');
+    if (historyUserFilter) {
+        historyUserFilter.addEventListener('change', reloadMapHistory);
+    }
+
+    const mapFocusDate = document.getElementById('map-focus-date');
+    if (mapFocusDate) {
+        // Inicializa el campo con el día de hoy
+        const today = new Date();
+        mapFocusDate.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        mapFocusDate.addEventListener('change', reloadMapHistory);
+    }
+
+    const mapPrevBtn = document.getElementById('map-date-prev');
+    if (mapPrevBtn) {
+        mapPrevBtn.addEventListener('click', () => {
+            const dateInput = document.getElementById('map-focus-date');
+            if (!dateInput.value) return;
+            const d = new Date(dateInput.value + 'T12:00:00'); 
+            d.setDate(d.getDate() - 1);
+            dateInput.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            reloadMapHistory();
+        });
+    }
+
+    const mapNextBtn = document.getElementById('map-date-next');
+    if (mapNextBtn) {
+        mapNextBtn.addEventListener('click', () => {
+            const dateInput = document.getElementById('map-focus-date');
+            if (!dateInput.value) return;
+            const d = new Date(dateInput.value + 'T12:00:00'); 
+            d.setDate(d.getDate() + 1);
+            dateInput.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            reloadMapHistory();
         });
     }
 
@@ -2797,11 +2956,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (out) out.value = results[0].formatted_address;
                             qrMapModal.style.display = 'none';
                         } else {
-                            alert('Could not get address. Please try again.');
+                            appAlert('Could not get address. Please try again.', 'Location Error', 'error');
                         }
                     });
                 } else {
-                    alert('Please select a location on the map.');
+                    appAlert('Please select a location on the map.', 'Missing Info', 'warning');
                 }
             });
         }
@@ -2864,12 +3023,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderAttendancePage();
         });
     }
-
-    const prevPageBtn = document.getElementById('attendance-prev-page');
-    if (prevPageBtn) prevPageBtn.addEventListener('click', () => { attendancePage = Math.max(1, attendancePage - 1); renderAttendancePage(); });
-
-    const nextPageBtn = document.getElementById('attendance-next-page');
-    if (nextPageBtn) nextPageBtn.addEventListener('click', () => { attendancePage += 1; renderAttendancePage(); });
 
     const prevMonthBtn = document.getElementById('attendance-calendar-prev');
     if (prevMonthBtn) {
@@ -2991,36 +3144,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     showProjectForm('edit', projectData);
                 } catch (err) {
                     console.error('Error parsing project data:', err);
-                }
-            }
-        });
-    }
-
-    const attendanceRecordsBody = document.getElementById('attendance-records-body');
-    if (attendanceRecordsBody) {
-        attendanceRecordsBody.addEventListener('click', (e) => {
-            const target = e.target;
-            if (target && target.matches('button[data-action]')) {
-                e.preventDefault();
-                const action = target.dataset.action;
-                const recordId = Number(target.dataset.recordId);
-
-                console.log('Action triggered:', { action, recordId }); // Debugging line
-
-                if (action === 'edit-record') {
-                    if (recordId) {
-                        let recordData = null;
-                        try {
-                            recordData = target.dataset.record ? JSON.parse(decodeURIComponent(target.dataset.record)) : null;
-                        } catch (_) {
-                            recordData = attendanceAllRecords.find(r => Number(r.id) === Number(recordId)) || null;
-                        }
-                        openEditModal(recordData);
-                    }
-                } else if (action === 'delete-record') {
-                    if (recordId) {
-                        deleteRecord(recordId);
-                    }
                 }
             }
         });

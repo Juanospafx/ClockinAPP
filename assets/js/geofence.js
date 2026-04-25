@@ -68,7 +68,7 @@ function showClockInSuccess(message, coords, projectCoords) {
                     strokeColor: '#fff',
                     strokeWeight: 2
                 },
-                title: 'Tu ubicación'
+                title: 'Your location'
             });
 
             // Project geofence circle
@@ -96,7 +96,7 @@ function showClockInSuccess(message, coords, projectCoords) {
                         strokeColor: '#fff',
                         strokeWeight: 1
                     },
-                    title: 'Ubicación del proyecto'
+                    title: 'Project location'
                 });
             }
         }, 100);
@@ -121,7 +121,7 @@ function showGeofenceError(message, details) {
     if (details && details.distance_meters !== undefined) {
         const dist = Math.round(details.distance_meters);
         const allowed = details.allowed_radius;
-        detailsText = `Estás a ${dist}m del proyecto. Radio permitido: ${allowed}m.`;
+        detailsText = `You are ${dist}m away from the project. Allowed radius: ${allowed}m.`;
     }
 
     const overlay = document.createElement('div');
@@ -137,7 +137,7 @@ function showGeofenceError(message, details) {
         </div>
         <div class="error-text">${escapeHtml(message)}</div>
         ${detailsText ? `<div class="error-details">${escapeHtml(detailsText)}</div>` : ''}
-        <button class="dismiss-btn" id="dismiss-overlay-btn">Entendido</button>
+        <button class="dismiss-btn" id="dismiss-overlay-btn">Got it</button>
     `;
 
     document.body.appendChild(overlay);
@@ -150,7 +150,7 @@ function showGeofenceError(message, details) {
  */
 function showLocationRequiredError() {
     showGeofenceError(
-        'La ubicación es obligatoria para registrar tu entrada/salida. Activa la geolocalización en tu navegador e intenta de nuevo.',
+        'Location is required to register your entry/exit. Enable geolocation in your browser and try again.',
         null
     );
 }
@@ -254,7 +254,7 @@ function initGeofenceConfigMap(initialCoords) {
     if (currentLocBtn) {
         currentLocBtn.addEventListener('click', () => {
             if (!navigator.geolocation) {
-                alert('Tu navegador no soporta geolocalización.');
+                alert('Your browser does not support geolocation.');
                 return;
             }
             navigator.geolocation.getCurrentPosition(
@@ -264,7 +264,7 @@ function initGeofenceConfigMap(initialCoords) {
                     geofenceMap.setCenter(coords);
                     geofenceMap.setZoom(16);
                 },
-                () => alert('No se pudo obtener tu ubicación.')
+                () => alert('Could not get your location.')
             );
         });
     }
@@ -294,7 +294,7 @@ function placeGeofenceMarker(coords, radius) {
         position: coords,
         map: geofenceMap,
         draggable: true,
-        title: 'Ubicación del proyecto'
+        title: 'Project location'
     });
 
     // Place circle

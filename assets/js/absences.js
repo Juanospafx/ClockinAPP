@@ -4,17 +4,17 @@
 
 // Reason labels for display
 const REASON_LABELS = {
-    familiar: 'Familiar',
-    enfermedad: 'Enfermedad',
-    vacaciones: 'Vacaciones',
-    sin_justificacion: 'Sin justificación'
+    familiar: 'Family',
+    enfermedad: 'Illness',
+    vacaciones: 'Vacation',
+    sin_justificacion: 'Unexcused'
 };
 
 const REASON_COLORS = {
-    familiar: '#9b59b6',
-    enfermedad: '#e74c3c',
-    vacaciones: '#3498db',
-    sin_justificacion: '#95a5a6'
+    familiar: '#3b82f6',        /* Azul (Active Employees) */
+    enfermedad: '#ef4444',      /* Rojo (Today's Absences) */
+    vacaciones: '#10b981',      /* Verde (Today's Clock-ins) */
+    sin_justificacion: '#94a3b8' /* Gris neutro (Card box) */
 };
 
 let absenceSummaryChart = null;
@@ -33,11 +33,11 @@ async function loadProjectsForAbsenceForm() {
     try {
         const data = await apiFetch('projects');
         if (data.projects) {
-            select.innerHTML = '<option value="">— Seleccionar proyecto —</option>' +
+            select.innerHTML = '<option value="">— Select project —</option>' +
                 data.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
         }
     } catch (err) {
-        select.innerHTML = '<option value="">Error cargando proyectos</option>';
+        select.innerHTML = '<option value="">Error loading projects</option>';
     }
 }
 
@@ -60,7 +60,7 @@ async function submitAbsenceReport(e) {
 
     if (!dateStart || !reason) {
         if (messageEl) {
-            messageEl.textContent = 'La fecha y la razón son obligatorias.';
+            messageEl.textContent = 'Date and reason are required.';
             messageEl.className = 'error-message';
         }
         return;
@@ -94,11 +94,11 @@ async function submitAbsenceReport(e) {
 
         const payload = await response.json();
         if (!response.ok || !payload || payload.ok !== true) {
-            throw new Error(payload?.error?.message || 'Error al enviar el reporte.');
+            throw new Error(payload?.error?.message || 'Error submitting report.');
         }
 
         if (messageEl) {
-            messageEl.textContent = payload.data.message || 'Reporte enviado.';
+            messageEl.textContent = payload.data.message || 'Report submitted successfully.';
             messageEl.className = 'success-message';
         }
 
@@ -131,7 +131,7 @@ async function loadUserAbsenceHistory() {
         const absences = data.absences || [];
 
         if (absences.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">No tienes reportes de ausencia.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6">You have no absence reports.</td></tr>';
             return;
         }
 
@@ -139,19 +139,21 @@ async function loadUserAbsenceHistory() {
             const dateRange = a.date_start === a.date_end
                 ? a.date_start
                 : `${a.date_start} → ${a.date_end}`;
-            const projectName = a.project_name || 'Sin proyecto';
+            const projectName = a.project_name || 'No project';
             const reasonLabel = REASON_LABELS[a.reason] || a.reason;
 
             return `
             <tr>
-                <td data-label="Fecha">${dateRange}</td>
-                <td data-label="Proyecto">${projectName}</td>
-                <td data-label="Razón"><span class="reason-badge ${a.reason}">${reasonLabel}</span></td>
-                <td data-label="Estado"><span class="status-badge ${a.status}">${a.status}</span></td>
-                <td data-label="Notas">${a.notes || '—'}</td>
-                <td data-label="Acciones">
-                    ${a.evidence_path ? `<a href="${appUrl('/' + a.evidence_path)}" target="_blank" class="evidence-link">📎 Ver</a>` : ''}
-                    ${a.status === 'pendiente' ? `<button class="small-button" data-action="delete-absence" data-absence-id="${a.id}">Eliminar</button>` : ''}
+                <td data-label="Date">${dateRange}</td>
+                <td data-label="Project">${projectName}</td>
+                <td data-label="Reason"><span class="reason-badge ${a.reason}">${reasonLabel}</span></td>
+                <td data-label="Status"><span class="status-badge ${a.status}">${a.status}</span></td>
+                <td data-label="Notes">${a.notes || '—'}</td>
+                <td data-label="Actions">
+                    <div class="absence-actions-cell">
+                        ${a.evidence_path ? `<a href="${appUrl('/' + a.evidence_path)}" target="_blank" class="evidence-link"><i class="fas fa-paperclip"></i></a>` : ''}
+                        ${a.status === 'pendiente' ? `<button class="delete-btn" data-action="delete-absence" data-absence-id="${a.id}"><i class="fas fa-trash-alt"></i></button>` : ''}
+                    </div>
                 </td>
             </tr>`;
         }).join('');
@@ -196,7 +198,7 @@ async function loadAdminAbsences() {
         const absences = data.absences || [];
 
         if (absences.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9">No se encontraron reportes de ausencia.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9">No absence reports found.</td></tr>';
             return;
         }
 
@@ -204,30 +206,30 @@ async function loadAdminAbsences() {
             const dateRange = a.date_start === a.date_end
                 ? a.date_start
                 : `${a.date_start} → ${a.date_end}`;
-            const projectName = a.project_name || 'Sin proyecto';
+            const projectName = a.project_name || 'No project';
             const reasonLabel = REASON_LABELS[a.reason] || a.reason;
             const isPending = a.status === 'pendiente';
 
             return `
             <tr>
-                <td data-label="Usuario">${a.username}</td>
-                <td data-label="Fecha">${dateRange}</td>
-                <td data-label="Proyecto">${projectName}</td>
-                <td data-label="Razón"><span class="reason-badge ${a.reason}">${reasonLabel}</span></td>
-                <td data-label="Estado"><span class="status-badge ${a.status}">${a.status}</span></td>
-                <td data-label="Notas">${a.notes || '—'}</td>
-                <td data-label="Evidencia">
-                    ${a.evidence_path ? `<a href="${appUrl('/' + a.evidence_path)}" target="_blank" class="evidence-link">📎 Ver</a>` : '—'}
+                <td data-label="User">${a.username}</td>
+                <td data-label="Date">${dateRange}</td>
+                <td data-label="Project">${projectName}</td>
+                <td data-label="Reason"><span class="reason-badge ${a.reason}">${reasonLabel}</span></td>
+                <td data-label="Status"><span class="status-badge ${a.status}">${a.status}</span></td>
+                <td data-label="Notes">${a.notes || '—'}</td>
+                <td data-label="Evidence">
+                    ${a.evidence_path ? `<a href="${appUrl('/' + a.evidence_path)}" target="_blank" class="evidence-link">📎 View</a>` : '—'}
                 </td>
-                <td data-label="Reportado">${new Date(a.created_at).toLocaleDateString()}</td>
-                <td data-label="Acciones">
+                <td data-label="Reported At">${new Date(a.created_at).toLocaleDateString()}</td>
+                <td data-label="Actions">
                     <div class="absence-actions-cell">
                         ${isPending ? `
-                            <button class="approve-btn" data-action="approve-absence" data-absence-id="${a.id}">✓ Aprobar</button>
-                            <button class="reject-btn" data-action="reject-absence" data-absence-id="${a.id}">✗ Rechazar</button>
-                        ` : `<span style="opacity:0.5; font-size:0.8rem;">${a.reviewed_by_username ? 'por ' + a.reviewed_by_username : ''}</span>`}
-                        <button class="small-button" data-action="edit-absence" data-absence='${encodeURIComponent(JSON.stringify(a))}'>Editar</button>
-                        <button class="delete-btn" data-action="delete-absence" data-absence-id="${a.id}">🗑</button>
+                            <button class="approve-btn" data-action="approve-absence" data-absence-id="${a.id}"><i class="fas fa-check"></i></button>
+                            <button class="reject-btn" data-action="reject-absence" data-absence-id="${a.id}"><i class="fas fa-times"></i></button>
+                        ` : `<span style="opacity:0.5; font-size:0.8rem;">${a.reviewed_by_username ? 'by ' + a.reviewed_by_username : ''}</span>`}
+                        <button class="edit-btn" data-action="edit-absence" data-absence='${encodeURIComponent(JSON.stringify(a))}'><i class="fas fa-edit"></i></button>
+                        <button class="delete-btn" data-action="delete-absence" data-absence-id="${a.id}"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 </td>
             </tr>`;
@@ -248,7 +250,7 @@ async function reviewAbsence(absenceId, status) {
         loadAbsenceSummary(); // refresh summary
         if (typeof loadNotifications === 'function') loadNotifications();
     } catch (error) {
-        alert('Error: ' + error.message);
+        appAlert('Error: ' + error.message, 'Action Failed', 'error');
     }
 }
 
@@ -257,19 +259,19 @@ async function reviewAbsence(absenceId, status) {
 async function editAbsence(absence) {
     if (!absence || !absence.id) return;
 
-    const dateStart = prompt('Fecha inicio (YYYY-MM-DD):', absence.date_start || '');
+    const dateStart = prompt('Start date (YYYY-MM-DD):', absence.date_start || '');
     if (dateStart === null) return;
 
-    const dateEnd = prompt('Fecha fin (YYYY-MM-DD):', absence.date_end || dateStart || '');
+    const dateEnd = prompt('End date (YYYY-MM-DD):', absence.date_end || dateStart || '');
     if (dateEnd === null) return;
 
-    const reason = prompt('Razón (familiar|enfermedad|vacaciones|sin_justificacion):', absence.reason || 'sin_justificacion');
+    const reason = prompt('Reason (familiar|enfermedad|vacaciones|sin_justificacion):', absence.reason || 'sin_justificacion');
     if (reason === null) return;
 
-    const notes = prompt('Notas:', absence.notes || '');
+    const notes = prompt('Notes:', absence.notes || '');
     if (notes === null) return;
 
-    const status = prompt('Estado (pendiente|aprobado|rechazado) [dejar vacío para mantener]:', absence.status || '');
+    const status = prompt('Status (pendiente|aprobado|rechazado) [leave empty to keep]:', absence.status || '');
     if (status === null) return;
 
     try {
@@ -286,7 +288,7 @@ async function editAbsence(absence) {
         loadAbsenceSummary();
         if (typeof loadNotifications === 'function') loadNotifications();
     } catch (error) {
-        alert('Error: ' + error.message);
+        appAlert('Error: ' + error.message, 'Update Failed', 'error');
     }
 }
 
@@ -294,20 +296,21 @@ async function editAbsence(absence) {
  * Delete an absence.
  */
 async function deleteAbsence(absenceId) {
-    if (!confirm('¿Eliminar este reporte de ausencia?')) return;
-    try {
-        await apiFetch(`absences/${absenceId}`, 'DELETE');
-        // Reload whichever view is active
-        const adminSection = document.getElementById('absence-records-section');
-        if (adminSection && adminSection.style.display === 'block') {
-            loadAdminAbsences();
-            loadAbsenceSummary();
-        } else {
-            loadUserAbsenceHistory();
+    appConfirm('Delete this absence report?', 'Delete Absence', async () => {
+        try {
+            await apiFetch(`absences/${absenceId}`, 'DELETE');
+            // Reload whichever view is active
+            const adminSection = document.getElementById('absence-records-section');
+            if (adminSection && adminSection.style.display === 'block') {
+                loadAdminAbsences();
+                loadAbsenceSummary();
+            } else {
+                loadUserAbsenceHistory();
+            }
+        } catch (error) {
+            appAlert('Error: ' + error.message, 'Deletion Error', 'error');
         }
-    } catch (error) {
-        alert('Error: ' + error.message);
-    }
+    });
 }
 
 /**
@@ -320,7 +323,7 @@ async function loadUsersForAbsenceFilter() {
     try {
         const data = await apiFetch('users');
         const opts = (data.users || []).map(u => `<option value="${u.id}">${u.username}</option>`).join('');
-        select.innerHTML = '<option value="">Todos</option>' + opts;
+        select.innerHTML = '<option value="">All</option>' + opts;
     } catch (_) {}
 }
 
@@ -334,7 +337,7 @@ async function loadProjectsForAbsenceFilter() {
     try {
         const data = await apiFetch('projects');
         const opts = (data.projects || []).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-        select.innerHTML = '<option value="">Todos</option>' + opts;
+        select.innerHTML = '<option value="">All</option>' + opts;
     } catch (_) {}
 }
 
@@ -411,7 +414,7 @@ async function createAbsenceByAdmin(e) {
 
     if (!userIds.length || !date) {
         if (messageEl) {
-            messageEl.textContent = 'Selecciona al menos un empleado y la fecha.';
+            messageEl.textContent = 'Select at least one employee and the date.';
             messageEl.className = 'error-message';
         }
         return;
@@ -432,7 +435,7 @@ async function createAbsenceByAdmin(e) {
         clearAdminAbsenceUsers();
 
         if (messageEl) {
-            messageEl.textContent = `✅ ${userIds.length} ausencia(s) registrada(s) correctamente.`;
+            messageEl.textContent = `✅ ${userIds.length} absence(s) registered successfully.`;
             messageEl.className = 'success-message';
         }
 
@@ -450,17 +453,17 @@ async function createAbsenceByAdmin(e) {
 async function runAutoAbsences() {
     const date = document.getElementById('auto-absence-date')?.value;
     if (!date) {
-        alert('Selecciona la fecha a procesar.');
+        appAlert('Select the date to process.', 'Missing Info', 'warning');
         return;
     }
 
     try {
         const resp = await apiFetch('absences/auto-mark', 'POST', { date });
-        alert(resp.message || 'Auto-ausencias procesadas.');
+        appAlert(resp.message || 'Auto-absences processed.', 'Process Complete', 'success');
         loadAdminAbsences();
         loadAbsenceSummary();
     } catch (error) {
-        alert('Error: ' + error.message);
+        appAlert('Error: ' + error.message, 'Process Error', 'error');
     }
 }
 
@@ -489,7 +492,7 @@ async function loadAbsenceSummary() {
         const summaries = data.summary || [];
 
         if (summaries.length === 0) {
-            container.innerHTML = '<p style="opacity:0.5">Sin datos de ausencia para el período seleccionado.</p>';
+            container.innerHTML = '<p style="opacity:0.5">No absence data for the selected period.</p>';
             return;
         }
 
@@ -502,15 +505,15 @@ async function loadAbsenceSummary() {
                     <div class="reason-item">
                         <span class="reason-badge ${reason}">${label}</span>
                         <span class="reason-count" style="color:${color}">${days}</span>
-                        <span>día${days !== 1 ? 's' : ''}</span>
+                        <span>day${days !== 1 ? 's' : ''}</span>
                     </div>`;
             }).join('');
 
             html += `
                 <div class="absence-summary-card">
-                    <h5>👤 ${s.username}</h5>
+                    <h5><i class="fas fa-user-circle" style="margin-right: 6px;"></i>${s.username}</h5>
                     <div class="reason-breakdown">${reasonsHtml}</div>
-                    <div class="total-line">Total ausencias: ${s.total_days} día${s.total_days !== 1 ? 's' : ''}</div>
+                    <div class="total-line">Total absences: ${s.total_days} day${s.total_days !== 1 ? 's' : ''}</div>
                     <div class="absence-summary-chart-container">
                         <canvas id="absence-chart-${s.user_id}" width="300" height="200"></canvas>
                     </div>
