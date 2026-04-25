@@ -1004,9 +1004,8 @@ async function loadAttendanceRecords(uid = null) {
             }
             renderAttendanceCalendar(attendanceAllRecords);
         } else {
-            const mock = getAttendanceMockRecords();
-            attendanceAllRecords = mock;
-            attendanceCalendarDate = new Date(mock[0].entry_time);
+            attendanceAllRecords = [];
+            attendanceCalendarDate = new Date();
             renderAttendanceCalendar(attendanceAllRecords);
         }
         renderAttendancePage();
@@ -1023,6 +1022,8 @@ async function loadAttendanceRecords(uid = null) {
         }
 
         recordsBody.innerHTML = `<tr><td colspan="11">Error loading records: ${msg}</td></tr>`;
+        attendanceAllRecords = [];
+        renderAttendanceCalendar(attendanceAllRecords);
     }
 }
 
@@ -1184,8 +1185,8 @@ function transformAttendanceRecordsToMatrix(records, visibleDates) {
     matrix.forEach((row) => {
         dayKeys.forEach((k) => {
             row.days[k].sort((a, b) => {
-                const da = new Date(a.entry_time || a.original_time || a.created_at || 0).getTime();
-                const db = new Date(b.entry_time || b.original_time || b.created_at || 0).getTime();
+                const da = new Date(a.original_time || a.entry_time || a.created_at || 0).getTime();
+                const db = new Date(b.original_time || b.entry_time || b.created_at || 0).getTime();
                 return da - db;
             });
         });
@@ -3223,10 +3224,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const attendanceGrid = document.getElementById('attendance-calendar-grid');
     if (attendanceGrid) {
-        if (!attendanceAllRecords.length) {
-            const mock = getAttendanceMockRecords();
-            renderAttendanceCalendar(mock);
-        }
         if (userRole === 'admin') {
             loadAttendanceRecords();
         } else if (userId) {
