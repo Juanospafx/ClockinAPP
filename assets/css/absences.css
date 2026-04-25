@@ -21,23 +21,20 @@
     display: block;
     margin-bottom: 4px;
     font-size: 0.9rem;
-    color: var(--clr-ccc);
+    color: var(--text-gray);
+    font-weight: 500;
 }
 
 .absence-form .form-group select,
 .absence-form .form-group input,
 .absence-form .form-group textarea {
     width: 100%;
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: 1px solid var(--clr-rgba-255-255-255-0-15);
-    background: var(--clr-rgba-0-0-0-0-3);
-    color: var(--clr-fff);
-    font-size: 0.9rem;
+    /* El resto hereda de modern_theme.css */
 }
 
 .absence-form .form-group textarea {
-    resize: vertical;
+    resize: none;
+    overflow: hidden;
     min-height: 60px;
 }
 
@@ -46,40 +43,43 @@
 }
 
 .absence-form .file-upload-group input[type="file"] {
-    padding: 6px;
+    padding: 7px 12px;
+    background: var(--bg-input) !important;
+    color: var(--text-gray) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.absence-form .file-upload-group input[type="file"]::file-selector-button {
+    background: var(--bg-card);
+    color: var(--text-white);
+    border: 1px solid var(--border-subtle);
+    padding: 6px 14px;
+    border-radius: 50px;
+    margin-right: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.absence-form .file-upload-group input[type="file"]::file-selector-button:hover {
+    background: var(--bg-body);
+    color: var(--primary);
+    border-color: var(--primary);
 }
 
 .absence-form .file-upload-group .file-info {
     font-size: 0.8rem;
-    color: var(--clr-rgba-255-255-255-0-5);
+    color: var(--text-muted);
     margin-top: 4px;
-}
-
-.absence-form .submit-btn {
-    padding: 10px 24px;
-    background: var(--clr-e63946);
-    color: var(--clr-fff);
-    border: none;
-    border-radius: 6px;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.absence-form .submit-btn:hover {
-    background: var(--clr-c62828);
-}
-
-.absence-form .submit-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 
 /* --- Admin filters bar --- */
 .absence-filters {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 15px;
     margin-bottom: 16px;
     align-items: flex-end;
 }
@@ -91,36 +91,23 @@
 }
 
 .absence-filters .form-group label {
-    font-size: 0.8rem;
-    color: var(--clr-aaa);
-    margin-bottom: 3px;
+    font-size: 0.85rem;
+    color: var(--text-gray);
+    margin-bottom: 5px;
+    font-weight: 500;
 }
 
 .absence-filters .form-group select,
 .absence-filters .form-group input {
-    padding: 6px 10px;
-    border-radius: 5px;
-    border: 1px solid var(--clr-rgba-255-255-255-0-15);
-    background: var(--clr-rgba-0-0-0-0-3);
-    color: var(--clr-fff);
-    font-size: 0.85rem;
+    width: 100%;
 }
 
 .absence-filters .filter-btn {
-    padding: 6px 16px;
-    background: var(--clr-e63946);
-    color: var(--clr-fff);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    height: fit-content;
+    height: 44px;
     align-self: flex-end;
+    margin-top: auto;
 }
 
-.absence-filters .filter-btn:hover {
-    background: var(--clr-c62828);
-}
 
 /* --- Status badges --- */
 .status-badge {
@@ -160,23 +147,24 @@
 }
 
 .reason-badge.familiar {
-    background: var(--clr-rgba-155-89-182-0-2);
-    color: var(--clr-b57cdb);
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6; /* Azul */
 }
 
 .reason-badge.enfermedad {
-    background: var(--clr-rgba-231-76-60-0-2);
-    color: var(--clr-e98a82);
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444; /* Rojo */
 }
 
 .reason-badge.vacaciones {
-    background: var(--clr-rgba-52-152-219-0-2);
-    color: var(--clr-7fbde4);
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981; /* Verde */
 }
 
 .reason-badge.sin_justificacion {
-    background: var(--clr-rgba-149-165-166-0-2);
-    color: var(--clr-a0a8a9);
+    background: var(--bg-card);
+    color: var(--text-gray);
+    border: 1px solid var(--border-subtle);
 }
 
 /* --- Admin action buttons in table --- */
@@ -186,64 +174,85 @@
     flex-wrap: wrap;
 }
 
-.absence-actions-cell button {
-    padding: 4px 10px;
-    border-radius: 4px;
+.absence-actions-cell button,
+.absence-actions-cell .evidence-link {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50px;
     border: none;
-    font-size: 0.8rem;
+    font-size: 0.95rem;
     cursor: pointer;
-    font-weight: 500;
+    transition: 0.3s;
+    text-decoration: none;
 }
-
 .absence-actions-cell .approve-btn {
-    background: var(--clr-rgba-46-204-113-0-2);
-    color: var(--clr-2ecc71);
-    border: 1px solid var(--clr-rgba-46-204-113-0-3);
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.3);
 }
 
 .absence-actions-cell .approve-btn:hover {
-    background: var(--clr-rgba-46-204-113-0-35);
+    background: rgba(46, 204, 113, 0.3);
+    transform: translateY(-2px);
 }
 
 .absence-actions-cell .reject-btn {
-    background: var(--clr-rgba-231-76-60-0-2);
-    color: var(--clr-e74c3c);
-    border: 1px solid var(--clr-rgba-231-76-60-0-3);
+    background: rgba(231, 76, 60, 0.15);
+    color: var(--danger-color);
+    border: 1px solid rgba(231, 76, 60, 0.3);
 }
 
 .absence-actions-cell .reject-btn:hover {
-    background: var(--clr-rgba-231-76-60-0-35);
+    background: rgba(231, 76, 60, 0.3);
+    transform: translateY(-2px);
 }
 
 .absence-actions-cell .delete-btn {
-    background: var(--clr-rgba-149-165-166-0-15);
-    color: var(--clr-95a5a6);
-    border: 1px solid var(--clr-rgba-149-165-166-0-2);
+    background: var(--bg-card);
+    color: var(--danger-color);
+    border: 1px solid var(--border-subtle);
+}
+
+.absence-actions-cell .delete-btn:hover {
+    background: var(--danger-color);
+    color: #fff;
+    transform: translateY(-2px);
 }
 
 /* --- Summary cards --- */
 .absence-summary-container {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
     margin-bottom: 24px;
 }
 
 .absence-summary-card {
-    background: var(--clr-rgba-255-255-255-0-05);
-    border: 1px solid var(--clr-rgba-255-255-255-0-1);
-    border-radius: 10px;
-    padding: 16px 20px;
-    margin-bottom: 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    min-width: 0;
 }
 
 .absence-summary-card h5 {
     margin: 0 0 10px 0;
-    font-size: 1rem;
-    color: var(--clr-e6e6e6);
+    font-size: 1.05rem;
+    color: var(--primary);
+    font-weight: 700;
+    text-align: center;
 }
 
 .absence-summary-card .reason-breakdown {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    justify-content: center;
+    gap: 8px 15px;
     margin-bottom: 10px;
 }
 
@@ -262,30 +271,40 @@
 .absence-summary-card .total-line {
     font-weight: 600;
     font-size: 0.95rem;
-    color: var(--clr-e63946);
-    margin-top: 4px;
-    padding-top: 8px;
-    border-top: 1px solid var(--clr-rgba-255-255-255-0-1);
+    color: var(--primary);
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-subtle);
+    text-align: center;
 }
 
 .absence-summary-chart-container {
+    position: relative;
+    width: 100%;
     max-width: 350px;
     margin: 12px auto 0;
 }
 
 /* --- Evidence link --- */
 .evidence-link {
-    color: var(--clr-3498db);
-    text-decoration: none;
-    font-size: 0.85rem;
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
-.evidence-link:hover {
-    text-decoration: underline;
-}
 
 /* --- Responsive --- */
+@media (max-width: 992px) {
+    .absence-summary-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
+    .absence-summary-container {
+        grid-template-columns: 1fr;
+    }
+
     .absence-form .form-row {
         flex-direction: column;
         gap: 0;
@@ -293,10 +312,90 @@
 
     .absence-filters {
         flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
     }
 
-    .absence-summary-card .reason-breakdown {
-        flex-direction: column;
-        gap: 6px;
+    .absence-filters .filter-btn {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    #auto-absence-run-btn {
+        width: 100%;
+        justify-content: center;
+        margin-top: 8px;
+    }
+}
+
+/* --- "Load more" for absences (Global) --- */
+.see-more-checkbox {
+    position: absolute !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -1;
+    width: 0;
+    height: 0;
+    margin: 0;
+}
+
+.see-more-btn {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    margin-top: 15px;
+    background: var(--bg-input) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-subtle) !important;
+    cursor: pointer;
+    padding: 12px;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.see-more-btn:hover {
+    background: var(--primary) !important;
+    color: #fff !important;
+    border-color: var(--primary) !important;
+}
+
+/* Lógica de alternancia del texto del botón (Load more / Show less) */
+.see-more-checkbox:not(:checked) ~ .see-more-btn .text-collapse {
+    display: none !important;
+}
+.see-more-checkbox:checked ~ .see-more-btn .text-expand {
+    display: none !important;
+}
+
+/* Desktop (mostrar maximo 5 filas por defecto) */
+#report-absence-section .see-more-checkbox:not(:checked) ~ .table-responsive tbody tr:nth-child(n+6),
+#absence-records-section .see-more-checkbox:not(:checked) ~ .table-responsive tbody tr:nth-child(n+6) {
+    display: none !important;
+}
+
+@supports selector(:has(a)) {
+    /* Ocultar botón mágicamente si no hay más de 5 filas que mostrar en desktop */
+    #report-absence-section .see-more-checkbox:not(:checked) ~ .table-responsive:not(:has(tbody tr:nth-child(6))) ~ .see-more-btn,
+    #absence-records-section .see-more-checkbox:not(:checked) ~ .table-responsive:not(:has(tbody tr:nth-child(6))) ~ .see-more-btn {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Mobile (mostrar maximo 2 filas por defecto) */
+    #report-absence-section .see-more-checkbox:not(:checked) ~ .table-responsive tbody tr:nth-child(n+3),
+    #absence-records-section .see-more-checkbox:not(:checked) ~ .table-responsive tbody tr:nth-child(n+3) {
+        display: none !important;
+    }
+
+    @supports selector(:has(a)) {
+        /* Ocultar botón mágicamente si no hay más de 2 filas que mostrar en mobile */
+        #report-absence-section .see-more-checkbox:not(:checked) ~ .table-responsive:not(:has(tbody tr:nth-child(3))) ~ .see-more-btn,
+        #absence-records-section .see-more-checkbox:not(:checked) ~ .table-responsive:not(:has(tbody tr:nth-child(3))) ~ .see-more-btn {
+            display: none !important;
+        }
     }
 }

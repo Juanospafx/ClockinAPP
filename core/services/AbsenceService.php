@@ -23,7 +23,7 @@ class AbsenceService
         }
 
         if ($targetUserId <= 0) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Usuario inválido para registrar ausencia.'], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'Invalid user for absence registration.'], 'status' => 400];
         }
 
         $pdo = get_pdo();
@@ -32,11 +32,11 @@ class AbsenceService
         $userCheck = $pdo->prepare('SELECT id FROM users WHERE id = ? LIMIT 1');
         $userCheck->execute([$targetUserId]);
         if (!$userCheck->fetchColumn()) {
-            return ['error' => ['code' => 'not_found', 'message' => 'El usuario especificado no existe.'], 'status' => 404];
+            return ['error' => ['code' => 'not_found', 'message' => 'The specified user does not exist.'], 'status' => 404];
         }
 
         if (self::isAdminUser($targetUserId)) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Los administradores no requieren registro de asistencia/ausencia.'], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'Admins do not require attendance/absence registration.'], 'status' => 400];
         }
 
         $projectId = isset($data['project_id']) && $data['project_id'] !== '' ? (int)$data['project_id'] : null;
@@ -47,16 +47,16 @@ class AbsenceService
 
         // Validation
         if ($dateStart === '') {
-            return ['error' => ['code' => 'validation_error', 'message' => 'La fecha de inicio es obligatoria.'], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'Start date is required.'], 'status' => 400];
         }
         if ($dateEnd === '') {
             $dateEnd = $dateStart;
         }
         if ($dateEnd < $dateStart) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'La fecha final no puede ser anterior a la fecha de inicio.'], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'End date cannot be before start date.'], 'status' => 400];
         }
         if (!in_array($reason, self::VALID_REASONS, true)) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Razón inválida. Opciones: ' . implode(', ', self::VALID_REASONS)], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'Invalid reason. Options: ' . implode(', ', self::VALID_REASONS)], 'status' => 400];
         }
 
         // Handle file upload
@@ -80,10 +80,10 @@ class AbsenceService
         $uStmt = $pdo->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
         $uStmt->execute([$targetUserId]);
         $username = (string)($uStmt->fetchColumn() ?: ('Usuario #' . $targetUserId));
-        NotificationService::notifyAdmins('absence_reported', "{$username} reportó una ausencia ({$dateStart}).", $absenceId);
+        NotificationService::notifyAdmins('absence_reported', "{$username} reported an absence ({$dateStart}).", $absenceId);
 
         return ['data' => [
-            'message' => 'Reporte de ausencia enviado exitosamente.',
+            'message' => 'Absence report submitted successfully.',
             'id'      => $absenceId,
         ]];
     }
@@ -153,7 +153,7 @@ class AbsenceService
     public static function reviewAbsence(int $absenceId, string $status, int $reviewerId): array
     {
         if (!in_array($status, ['aprobado', 'rechazado'], true)) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Estado inválido. Use: aprobado o rechazado.'], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'Invalid status. Use: aprobado or rechazado.'], 'status' => 400];
         }
 
         $pdo = get_pdo();
@@ -163,7 +163,7 @@ class AbsenceService
         $absence = $check->fetch(PDO::FETCH_ASSOC);
 
         if (!$absence) {
-            return ['error' => ['code' => 'not_found', 'message' => 'Reporte de ausencia no encontrado.'], 'status' => 404];
+            return ['error' => ['code' => 'not_found', 'message' => 'Absence report not found.'], 'status' => 404];
         }
 
         $stmt = $pdo->prepare(
@@ -179,12 +179,12 @@ class AbsenceService
         $reviewerStmt->execute([$reviewerId]);
         $reviewerName = (string)($reviewerStmt->fetchColumn() ?: 'Admin');
 
-        $label = $status === 'aprobado' ? 'aprobado' : 'rechazado';
+        $labelEng = $status === 'aprobado' ? 'approved' : 'rejected';
         if ($ownerId > 0) {
-            NotificationService::create($ownerId, 'absence_reviewed', "Tu ausencia fue {$label} por {$reviewerName}.", $absenceId);
+            NotificationService::create($ownerId, 'absence_reviewed', "Your absence was {$labelEng} by {$reviewerName}.", $absenceId);
         }
 
-        return ['data' => ['message' => "Reporte de ausencia {$label} exitosamente."]];
+        return ['data' => ['message' => "Absence report {$labelEng} successfully."]];
     }
 
     /**
@@ -257,7 +257,7 @@ class AbsenceService
     public static function autoMarkUnexcusedForDate(string $date, int $adminId): array
     {
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Fecha inválida. Formato esperado: YYYY-MM-DD'], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'Invalid date. Expected format: YYYY-MM-DD'], 'status' => 400];
         }
 
         $pdo = get_pdo();
@@ -313,7 +313,7 @@ class AbsenceService
                 $userId,
                 $date,
                 $date,
-                'Ausencia registrada automáticamente por falta de asistencia y sin justificación.' ,
+                'Absence registered automatically due to lack of attendance and without justification.' ,
                 $adminId
             ]);
             $inserted++;
@@ -325,7 +325,7 @@ class AbsenceService
             'inserted_absences' => $inserted,
             'skipped_with_attendance' => $skippedWithAttendance,
             'skipped_with_existing_absence' => $skippedWithAbsence,
-            'message' => "Ausencias automáticas procesadas para {$date}."
+            'message' => "Automatic absences processed for {$date}."
         ]];
     }
 
@@ -347,7 +347,7 @@ class AbsenceService
         $check = $pdo->prepare('SELECT id FROM absences WHERE id = ? LIMIT 1');
         $check->execute([$absenceId]);
         if (!$check->fetchColumn()) {
-            return ['error' => ['code' => 'not_found', 'message' => 'Reporte no encontrado.'], 'status' => 404];
+            return ['error' => ['code' => 'not_found', 'message' => 'Report not found.'], 'status' => 404];
         }
 
         $projectId = isset($data['project_id']) && $data['project_id'] !== '' ? (int)$data['project_id'] : null;
@@ -358,16 +358,16 @@ class AbsenceService
         $status = trim((string)($data['status'] ?? ''));
 
         if ($dateStart === '' || $dateEnd === '') {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Las fechas son obligatorias.'], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'Dates are required.'], 'status' => 400];
         }
         if ($dateEnd < $dateStart) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'La fecha final no puede ser anterior a la inicial.'], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'End date cannot be before start date.'], 'status' => 400];
         }
         if (!in_array($reason, self::VALID_REASONS, true)) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Razón inválida.'], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'Invalid reason.'], 'status' => 400];
         }
         if ($status !== '' && !in_array($status, self::VALID_STATUSES, true)) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Estado inválido.'], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'Invalid status.'], 'status' => 400];
         }
 
         if ($status === '') {
@@ -378,7 +378,7 @@ class AbsenceService
             $stmt->execute([$projectId, $dateStart, $dateEnd, $reason, ($notes !== '' ? $notes : null), $status, $adminId, $absenceId]);
         }
 
-        return ['data' => ['message' => 'Reporte de ausencia actualizado.']];
+        return ['data' => ['message' => 'Absence report updated.']];
     }
 
     /**
@@ -393,16 +393,16 @@ class AbsenceService
         $absence = $check->fetch(PDO::FETCH_ASSOC);
 
         if (!$absence) {
-            return ['error' => ['code' => 'not_found', 'message' => 'Reporte no encontrado.'], 'status' => 404];
+            return ['error' => ['code' => 'not_found', 'message' => 'Report not found.'], 'status' => 404];
         }
 
         // Users can only delete their own pending reports
         if ($role !== 'admin') {
             if ((int)$absence['user_id'] !== $userId) {
-                return ['error' => ['code' => 'forbidden', 'message' => 'No puedes eliminar reportes de otros usuarios.'], 'status' => 403];
+                return ['error' => ['code' => 'forbidden', 'message' => 'You cannot delete other users reports.'], 'status' => 403];
             }
             if ($absence['status'] !== 'pendiente') {
-                return ['error' => ['code' => 'forbidden', 'message' => 'Solo puedes eliminar reportes pendientes.'], 'status' => 403];
+                return ['error' => ['code' => 'forbidden', 'message' => 'You can only delete pending reports.'], 'status' => 403];
             }
         }
 
@@ -417,7 +417,7 @@ class AbsenceService
         $stmt = $pdo->prepare('DELETE FROM absences WHERE id = ?');
         $stmt->execute([$absenceId]);
 
-        return ['data' => ['message' => 'Reporte de ausencia eliminado.']];
+        return ['data' => ['message' => 'Absence report deleted.']];
     }
 
     // --- Private helpers ---
@@ -425,14 +425,14 @@ class AbsenceService
     private static function handleEvidenceUpload(array $file, int $userId): array
     {
         if ($file['size'] > self::MAX_FILE_SIZE) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'El archivo es demasiado grande. Máximo 10 MB.'], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'File is too large. Maximum 10 MB.'], 'status' => 400];
         }
 
         $originalName = basename($file['name'] ?? 'file');
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
         if (!in_array($ext, self::ALLOWED_EXTENSIONS, true)) {
-            return ['error' => ['code' => 'validation_error', 'message' => 'Tipo de archivo no permitido. Permitidos: ' . implode(', ', self::ALLOWED_EXTENSIONS)], 'status' => 400];
+            return ['error' => ['code' => 'validation_error', 'message' => 'File type not allowed. Allowed: ' . implode(', ', self::ALLOWED_EXTENSIONS)], 'status' => 400];
         }
 
         $uploadDir = APP_ROOT . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'absences';
@@ -444,7 +444,7 @@ class AbsenceService
         $destPath = $uploadDir . DIRECTORY_SEPARATOR . $safeName;
 
         if (!move_uploaded_file($file['tmp_name'], $destPath)) {
-            return ['error' => ['code' => 'server_error', 'message' => 'Error al guardar el archivo.'], 'status' => 500];
+            return ['error' => ['code' => 'server_error', 'message' => 'Error saving file.'], 'status' => 500];
         }
 
         return ['path' => 'uploads/absences/' . $safeName];

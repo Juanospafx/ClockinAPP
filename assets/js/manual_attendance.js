@@ -32,6 +32,15 @@
             if (singleBtn) singleBtn.addEventListener('click', () => setEntryMode('single'));
             if (multiBtn) multiBtn.addEventListener('click', () => setEntryMode('multi'));
 
+            // New absence bindings
+            const absSelectAllBtn = document.getElementById('manual-absence-select-all');
+            const absClearBtn = document.getElementById('manual-absence-clear');
+            const absSearchInput = document.getElementById('manual-absence-search');
+
+            if (absSelectAllBtn) absSelectAllBtn.addEventListener('click', () => selectAllSpecific('manual-absence-employee-list', 'manual-absence-selected-count'));
+            if (absClearBtn) absClearBtn.addEventListener('click', () => clearSpecific('manual-absence-employee-list', 'manual-absence-selected-count'));
+            if (absSearchInput) absSearchInput.addEventListener('input', () => filterSpecificList('manual-absence-search', 'manual-absence-employee-list'));
+
             attendanceForm.dataset.manualInit = '1';
         }
 
@@ -94,6 +103,18 @@
         if (dateInput) dateInput.required = entryMode === 'single';
         if (startInput) startInput.required = entryMode === 'multi';
         if (endInput) endInput.required = entryMode === 'multi';
+
+            const absSingleBlock = document.getElementById('manual-absence-single-date-block');
+            const absRangeBlock = document.getElementById('manual-absence-range-date-block');
+            const absDateInput = document.getElementById('manual-absence-date');
+            const absStartInput = document.getElementById('manual-absence-date-start');
+            const absEndInput = document.getElementById('manual-absence-date-end');
+
+            if (absSingleBlock) absSingleBlock.style.display = entryMode === 'single' ? 'flex' : 'none';
+            if (absRangeBlock) absRangeBlock.style.display = entryMode === 'multi' ? 'flex' : 'none';
+            if (absDateInput) absDateInput.required = entryMode === 'single';
+            if (absStartInput) absStartInput.required = entryMode === 'multi';
+            if (absEndInput) absEndInput.required = entryMode === 'multi';
     }
 
     function setManualMode(mode) {
@@ -103,33 +124,27 @@
         const subtitleEl = document.getElementById('manual-section-subtitle');
         const attendanceForm = document.getElementById('manual-attendance-form');
         const absenceForm = document.getElementById('manual-absence-form');
-        const messageEl = document.getElementById('manual-attendance-message');
-
-        if (messageEl) {
-            messageEl.textContent = '';
-            messageEl.className = '';
-        }
 
         if (currentManualMode === 'absence') {
-            if (titleEl) titleEl.textContent = '📝 Manual Records';
+            if (titleEl) titleEl.innerHTML = '<i class="fas fa-edit" style="margin-right: 8px;"></i> Manual Records';
             if (subtitleEl) subtitleEl.textContent = 'Register absence manually (user, absence type, date and notes).';
             if (attendanceForm) attendanceForm.style.display = 'none';
             if (absenceForm) absenceForm.style.display = 'block';
         } else {
-            if (titleEl) titleEl.textContent = '📝 Manual Records';
+            if (titleEl) titleEl.innerHTML = '<i class="fas fa-edit" style="margin-right: 8px;"></i> Manual Records';
             if (subtitleEl) subtitleEl.textContent = 'Register attendance entries manually for employees who forgot to clock in/out.';
             if (attendanceForm) attendanceForm.style.display = 'block';
             if (absenceForm) absenceForm.style.display = 'none';
         }
     }
 
-    function renderEmployeeList(users) {
-        const employeeList = document.getElementById('manual-employee-list');
+    function renderSpecificList(users, listId, countId) {
+        const employeeList = document.getElementById(listId);
         if (!employeeList) return;
 
         employeeList.innerHTML = '';
         users.forEach((u) => {
-            const row = document.createElement('label');
+            const row = document.createElement('div');
             row.className = 'manual-employee-item';
             row.dataset.userId = String(u.id);
             row.dataset.username = (u.username || '').toLowerCase();
@@ -137,23 +152,17 @@
             row.setAttribute('aria-selected', 'false');
             row.tabIndex = 0;
 
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.className = 'manual-employee-checkbox';
-            checkbox.value = String(u.id);
-
             const syncRowState = () => {
-                row.classList.toggle('is-selected', checkbox.checked);
-                row.setAttribute('aria-selected', checkbox.checked ? 'true' : 'false');
-                updateSelectedCount();
+                const isSelected = row.classList.toggle('is-selected');
+                row.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+                updateSpecificCount(listId, countId);
             };
 
-            checkbox.addEventListener('change', syncRowState);
+            row.addEventListener('click', syncRowState);
 
             row.addEventListener('keydown', (e) => {
                 if (e.key === ' ' || e.key === 'Enter') {
                     e.preventDefault();
-                    checkbox.checked = !checkbox.checked;
                     syncRowState();
                 }
             });
@@ -166,23 +175,56 @@
             indicator.className = 'manual-employee-indicator';
             indicator.setAttribute('aria-hidden', 'true');
 
-            row.appendChild(checkbox);
             row.appendChild(text);
             row.appendChild(indicator);
             employeeList.appendChild(row);
         });
 
-        updateSelectedCount();
+        updateSpecificCount(listId, countId);
     }
 
-    function filterEmployeeList() {
-        const q = (document.getElementById('manual-employee-search')?.value || '').trim().toLowerCase();
-        const rows = document.querySelectorAll('.manual-employee-item');
+    function updateSpecificCount(listId, countId) {
+        const selectedCountEl = document.getElementById(countId);
+        if (!selectedCountEl) return;
+        const count = document.querySelectorAll(`#${listId} .manual-employee-item.is-selected`).length;
+        selectedCountEl.textContent = `${count} selected`;
+    }
+
+    function filterSpecificList(searchId, listId) {
+        const q = (document.getElementById(searchId)?.value || '').trim().toLowerCase();
+        const rows = document.querySelectorAll(`#${listId} .manual-employee-item`);
         rows.forEach((row) => {
             const uname = row.dataset.username || '';
             row.hidden = q ? !uname.includes(q) : false;
         });
     }
+
+    function selectAllSpecific(listId, countId) {
+        document.querySelectorAll(`#${listId} .manual-employee-item`).forEach((row) => {
+            if (row.hidden) return;
+            row.classList.add('is-selected');
+            row.setAttribute('aria-selected', 'true');
+        });
+        updateSpecificCount(listId, countId);
+    }
+
+    function clearSpecific(listId, countId) {
+        document.querySelectorAll(`#${listId} .manual-employee-item`).forEach((row) => {
+            row.classList.remove('is-selected');
+            row.setAttribute('aria-selected', 'false');
+        });
+        updateSpecificCount(listId, countId);
+    }
+
+    function renderEmployeeList(users) {
+        renderSpecificList(users, 'manual-employee-list', 'manual-selected-count');
+        renderSpecificList(users, 'manual-absence-employee-list', 'manual-absence-selected-count');
+    }
+
+    function updateSelectedCount() { updateSpecificCount('manual-employee-list', 'manual-selected-count'); }
+    function filterEmployeeList() { filterSpecificList('manual-employee-search', 'manual-employee-list'); }
+    function selectAllUsers() { selectAllSpecific('manual-employee-list', 'manual-selected-count'); }
+    function clearSelectedUsers() { clearSpecific('manual-employee-list', 'manual-selected-count'); }
 
     async function populateManualDropdowns() {
         const role = normalizeRole(sessionStorage.getItem('user_role'));
@@ -195,13 +237,6 @@
 
             renderEmployeeList(manualUsersCache);
 
-            const absenceUserSelect = document.getElementById('manual-absence-user');
-            if (absenceUserSelect) {
-                const opts = manualUsersCache
-                    .map(u => `<option value="${u.id}">${u.username}</option>`)
-                    .join('');
-                absenceUserSelect.innerHTML = '<option value="">— Select user —</option>' + opts;
-            }
         } catch (e) {
             console.error('Error loading users for manual forms:', e);
         }
@@ -237,39 +272,9 @@
     }
 
     function getSelectedUserIds() {
-        return Array.from(document.querySelectorAll('.manual-employee-checkbox:checked'))
-            .map(el => parseInt(el.value, 10))
+        return Array.from(document.querySelectorAll('#manual-employee-list .manual-employee-item.is-selected'))
+            .map(el => parseInt(el.dataset.userId, 10))
             .filter(Number.isFinite);
-    }
-
-    function selectAllUsers() {
-        document.querySelectorAll('.manual-employee-item').forEach((row) => {
-            if (row.hidden) return;
-            const cb = row.querySelector('.manual-employee-checkbox');
-            if (!cb) return;
-            cb.checked = true;
-            row.classList.add('is-selected');
-            row.setAttribute('aria-selected', 'true');
-        });
-        updateSelectedCount();
-    }
-
-    function clearSelectedUsers() {
-        document.querySelectorAll('.manual-employee-item').forEach((row) => {
-            const cb = row.querySelector('.manual-employee-checkbox');
-            if (!cb) return;
-            cb.checked = false;
-            row.classList.remove('is-selected');
-            row.setAttribute('aria-selected', 'false');
-        });
-        updateSelectedCount();
-    }
-
-    function updateSelectedCount() {
-        const selectedCountEl = document.getElementById('manual-selected-count');
-        if (!selectedCountEl) return;
-        const count = document.querySelectorAll('.manual-employee-checkbox:checked').length;
-        selectedCountEl.textContent = `${count} selected`;
     }
 
     function buildDateList() {
@@ -356,17 +361,16 @@
 
     async function handleManualAttendanceSubmit(e) {
         e.preventDefault();
-        const msg = document.getElementById('manual-attendance-message');
         const payload = buildManualAttendancePayload();
 
         if (!payload.user_ids.length || !payload.dates.length || !payload.entry_time || !payload.exit_time || !payload.reason) {
-            if (msg) { msg.textContent = 'Please fill required fields, select users and valid dates.'; msg.className = 'error'; }
+            appAlert('Please fill required fields, select users and valid dates.', 'Missing Information', 'warning');
             return;
         }
 
         const timeError = validateTimeRange(payload.entry_time, payload.exit_time, payload.lunch_start, payload.lunch_end);
         if (timeError) {
-            if (msg) { msg.textContent = timeError; msg.className = 'error'; }
+            appAlert(timeError, 'Invalid Time', 'warning');
             return;
         }
 
@@ -374,9 +378,6 @@
     }
 
     async function runManualBatchSubmit(payload) {
-        const msg = document.getElementById('manual-attendance-message');
-        if (!msg) return;
-
         let successCount = 0;
         let failCount = 0;
         let skippedConflicts = 0;
@@ -418,8 +419,7 @@
         if (failCount > 0) lines.push(`❌ Failed: ${failCount}`);
         if (failDetails.length) lines.push(failDetails.slice(0, 5).join(' | '));
 
-        msg.textContent = lines.join(' · ');
-        msg.className = failCount > 0 ? 'warning' : 'success';
+        appAlert(lines.join(' · '), 'Batch Registration Complete', failCount > 0 ? 'warning' : 'success');
 
         const attendanceForm = document.getElementById('manual-attendance-form');
         if (attendanceForm) attendanceForm.reset();
@@ -435,41 +435,62 @@
 
     async function handleManualAbsenceSubmit(e) {
         e.preventDefault();
-        const msg = document.getElementById('manual-attendance-message');
 
-        const userId = parseInt(document.getElementById('manual-absence-user')?.value || '', 10);
+        const userIds = Array.from(document.querySelectorAll('#manual-absence-employee-list .manual-employee-item.is-selected'))
+            .map(el => parseInt(el.dataset.userId, 10))
+            .filter(Number.isFinite);
+
         const projectId = document.getElementById('manual-absence-project')?.value ? parseInt(document.getElementById('manual-absence-project').value, 10) : null;
-        const date = document.getElementById('manual-absence-date')?.value;
+        const dateStart = entryMode === 'single' ? document.getElementById('manual-absence-date')?.value : document.getElementById('manual-absence-date-start')?.value;
+        const dateEnd = entryMode === 'single' ? document.getElementById('manual-absence-date')?.value : document.getElementById('manual-absence-date-end')?.value;
         const reason = document.getElementById('manual-absence-reason')?.value || 'sin_justificacion';
         const notes = (document.getElementById('manual-absence-notes')?.value || '').trim();
 
-        if (!Number.isFinite(userId) || !date) {
-            if (msg) { msg.textContent = 'Please select user and date.'; msg.className = 'error'; }
+        if (!userIds.length || !dateStart || !dateEnd) {
+            appAlert('Please select at least one user and a valid date range.', 'Missing Information', 'warning');
+            return;
+        }
+
+        if (dateStart > dateEnd) {
+            appAlert('Start date must be earlier than or equal to the end date.', 'Invalid Date', 'warning');
             return;
         }
 
         try {
-            await apiFetch('absences', 'POST', {
-                user_id: userId,
-                project_id: projectId,
-                date_start: date,
-                date_end: date,
-                reason,
-                notes
-            });
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const uid of userIds) {
+                try {
+                    await apiFetch('absences', 'POST', {
+                        user_id: uid,
+                        project_id: projectId,
+                        date_start: dateStart,
+                        date_end: dateEnd,
+                        reason,
+                        notes
+                    });
+                    successCount++;
+                } catch (err) {
+                    failCount++;
+                }
+            }
 
             const form = document.getElementById('manual-absence-form');
             if (form) form.reset();
-            if (msg) {
-                msg.textContent = '✅ Manual absence created successfully.';
-                msg.className = 'success';
+            clearSpecific('manual-absence-employee-list', 'manual-absence-selected-count');
+
+            if (failCount > 0) {
+                appAlert(`Created ${successCount} absences, ${failCount} failed.`, 'Partial Success', 'warning');
+            } else {
+                appAlert(`${successCount} manual absence(s) created successfully.`, 'Success', 'success');
             }
 
             if (typeof loadAdminAbsences === 'function') loadAdminAbsences();
             if (typeof loadAbsenceSummary === 'function') loadAbsenceSummary();
             if (typeof loadNotifications === 'function') loadNotifications();
         } catch (err) {
-            if (msg) { msg.textContent = err.message || 'Error creating manual absence.'; msg.className = 'error'; }
+            appAlert(err.message || 'Error creating manual absence.', 'Error', 'error');
         }
     }
 

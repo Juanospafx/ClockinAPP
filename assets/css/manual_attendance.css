@@ -1,145 +1,164 @@
 /* Manual Attendance Styles */
 .manual-attendance-form {
-    max-width: 920px;
-    margin-bottom: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.manual-grid-layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 25px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .manual-attendance-form .form-row {
     display: flex;
     gap: 16px;
     flex-wrap: wrap;
+    margin-bottom: 15px;
 }
 
 .manual-attendance-form .form-group {
     flex: 1;
-    min-width: 220px;
+    min-width: 180px;
 }
 
 .manual-mode-switch {
     display: inline-flex;
-    gap: 8px;
-    margin-bottom: 14px;
-    padding: 4px;
-    border-radius: 12px;
-    border: 1px solid var(--clr-rgba-159-176-205-0-2);
-    background: var(--clr-rgba-255-255-255-0-05);
+    gap: 5px;
+    padding: 5px;
+    border-radius: 50px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-input);
 }
 
 .manual-mode-btn {
     border: 1px solid transparent;
-    border-radius: 10px;
-    padding: 6px 12px;
+    border-radius: 50px;
+    padding: 8px 20px;
     background: transparent;
-    color: var(--text-color);
+    color: var(--text-gray);
     cursor: pointer;
     font-weight: 600;
+    transition: 0.3s ease;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.manual-mode-btn:hover {
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 .manual-mode-btn.active {
-    background: var(--clr-rgba-92-167-255-0-08);
-    border-color: var(--clr-rgba-159-176-205-0-35);
-}
-
-.manual-employee-search-input {
-    width: 100%;
-    margin-bottom: 8px;
+    background: var(--primary);
+    color: #fff;
 }
 
 .manual-employee-list {
-    border: 1px solid var(--clr-rgba-159-176-205-0-22);
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
-    height: 260px;
+    height: 380px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 6px;
-    background: var(--clr-rgba-255-255-255-0-04);
-}
-
-.manual-employee-list::-webkit-scrollbar {
-    width: 8px;
-}
-
-.manual-employee-list::-webkit-scrollbar-thumb {
-    background: var(--clr-rgba-159-176-205-0-35);
-    border-radius: 999px;
+    padding: 12px;
+    background: var(--bg-body);
+    align-content: start;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .manual-employee-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 10px;
     width: 100%;
+    min-width: 0;
     padding: 10px 12px;
     border-radius: 10px;
     cursor: pointer;
-    border: 1px solid transparent;
-    transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-card);
+    margin: 0;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
 }
 
 .manual-employee-item:hover {
-    background: var(--clr-rgba-255-255-255-0-06);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .manual-employee-item:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--clr-rgba-92-167-255-0-08);
+    box-shadow: 0 0 0 2px rgba(251, 90, 58, 0.2);
 }
 
 .manual-employee-item.is-selected {
-    background: var(--clr-rgba-92-167-255-0-08);
-    border-color: var(--clr-rgba-159-176-205-0-35);
+    background: rgba(251, 90, 58, 0.08);
+    border-color: var(--primary);
+    color: var(--text-white);
 }
 
 .manual-employee-item[hidden] {
     display: none;
 }
 
-.manual-employee-checkbox {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
 .manual-employee-name {
     color: var(--text-color);
     font-weight: 500;
+    font-size: 0.85rem;
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    order: 2;
+}
+
+/* Esconder de forma forzada cualquier checkbox nativo (generado por caché de JS antiguos) */
+.manual-employee-item input[type="checkbox"] {
+    display: none !important;
 }
 
 .manual-employee-indicator {
-    width: 18px;
-    height: 18px;
-    border-radius: 999px;
-    border: 1px solid var(--clr-rgba-159-176-205-0-35);
-    opacity: 0;
-    transform: scale(0.85);
-    transition: opacity 0.16s ease, transform 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+    position: relative;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    border-radius: 5px;
+    border: 2px solid var(--border-subtle);
+    opacity: 0.6;
+    transition: 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    order: 1;
 }
 
 .manual-employee-item.is-selected .manual-employee-indicator {
     opacity: 1;
-    transform: scale(1);
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    position: relative;
+    background: var(--primary);
+    border-color: var(--primary);
 }
 
 .manual-employee-item.is-selected .manual-employee-indicator::after {
     content: '';
     position: absolute;
-    top: 3px;
+    top: 2px;
     left: 6px;
     width: 4px;
-    height: 8px;
+    height: 9px;
     border: solid #fff;
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
@@ -156,70 +175,35 @@
 
 .manual-selected-count {
     display: inline-block;
-    opacity: 0.9;
+    color: var(--text-gray);
+    font-weight: 500;
 }
 
 .manual-user-actions {
     display: inline-flex;
-    gap: 8px;
+    gap: 6px;
 }
 
 .manual-secondary-btn {
-    margin-top: 0;
-    padding: 6px 12px;
-    border-radius: 10px;
-    border: 1px solid var(--clr-rgba-159-176-205-0-22);
-    background: var(--clr-rgba-255-255-255-0-05);
-    color: var(--text-color);
+    padding: 6px 14px;
+    border-radius: 50px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-input);
+    color: var(--text-white);
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
+    transition: 0.2s;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
-.manual-sub-label {
-    display: block;
-    margin-top: 10px;
-}
-
-.manual-checkbox-group {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    min-width: 190px;
-}
-
-.manual-checkbox-group input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-}
-
-.manual-attendance-form .required {
-    color: var(--clr-dc3545);
-}
-
-.manual-attendance-form textarea {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 10px;
-    border: 1px solid var(--clr-rgba-159-176-205-0-35);
-    border-radius: 10px;
-    font-family: inherit;
-    resize: vertical;
-}
-
-.manual-attendance-form .submit-btn {
-    margin-top: 12px;
-    padding: 10px 24px;
-    background: var(--clr-007bff);
-    color: var(--clr-fff);
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.manual-attendance-form .submit-btn:hover {
-    background: var(--clr-0056b3);
+.manual-secondary-btn:hover {
+    background: var(--bg-body);
+    color: var(--primary);
+    border-color: var(--primary);
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 /* Badge for manual entries in records table */
@@ -280,17 +264,19 @@
     opacity: 1;
 }
 
-html[data-theme="light"] .manual-employee-name {
-    color: #1f2937;
-}
-
-html[data-theme="light"] .manual-employee-item.is-selected {
-    background: #eef6ff;
-    border-color: #cddff7;
-}
-
-html[data-theme="light"] .manual-secondary-btn {
-    background: #fff;
-    color: #334155;
-    border-color: #d9dde3;
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .manual-grid-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .manual-employee-list {
+        height: 280px;
+    }
+    
+    .manual-attendance-form .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
 }
