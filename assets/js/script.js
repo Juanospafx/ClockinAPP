@@ -543,6 +543,7 @@ function showSection(sectionId) {
         startActiveTimersPolling();
     } else if (target === 'records-section') {
         if (role === 'admin') loadUsersForAdminFilter();
+        loadAttendanceRecords(role === 'admin' ? null : userId);
     } else if (target === 'users-section') {
         loadUsers();
     } else if (target === 'admin-tools-section') {
@@ -3182,11 +3183,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeTimersBody = document.getElementById('active-timers-body');
     if (activeTimersBody) {
         activeTimersBody.addEventListener('click', (e) => {
-            const target = e.target;
-            if (target && target.matches('button[data-action]')) {
+            // FIX: usar closest() para capturar el botón aunque el click sea en el ícono hijo
+            const btn = e.target.closest('button[data-action]');
+            if (btn) {
                 e.preventDefault();
-                const timerId = Number(target.getAttribute('data-id'));
-                const action = target.getAttribute('data-action');
+                const timerId = Number(btn.getAttribute('data-id'));
+                const action = btn.getAttribute('data-action');
                 if (timerId && action) {
                     updateTimerStatus(timerId, action);
                 }
