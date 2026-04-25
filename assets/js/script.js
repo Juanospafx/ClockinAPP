@@ -978,8 +978,10 @@ function getAttendanceMockRecords() {
 }
 
 async function loadAttendanceRecords(uid = null) {
+    // attendance-records-body no existe en el HTML — la sección usa attendance-calendar-grid
     const recordsBody = document.getElementById('attendance-records-body');
-    if (!recordsBody) return;
+    const calendarGrid = document.getElementById('attendance-calendar-grid');
+    if (!recordsBody && !calendarGrid) return;
 
     const role = normalizeRole(sessionStorage.getItem('user_role'));
     const endpoint = role === 'admin' && !uid ? 'attendance?all=true' : `attendance?user_id=${uid || sessionStorage.getItem('user_id')}`;
@@ -1021,7 +1023,8 @@ async function loadAttendanceRecords(uid = null) {
             return;
         }
 
-        recordsBody.innerHTML = `<tr><td colspan="11">Error loading records: ${msg}</td></tr>`;
+        const errTarget = recordsBody || calendarGrid;
+        if (errTarget) errTarget.innerHTML = `<div style="padding:20px;color:var(--danger)">Error loading records: ${msg}</div>`;
         attendanceAllRecords = [];
         renderAttendanceCalendar(attendanceAllRecords);
     }
