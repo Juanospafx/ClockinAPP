@@ -51,6 +51,13 @@ function appUrl(path) {
     return `${APP_BASE}${normalized}`;
 }
 
+agent/clockinapp-stage1
+// Configuración dinámica (Producción y local)
+const API_BASE_URL = appUrl('/api/v1');
+// --- CONFIGURACIÓN LOCAL (XAMPP) ---
+// Solo descomentar si appUrl falla en XAMPP:
+//const API_BASE_URL = 'http://localhost/ClockinAPP/api/v1';
+
 // --- Custom Alerts System ---
 let appConfirmCallback = null;
 
@@ -88,6 +95,7 @@ window.appConfirm = function(message, title = 'Confirm Action', callback) {
 // --- CONFIGURACIÓN LOCAL (XAMPP) ---
 // Descomenta la siguiente línea y comenta la original si la ruta dinámica falla:
 const API_BASE_URL = 'http://localhost/ClockinAPP/api/v1';
+main
 
 // --- Global State ---
 let qrScanner = null;
@@ -223,7 +231,7 @@ function getTimerKey() {
 // --- Utility Functions ---
 async function apiFetch(endpoint, method = 'GET', data = null, contentType = 'json') {
     const url = `${API_BASE_URL}/${endpoint}`;
-    const options = { method, credentials: 'same-origin' };
+    const options = { method, credentials: 'include' };
 
     if (data) {
         if (contentType === 'json') {
