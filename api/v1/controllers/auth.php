@@ -7,15 +7,6 @@ require_once __DIR__ . '/../../../core/services/CsrfService.php';
 require_once __DIR__ . '/../../../core/services/RateLimitService.php';
 require_once __DIR__ . '/../../../core/response.php';
 
-// --- CONFIGURACIÓN LOCAL XAMPP ---
-// Descomenta este bloque para ver los errores de PHP reales en tu pantalla 
-// y para evitar bloqueos de CORS si abres el frontend directamente.
-
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
-header("Access-Control-Allow-Origin: *");
-
 
 function handle_auth_login(): void {
     $data = read_json_body();
