@@ -14,69 +14,150 @@
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
-    <link rel="stylesheet" href="../../assets/css/global_login.css?v=3.3">
-    <link rel="stylesheet" href="../../assets/css/registros.css?v=3.3">
-    <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=4.8">
-    <link rel="stylesheet" href="../../assets/css/geofence.css?v=3.3">
-    <link rel="stylesheet" href="../../assets/css/absences.css?v=3.3">
-    <link rel="stylesheet" href="../../assets/css/manual_attendance.css?v=2.3">
+
+    <!-- Brightronix / Electroplan Fonts & Icons (¡Muy importante para la estética!) -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Archivos CSS (Versión forzada a 3.5 para limpiar caché) -->
+    <link rel="stylesheet" href="../../assets/css/global_login.css?v=3.5">
+    <link rel="stylesheet" href="../../assets/css/modern_theme.css?v=4.9">
+    <link rel="stylesheet" href="../../assets/css/registros.css?v=3.5">
+    <link rel="stylesheet" href="../../assets/css/geofence.css?v=3.5">
+    <link rel="stylesheet" href="../../assets/css/absences.css?v=3.5">
+    <link rel="stylesheet" href="../../assets/css/manual_attendance.css?v=2.6">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <!-- Scripts base -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
-    <script src="../../assets/js/geofence.js?v=3.3"></script>
-    <script src="../../assets/js/absences.js?v=3.3"></script>
-    <script src="../../assets/js/manual_attendance.js?v=2.3"></script>
+    <script src="../../assets/js/geofence.js?v=3.5"></script>
+    <script src="../../assets/js/absences.js?v=3.5"></script>
+    <script src="../../assets/js/manual_attendance.js?v=2.6"></script>
     <script src="../../assets/vendor/daypilot/daypilot-javascript.min.js?v=5.4.1"></script>
-    <script src="../../assets/js/script.js?v=4.2"></script>
-
+    <script src="../../assets/js/script.js?v=4.5"></script>
 </head>
 
 <body>
-    <div class="sidebar">
-        <button class="close-sidebar-button">×</button>
-        <h2 id="user-greeting">Hello, User!</h2>
-        <div id="timer-display" style="display:none;">
-            <p>Work Time:</p>
-            <p id="timer-clock">00:00:00</p>
+    <nav class="sidebar" id="mainSidebar">
+
+        <div
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem; margin-top: 0.5rem; padding-left: 2.5rem; padding-right: 1.5rem;">
+            <a href="#" onclick="var r = sessionStorage.getItem('user_role'); var el = document.getElementById(r === 'admin' ? 'nav-dashboard' : (r === 'special' ? 'nav-scan-special' : 'nav-scan')); if(el) el.click(); return false;" style="text-decoration: none; display: flex; flex-direction: column; align-items: flex-start;">
+                <div class="sidebar-logo" role="img" aria-label="Brightronix Logo"></div>
+                <div class="app-subtitle"
+                    style="font-size: 0.85rem; color: var(--text-gray); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-top: -0.8rem; margin-left: 0.6rem;">
+                    ClockinAPP</div>
+            </a>
+            <button id="globalThemeToggle" class="theme-btn d-none d-md-flex" type="button" onclick="toggleAppTheme()"
+                aria-label="Toggle day/night theme" title="Switch to Day Mode">
+                <i class="fas fa-sun"></i>
+            </button>
         </div>
-        <ul>
-            <!-- User Navigation -->
-            <li class="user-only"><a href="#" id="nav-scan">Scan QR</a></li>
-            <li class="user-only"><a href="#" id="nav-my-records">My Records</a></li>
-            <li class="user-only"><a href="#" id="nav-report-absence">Report Absence</a></li>
 
-            <!-- Special User Navigation -->
-            <li class="special-only"><a href="#" id="nav-scan-special">Scan QR</a></li>
-            <li class="special-only"><a href="#" id="nav-my-records-special">My Records</a></li>
-            <li class="special-only"><a href="#" id="nav-report-absence-special">Report Absence</a></li>
-            <li class="special-only"><a href="#" id="nav-user-records-special">User Records</a></li>
-            <li class="special-only"><a href="#" id="nav-special-tools">Special User Tool</a></li>
+        <div class="flex-grow-1"
+            style="padding-left: 2.2rem; padding-right: 2.2rem; overflow-y: auto; overflow-x: hidden;">
+            <div id="timer-display" style="display:none;">
+                <p>Work Time:</p>
+                <p id="timer-clock">00:00:00</p>
+            </div>
+            <ul style="padding: 0; margin: 0; list-style: none;">
+                <!-- User Navigation -->
+                <li class="user-only"><a href="#" id="nav-scan"><i class="fas fa-qrcode fa-fw"></i> Scan QR</a></li>
+                <li class="user-only"><a href="#" id="nav-my-records"><i class="fas fa-list-alt fa-fw"></i> My
+                        Records</a></li>
+                <li class="user-only"><a href="#" id="nav-report-absence"><i class="fas fa-calendar-times fa-fw"></i>
+                        Report Absence</a></li>
 
-            <!-- Admin Navigation -->
-            <li class="admin-only"><a href="#" id="nav-dashboard">Dashboard</a></li>
-            <li class="admin-only"><a href="#" id="nav-all-records">Attendance tracking</a></li>
-            <li class="admin-only"><a href="#" id="nav-absence-records">Absence Records</a></li>
-            <li class="admin-only"><a href="#" id="nav-manual-attendance">Manual Attendance</a></li>
-            <li class="admin-only"><a href="#" id="nav-manual-absence">Manual Absence</a></li>
-            <li class="admin-only"><a href="#" id="nav-admin-tools">Admin Tools</a></li>
-            <li class="admin-only"><a href="#" id="nav-users">Users</a></li>
-            <li class="admin-only"><a href="#" id="nav-projects">Projects</a></li>
-            <li class="admin-only"><a href="#" id="nav-timer-control">Timer Control</a></li>
+                <!-- Special User Navigation -->
+                <li class="special-only"><a href="#" id="nav-scan-special"><i class="fas fa-qrcode fa-fw"></i> Scan
+                        QR</a></li>
+                <li class="special-only"><a href="#" id="nav-my-records-special"><i class="fas fa-list-alt fa-fw"></i>
+                        My Records</a></li>
+                <li class="special-only"><a href="#" id="nav-report-absence-special"><i
+                            class="fas fa-calendar-times fa-fw"></i> Report Absence</a></li>
+                <li class="special-only"><a href="#" id="nav-user-records-special"><i class="fas fa-users fa-fw"></i>
+                        User Records</a></li>
+                <li class="special-only"><a href="#" id="nav-dashboard-special"><i class="fas fa-stopwatch fa-fw"></i> Active Timers</a></li>
 
-            <li><a href="#" id="nav-logout">Logout</a></li>
-        </ul>
-    </div>
+                <!-- Admin Navigation -->
+                <li class="admin-only"><a href="#" id="nav-dashboard"><i class="fas fa-chart-pie fa-fw"></i>
+                        Dashboard</a></li>
+                <li class="admin-only"><a href="#" id="nav-all-records"><i class="fas fa-clipboard-list fa-fw"></i>
+                        Attendance tracking</a></li>
+                <li class="admin-only"><a href="#" id="nav-absence-records"><i class="fas fa-calendar-check fa-fw"></i>
+                        Absence Records</a></li>
+                <li class="admin-only"><a href="#" id="nav-manual-attendance"><i class="fas fa-user-edit fa-fw"></i>
+                        Manual Attendance</a></li>
+                <li class="admin-only"><a href="#" id="nav-manual-absence"><i class="fas fa-user-times fa-fw"></i>
+                        Manual Absence</a></li>
+                <li class="admin-only"><a href="#" id="nav-admin-tools"><i class="fas fa-qrcode fa-fw"></i> Admin
+                        Tools</a></li>
+                <li class="admin-only"><a href="#" id="nav-users"><i class="fas fa-users-cog fa-fw"></i> Users</a></li>
+            </ul>
+        </div>
+
+        <div style="padding-bottom: 1rem; padding-left: 2.2rem; padding-right: 2.2rem; margin-top: auto;">
+            <ul style="padding: 0; margin: 0; list-style: none;">
+                <li><a href="#" id="nav-logout" style="color: var(--danger) !important;"><i
+                            class="fas fa-sign-out-alt fa-fw"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
 
     <div class="main-content">
-        <button class="open-sidebar-button">☰</button>
-        <div class="app-header">
-            <button id="notifications-toggle" type="button" data-tooltip="Notificaciones" aria-label="Notificaciones">🔔<span id="notifications-badge" class="notif-badge" style="display:none;">0</span></button>
-            <span id="header-profile-name">User</span>
-            <button id="theme-toggle" type="button" data-tooltip="Toggle theme" aria-label="Toggle theme">☀️</button>
-            <div id="notifications-panel" class="notifications-panel" style="display:none;">
-                <div class="notifications-panel-header">Notificaciones</div>
-                <ul id="notifications-list"></ul>
+        <header class="header"
+            style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 15px; flex: 1; min-width: 0;">
+                <button class="mobile-toggle open-sidebar-button"
+                    style="border: none; background: transparent; color: var(--text-color); font-size: 1.5rem; padding: 0; cursor: pointer; box-shadow: none; width: auto; height: auto !important;">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="breadcrumbs" style="color: var(--text-color); font-weight: 500; font-size: 1rem;"></div>
+                    <a href="#" onclick="var r = sessionStorage.getItem('user_role'); var el = document.getElementById(r === 'admin' ? 'nav-dashboard' : (r === 'special' ? 'nav-scan-special' : 'nav-scan')); if(el) el.click(); return false;"
+                        style="font-weight: 300; font-size: 0.85rem; color: var(--text-color); opacity: 0.85; text-decoration: none; transition: color 0.3s;"
+                        onmouseover="this.style.color='var(--accent-primary)'"
+                        onmouseout="this.style.color='var(--text-color)'">Home</a>
+                </div>
             </div>
-        </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; position: relative;">
+                <a href="#" class="user-pill text-decoration-none">
+                    <div class="avatar"
+                        style="width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem;">
+                        U</div>
+                    <div class="user-pill-info"
+                        style="display: flex; flex-direction: column; line-height: 1.2; padding-right: 5px;">
+                        <span id="header-profile-name" class="user-pill-name"
+                            style="font-size: 0.95rem; font-weight: 600; color: var(--text-color);">User</span>
+                        <span class="user-pill-role"
+                            style="font-size: 0.75rem; color: var(--clr-9fb0cd); font-weight: 500;">Role</span>
+                    </div>
+                </a>
+
+                <button id="notifications-toggle" type="button" data-tooltip="Notifications"
+                    aria-label="Notifications"
+                    style="border: 1px solid var(--border-subtle, #2f384a); background: var(--bg-input, #151a23); color: var(--text-color); font-size: 1.1rem; width: 46px; height: 46px; border-radius: 50px; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: all 0.3s ease;">
+                    <i class="fas fa-bell"></i>
+                    <span id="notifications-badge" class="notif-badge"
+                        style="display:none; position: absolute; top: -2px; right: -2px; font-size: 0.65rem; background: var(--danger-color); color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid var(--bg-app);">0</span>
+                </button>
+
+                <div id="notifications-panel" class="notifications-panel"
+                    style="display:none; position: absolute; top: 55px; right: 0; z-index: 1000; background: var(--card-background); border: 1px solid var(--border-subtle); border-radius: 14px; width: 320px; box-shadow: var(--shadow-card); overflow: hidden;">
+                    <div class="notifications-panel-header"
+                        style="padding: 16px; border-bottom: 1px solid var(--border-subtle); font-weight: 600; font-size: 1.05rem; color: var(--text-color); display: flex; justify-content: space-between; align-items: center;">
+                        Notifications
+                    </div>
+                    <ul id="notifications-list"
+                        style="list-style: none; padding: 0; margin: 0; max-height: 350px; overflow-y: auto;"></ul>
+                </div>
+            </div>
+        </header>
 
         <!-- Section for QR Scanning (for regular users) -->
         <section id="scan-section">
@@ -84,12 +165,14 @@
                 <div class="scan-center-card card-box">
                     <div class="scan-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24" role="img" focusable="false">
-                            <path d="M4 4h5v2H6v3H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4zM8 8h3v3H8V8zm5 0h3v3h-3V8zm-5 5h3v3H8v-3zm5 0h3v3h-3v-3z"/>
+                            <path
+                                d="M4 4h5v2H6v3H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4zM8 8h3v3H8V8zm5 0h3v3h-3V8zm-5 5h3v3H8v-3zm5 0h3v3h-3v-3z" />
                         </svg>
                     </div>
                     <h3>Scan QR Code</h3>
                     <button id="start-scanner-button">Start Scanner</button>
-                    <div id="scanner-container" style="display: none;"><video id="qr-video" playsinline muted></video></div>
+                    <div id="scanner-container" style="display: none;"><video id="qr-video" playsinline muted></video>
+                    </div>
                     <p id="scan-result">Waiting for scan...</p>
                     <p id="register-message"></p>
                 </div>
@@ -97,570 +180,777 @@
         </section>
 
         <!-- Section for Displaying Records (for users and admins) -->
-        <section id="records-section" style="display:none;">
-            <h3>Attendance Records</h3>
-            <div class="admin-only">
-                <div class="form-group">
-                    <label for="admin-user-filter">Filter by User:</label>
-                    <select id="admin-user-filter"></select>
-                </div>
-                <div class="form-group">
-                    <label for="recalculate-date">Date for Recalculation:</label>
-                    <input type="date" id="recalculate-date">
-                    <button id="recalculate-duration-button">Recalculate Daily Duration</button>
-                </div>
+        <section id="records-section" style="display:none; background: transparent; border: none; box-shadow: none; padding: 0;">
+            <div style="width: 100%; margin-bottom: 20px; display: flex; flex-direction: column; align-items: flex-start;">
+                <h3 style="margin: 0; font-size: 1.8rem;"><i class="fas fa-clipboard-list" style="margin-right: 8px;"></i> Attendance Tracking</h3>
+                <p style="color: var(--text-gray); margin-top: 8px; font-size: 0.95rem;">View and manage attendance records.</p>
             </div>
-            <div class="form-group">
-                <label for="attendance-table-search">Search Attendance Records:</label>
-                <input type="text" id="attendance-table-search" placeholder="Search...">
-            </div>
-            <div class="table-tools attendance-tools">
-                <button id="export-attendance-csv" type="button">Export CSV</button>
-                <div class="attendance-calendar-controls">
-                    <input type="date" id="attendance-focus-date">
-                    <select id="attendance-view-mode">
-                        <option value="week" selected>Week</option>
-                        <option value="day">Day</option>
-                    </select>
+
+            <div class="box-card" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 18px;">
+
+                <!-- 2. Fix records -->
+                <div class="admin-only" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: 100%;">
+                    <span style="font-size: 0.85rem; color: var(--text-gray); font-weight: 600; white-space: nowrap;">Fix records:</span>
+                    <input type="date" id="recalculate-date" title="Date for recalculation" style="height: 38px; width: 150px; border-radius: 50px; padding: 0 15px;">
                 </div>
-                <div class="attendance-calendar-nav">
-                    <button id="attendance-calendar-prev" type="button">←</button>
-                    <button id="attendance-calendar-today" type="button">Today</button>
-                    <span id="attendance-calendar-title">Calendar</span>
-                    <button id="attendance-calendar-next" type="button">→</button>
+
+                <!-- 3. Top Actions (Recalculate + Export CSV) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; width: 100%;">
+                    <div class="admin-only" style="display: flex; align-items: center;">
+                        <button id="recalculate-duration-button" title="Recalculate Daily Duration"><i class="fas fa-sync-alt"></i> Recalculate</button>
+                    </div>
+                    <button id="export-attendance-csv" type="button" class="btn-success-outline" style="margin-left: auto;"><i class="fas fa-file-csv"></i> Export CSV</button>
+                </div>
+
+                <!-- 4. Search records & All Users (Side-by-side before calendar) -->
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 15px; width: 100%;">
+                    <div class="search-wrapper" style="flex: 1; min-width: 250px;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="attendance-table-search" placeholder="Search records...">
+                    </div>
+                    
+                    <div class="admin-only" style="flex: 1; min-width: 250px;">
+                        <select id="admin-user-filter" style="width: 100%; border-radius: 50px !important; background: var(--bg-input) !important; padding-left: 20px;">
+                            <option value="">All Users</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="width: 100%; height: 1px; background: var(--border-subtle); margin: 5px 0;"></div>
+
+                <!-- 4 & 5. Calendar and View controls centered -->
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%;">
+                    <div class="map-calendar-nav" id="attendance-calendar-nav">
+                        <button id="attendance-calendar-prev" type="button"><i class="fas fa-chevron-left"></i></button>
+                        <button id="attendance-calendar-today" type="button" style="width: auto; padding: 0 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 600;">Today</button>
+                        <span id="attendance-calendar-title" style="font-weight: 600; color: var(--text-white); padding: 0 10px; min-width: 150px; text-align: center;">Calendar</span>
+                        <button id="attendance-calendar-next" type="button"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <div class="map-date-wrapper" style="border: 1px solid var(--border-subtle); border-radius: 50px; background: var(--bg-input);">
+                            <i class="fas fa-calendar-alt text-gray" style="margin-left: 10px;"></i>
+                            <input type="date" id="attendance-focus-date" style="padding-left: 5px !important;">
+                        </div>
+                        <select id="attendance-view-mode" style="border-radius: 50px; padding: 8px 15px; background: var(--bg-input) !important; text-align: center;">
+                            <option value="week" selected>Week View</option>
+                            <option value="day">Day View</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <div id="attendance-calendar-wrap" class="attendance-calendar-wrap">
-                <div id="attendance-calendar-grid" class="attendance-calendar-grid"></div>
-            </div>
-
-            <table id="attendance-table" style="display:none;">
-                <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Date</th>
-                        <th>Location</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>Entry Time</th>
-                        <th>Exit Time</th>
-                        <th>Work Duration (hours)</th>
-                        <th>Lunch Duration (hours)</th>
-                        <th>Project</th>
-                        <th class="admin-only">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="attendance-records-body"></tbody>
-            </table>
-            <div class="pagination-controls" style="display:none;">
-                <button id="attendance-prev-page" type="button">← Prev</button>
-                <span id="attendance-page-info">Page 1</span>
-                <button id="attendance-next-page" type="button">Next →</button>
+            <div class="box-card" style="padding: 0; overflow: hidden;">
+                <div id="attendance-calendar-wrap" class="attendance-calendar-wrap" style="margin-top: 0; border: none; box-shadow: none; border-radius: 0;">
+                    <div id="attendance-calendar-grid" class="attendance-calendar-grid"></div>
+                </div>
             </div>
         </section>
 
         <!-- Section for Special User Records -->
-        <section id="special-user-records-section" style="display:none;">
-            <h3>User Records (Last 15)</h3>
-            <div class="form-group">
-                <label for="special-users-filter">Select User:</label>
-                <select id="special-users-filter"></select>
+        <section id="special-user-records-section" style="display:none; background: transparent; border: none; box-shadow: none; padding: 0;">
+            <div style="width: 100%; margin-bottom: 20px; display: flex; flex-direction: column; align-items: flex-start;">
+                <h3 style="margin: 0; font-size: 1.8rem;"><i class="fas fa-users" style="margin-right: 8px;"></i> User Records</h3>
+                <p style="color: var(--text-gray); margin-top: 8px; font-size: 0.95rem;">View recent attendance activity for standard users.</p>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Date</th>
-                        <th>Location</th>
-                        <th>Type</th>
-                        <th>Entry Time</th>
-                        <th>Exit Time</th>
-                        <th>Work Duration (hours)</th>
-                        <th>Lunch Duration (hours)</th>
-                        <th>Project</th>
-                    </tr>
-                </thead>
-                <tbody id="special-user-records-body"></tbody>
-            </table>
+
+            <div class="box-card" style="display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-history" style="margin-right: 8px;"></i> Last 15 Records</h4>
+                    
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <label for="special-users-filter" style="margin: 0; font-weight: 500; color: var(--text-white);">Select User:</label>
+                        <select id="special-users-filter" style="height: 42px; border-radius: 50px; padding: 0 15px; background: var(--bg-input) !important;"></select>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Date</th>
+                                <th>Location</th>
+                                <th>Type</th>
+                                <th>Entry Time</th>
+                                <th>Exit Time</th>
+                                <th>Work Duration (hours)</th>
+                                <th>Lunch Duration (hours)</th>
+                                <th>Project</th>
+                            </tr>
+                        </thead>
+                        <tbody id="special-user-records-body"></tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <!-- Section for Admin Dashboard -->
-        <section id="dashboard-section" style="display:none;">
-            <h3>Admin Dashboard</h3>
-            <div id="dashboard-metrics" class="dashboard-metrics">
-                <div class="metric-card"><div class="metric-icon">👥</div><div><div class="metric-label">Total empleados activos hoy</div><div id="metric-active-employees" class="metric-value">0</div></div></div>
-                <div class="metric-card"><div class="metric-icon">⏱️</div><div><div class="metric-label">Clock ins de hoy</div><div id="metric-clockins" class="metric-value">0</div></div></div>
-                <div class="metric-card"><div class="metric-icon">📌</div><div><div class="metric-label">Ausencias de hoy</div><div id="metric-absences" class="metric-value">0</div></div></div>
-                <div class="metric-card"><div class="metric-icon">📊</div><div><div class="metric-label">Promedio horas semana</div><div id="metric-avg-hours" class="metric-value">0.00</div></div></div>
+        <section id="dashboard-section"
+            style="display:none; background: transparent; border: none; box-shadow: none; padding: 0;">
+            <div style="width: 100%; margin-bottom: 20px; display: flex; flex-direction: column; align-items: flex-start;">
+                <h3 style="margin: 0; font-size: 1.8rem;"><i class="fas fa-chart-pie" style="margin-right: 8px;"></i> Dashboard</h3>
+                <p style="color: var(--text-gray); margin-top: 8px; font-size: 0.95rem;">Here is the latest activity.</p>
             </div>
-            <div class="chart-container chart-container-modern">
-                <div class="chart-header">
-                    <h4>Hours Worked Summary</h4>
-                    <span class="chart-chip">Monthly trend</span>
+            <div id="user-locations-map-container" class="admin-only">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-map-marker-alt" style="margin-right: 8px;"></i> User Locations Map</h4>
                 </div>
-                <canvas id="hours-chart"></canvas>
-            </div>
-            <div id="user-locations-map-container">
-                <h4>User Locations Map</h4>
-                <div class="form-group">
-                    <label for="history-user-filter">Select User for History:</label>
-                    <select id="history-user-filter"></select>
-                    <label for="history-start-date">Start Date:</label>
-                    <input type="date" id="history-start-date">
-                    <label for="history-end-date">End Date:</label>
-                    <input type="date" id="history-end-date">
-                    <button id="view-history-button">View History</button>
+                <div class="map-controls-modern">
+                    <select id="history-user-filter" class="map-user-select"></select>
+                    <div class="map-calendar-nav">
+                        <button id="map-date-prev" type="button"><i class="fas fa-chevron-left"></i></button>
+                        <div class="map-date-wrapper">
+                            <i class="fas fa-calendar-alt"></i>
+                            <input type="date" id="map-focus-date">
+                        </div>
+                        <button id="map-date-next" type="button"><i class="fas fa-chevron-right"></i></button>
+                    </div>
                 </div>
                 <div id="user-locations-map-canvas" class="map-canvas-modern"></div>
                 <p id="map-message"></p>
             </div>
+            <div id="dashboard-metrics" class="dashboard-metrics admin-only">
+                <div class="box-card metric-box" onclick="document.getElementById('nav-all-records').click();" style="position: relative; overflow: hidden; cursor: pointer;" title="Go to Attendance Tracking"><i
+                        class="fas fa-users stat-icon-bg" style="color: #3b82f6;"></i>
+                    <div id="metric-active-employees" class="stat-num">0</div>
+                    <div class="stat-label">Active Employees</div>
+                </div>
+                <div class="box-card metric-box" onclick="document.getElementById('nav-all-records').click();" style="position: relative; overflow: hidden; cursor: pointer;" title="Go to Attendance Tracking"><i
+                        class="fas fa-clock stat-icon-bg" style="color: #10b981;"></i>
+                    <div id="metric-clockins" class="stat-num">0</div>
+                    <div class="stat-label">Today's Clock-ins</div>
+                </div>
+                <div class="box-card metric-box" onclick="document.getElementById('nav-absence-records').click();" style="position: relative; overflow: hidden; cursor: pointer;" title="Go to Absence Records"><i
+                        class="fas fa-calendar-times stat-icon-bg" style="color: #ef4444;"></i>
+                    <div id="metric-absences" class="stat-num">0</div>
+                    <div class="stat-label">Today's Absences</div>
+                </div>
+                <div class="box-card metric-box" style="position: relative; overflow: hidden;"><i
+                        class="fas fa-chart-line stat-icon-bg" style="color: #f59e0b;"></i>
+                    <div id="metric-avg-hours" class="stat-num">0.00</div>
+                    <div class="stat-label">Avg. Hours / Week</div>
+                </div>
+            </div>
+
+            <!-- Active Timers Card (Moved to Dashboard) -->
+            <div class="box-card" style="display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-stopwatch" style="margin-right: 8px;"></i> Active Timers</h4>
+                    <p style="color: var(--text-gray); margin: 0; font-size: 0.95rem;">Monitor and manage active shifts.</p>
+                </div>
+                
+                <p id="timer-control-message" style="margin-top: 0; margin-bottom: 15px; font-weight: 600;"></p>
+                
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Project</th>
+                                <th>Start Time</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="active-timers-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="chart-container chart-container-modern admin-only" style="margin-top: 24px;">
+                <div class="chart-header">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-chart-bar" style="margin-right: 8px;"></i> Hours Worked Summary</h4>
+                    <span class="chart-chip">Monthly trend</span>
+                </div>
+                <canvas id="hours-chart"></canvas>
+            </div>
         </section>
 
-        <!-- Section for Admin Tools (QR Generation) -->
-        <section id="admin-tools-section" style="display:none;">
-            <h3>Admin Tools</h3>
-            <h4>Generate QR Codes</h4>
-            <div class="form-group">
-                <label for="project-select">Select Project:</label>
-                <select id="project-select"></select>
+        <!-- Section for Admin Tools (Projects & QR Generation) -->
+        <section id="admin-tools-section" style="display:none; background: transparent; border: none; box-shadow: none; padding: 0;">
+            
+            <div style="width: 100%; margin-bottom: 20px; display: flex; flex-direction: column; align-items: flex-start;">
+                <h3 style="margin: 0; font-size: 1.8rem;"><i class="fas fa-tools" style="margin-right: 8px;"></i> Admin Tools</h3>
+                <p style="color: var(--text-gray); margin-top: 8px; font-size: 0.95rem;">Manage projects, locations, and generate access QR codes.</p>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="qr-entry-time">Hora de entrada (requerida):</label>
-                    <input type="time" id="qr-entry-time" required>
+
+            <!-- Project Management Card -->
+            <div class="box-card" style="margin-bottom: 20px; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-map-marked-alt" style="margin-right: 8px;"></i> Projects Management</h4>
+                    
+                    <button id="add-project-button">
+                        <i class="fas fa-plus"></i> Add Project
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label for="qr-exit-time">Hora de salida (opcional):</label>
-                    <input type="time" id="qr-exit-time">
+
+                <div class="search-wrapper" style="width: 100%; max-width: 320px; margin-bottom: 20px;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="projects-table-search" placeholder="Search projects..." style="padding-left: 42px !important; border-radius: 50px !important;">
+                </div>
+
+                <div id="project-form-container" style="display:none; margin-bottom: 20px; padding: 20px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--bg-input);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                        <h4 style="margin: 0; color: var(--primary); font-size: 1.2rem;"><i class="fas fa-project-diagram" style="margin-right: 8px;"></i> <span id="project-form-title"></span> Project</h4>
+                    </div>
+                    <form id="project-form">
+                        <input type="hidden" id="project-id">
+                        <input type="hidden" id="project-latitude">
+                        <input type="hidden" id="project-longitude">
+                        <input type="hidden" id="project-geofence-radius" value="100">
+                        <div class="form-group">
+                            <label for="project-name">Project Name: <span style="color: var(--danger);">*</span></label>
+                            <input type="text" id="project-name" maxlength="50" required>
+                        </div>
+
+                        <!-- Geofence Configuration -->
+                        <div class="geofence-config" style="background: var(--bg-card); border-color: var(--border-subtle);">
+                            <h5 style="color: var(--text-white);">📍 Geofence Configuration</h5>
+                            <div class="map-search-container">
+                                <input type="text" id="geofence-search-input" placeholder="Search address..." style="background: var(--bg-input); border-color: var(--border-subtle); color: var(--text-white);">
+                                <button type="button" id="geofence-current-loc-btn" style="background: var(--bg-input); border-color: var(--border-subtle); color: var(--text-white);">📍 My location</button>
+                            </div>
+                            <div class="geofence-map-container" id="geofence-map-canvas"></div>
+                            <div class="radius-control">
+                                <label style="color: var(--text-gray);">Tolerance radius:</label>
+                                <input type="range" id="geofence-radius-slider" min="10" max="5000" step="10" value="100">
+                                <span class="radius-value" id="geofence-radius-value" style="color: var(--primary);">100m</span>
+                            </div>
+                            <div class="geofence-coords" style="color: var(--text-gray);">
+                                Coordinates: <span id="geofence-coords-display">Not selected</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                            <button type="button" id="cancel-project-edit" class="btn-secondary">Cancel</button>
+                            <button type="submit" id="save-project-button"><i class="fas fa-save"></i> Save Project</button>
+                        </div>
+                    </form>
+                    <p id="project-form-message" style="margin-top: 10px; font-weight: 600;"></p>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Geofence</th>
+                                <th>Creation Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projects-table-body"></tbody>
+                    </table>
                 </div>
             </div>
 
-            <button id="generate-qr-button">Generate QR</button>
-            <div id="qr-code-display" style="margin-top: 20px;"></div>
-            <p id="qr-message"></p>
+            <!-- Generate QR Form Card -->
+            <div class="box-card" style="margin-bottom: 20px; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-qrcode" style="margin-right: 8px;"></i> Generate New QR Code</h4>
+                </div>
+                
+                <div class="form-group">
+                    <label for="project-select">Select Project: <span style="color: var(--danger);">*</span></label>
+                    <select id="project-select"></select>
+                </div>
+                
+                <div class="form-row" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div class="form-group" style="flex: 1; min-width: 200px;">
+                        <label for="qr-entry-time">Entry time (required): <span style="color: var(--danger);">*</span></label>
+                        <input type="time" id="qr-entry-time" required>
+                    </div>
+                    <div class="form-group" style="flex: 1; min-width: 200px;">
+                        <label for="qr-exit-time">Exit time (optional):</label>
+                        <input type="time" id="qr-exit-time">
+                    </div>
+                </div>
 
-            <h4>Generated QR Codes</h4>
-            <div class="form-group">
-                <label for="generated-qrs-table-search">Search Generated QRs:</label>
-                <input type="text" id="generated-qrs-table-search" placeholder="Search...">
+                <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                    <button id="generate-qr-button">
+                        <i class="fas fa-magic"></i> Generate QR
+                    </button>
+                </div>
+                
+                <div id="qr-code-display"></div>
+                <p id="qr-message" style="margin-top: 10px; font-weight: 600; text-align: center;"></p>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Project Name</th>
-                        <th>Action Type</th>
-                        <th>Location</th>
-                        <th>Generated At</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="generated-qrs-table-body"></tbody>
-            </table>
+
+            <!-- Generated QRs Table Card -->
+            <div class="box-card" style="display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-list-ul" style="margin-right: 8px;"></i> Generated QR Codes</h4>
+                    
+                    <div class="search-wrapper" style="width: 100%; max-width: 320px;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="generated-qrs-table-search" placeholder="Search generated QRs..." style="padding-left: 42px !important; border-radius: 50px !important;">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Action Type</th>
+                                <th>Location</th>
+                                <th>Generated At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="generated-qrs-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <!-- Section for User Management (Admin Only) -->
-        <section id="users-section" style="display:none;">
-            <h3>User Management</h3>
-            <button id="add-user-button">Add New User</button>
-            <div class="form-group">
-                <label for="users-table-search">Search Users:</label>
-                <input type="text" id="users-table-search" placeholder="Search users...">
-            </div>
-            <div id="user-form-container" style="display:none;">
-                <h4><span id="user-form-title"></span> User</h4>
-                <form id="user-form">
-                    <input type="hidden" id="user-id">
-                    <div class="form-group">
-                        <label for="username">Username:</label>
-                        <input type="text" id="username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password:</label>
-                        <input type="password" id="password">
-                    </div>
-                    <div class="form-group">
-                        <label for="role">Role:</label>
-                        <!-- ⚡ Este select se llena dinámicamente desde roles.php -->
-                        <select id="role"></select>
-                    </div>
-                    <button type="submit" id="save-user-button">Save User</button>
-                    <button type="button" id="cancel-user-edit">Cancel</button>
-                </form>
-                <p id="user-form-message"></p>
+        <section id="users-section" style="display:none; background: transparent; border: none; box-shadow: none; padding: 0;">
+            
+            <div style="width: 100%; margin-bottom: 20px; display: flex; flex-direction: column; align-items: flex-start;">
+                <h3 style="margin: 0; font-size: 1.8rem;"><i class="fas fa-users-cog" style="margin-right: 8px;"></i> User Management</h3>
+                <p style="color: var(--text-gray); margin-top: 8px; font-size: 0.95rem;">Manage employee accounts, credentials, and system roles.</p>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="users-table-body"></tbody>
-            </table>
-        </section>
+            <div class="box-card" style="display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-list-ul" style="margin-right: 8px;"></i> System Users</h4>
+                    
+                    <button id="add-user-button">
+                        <i class="fas fa-user-plus"></i> Add User
+                    </button>
+                </div>
 
-        <!-- Section for Project Management (Admin Only) -->
-        <section id="projects-section" style="display:none;">
-            <h3>Project Management</h3>
-            <button id="add-project-button">Add New Project</button>
-            <div class="form-group">
-                <label for="projects-table-search">Search Projects:</label>
-                <input type="text" id="projects-table-search" placeholder="Search projects...">
-            </div>
-            <div id="project-form-container" style="display:none;">
-                <h4><span id="project-form-title"></span> Project</h4>
-                <form id="project-form">
-                    <input type="hidden" id="project-id">
-                    <input type="hidden" id="project-latitude">
-                    <input type="hidden" id="project-longitude">
-                    <input type="hidden" id="project-geofence-radius" value="100">
-                    <div class="form-group">
-                        <label for="project-name">Project Name:</label>
-                        <input type="text" id="project-name" required>
+                <div class="search-wrapper" style="width: 100%; max-width: 320px; margin-bottom: 20px;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="users-table-search" placeholder="Search users..." style="padding-left: 42px !important; border-radius: 50px !important;">
+                </div>
+
+                <div id="user-form-container" style="display:none; margin-bottom: 20px; padding: 20px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--bg-input);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                        <h4 style="margin: 0; color: var(--primary); font-size: 1.2rem;"><i class="fas fa-user-edit" style="margin-right: 8px;"></i> <span id="user-form-title"></span> User</h4>
                     </div>
-
-                    <!-- Geofence Configuration -->
-                    <div class="geofence-config">
-                        <h5>📍 Configuración de Geocerca</h5>
-                        <div class="map-search-container">
-                            <input type="text" id="geofence-search-input" placeholder="Buscar dirección...">
-                            <button type="button" id="geofence-current-loc-btn">📍 Mi ubicación</button>
+                    <form id="user-form">
+                        <input type="hidden" id="user-id">
+                        
+                        <div class="form-row" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <div class="form-group" style="flex: 1; min-width: 200px;">
+                                <label for="username">Username: <span style="color: var(--danger);">*</span></label>
+                                <input type="text" id="username" required>
+                            </div>
+                            <div class="form-group" style="flex: 1; min-width: 200px;">
+                                <label for="password">Password:</label>
+                                <input type="password" id="password">
+                            </div>
                         </div>
-                        <div class="geofence-map-container" id="geofence-map-canvas"></div>
-                        <div class="radius-control">
-                            <label>Radio de tolerancia:</label>
-                            <input type="range" id="geofence-radius-slider" min="10" max="5000" step="10" value="100">
-                            <span class="radius-value" id="geofence-radius-value">100m</span>
-                        </div>
-                        <div class="geofence-coords">
-                            Coordenadas: <span id="geofence-coords-display">No seleccionadas</span>
-                        </div>
-                    </div>
 
-                    <button type="submit" id="save-project-button">Save Project</button>
-                    <button type="button" id="cancel-project-edit">Cancel</button>
-                </form>
-                <p id="project-form-message"></p>
+                        <div class="form-group">
+                            <label for="role">Role: <span style="color: var(--danger);">*</span></label>
+                            <select id="role"></select>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                            <button type="button" id="cancel-user-edit" class="btn-secondary">Cancel</button>
+                            <button type="submit" id="save-user-button"><i class="fas fa-save"></i> Save User</button>
+                        </div>
+                    </form>
+                    <p id="user-form-message" style="margin-top: 10px; font-weight: 600;"></p>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body"></tbody>
+                    </table>
+                </div>
             </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Geofence</th>
-                        <th>Creation Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="projects-table-body"></tbody>
-            </table>
         </section>
 
         <!-- Section: Report Absence (User / Special) -->
-        <section id="report-absence-section" style="display:none;">
-            <h3>Reportar Ausencia</h3>
-            <form id="absence-report-form" class="absence-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="absence-project-select">Proyecto:</label>
-                        <select id="absence-project-select">
-                            <option value="">— Seleccionar proyecto —</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="absence-reason">Razón:</label>
-                        <select id="absence-reason" required>
-                            <option value="">— Seleccionar —</option>
-                            <option value="familiar">Familiar</option>
-                            <option value="enfermedad">Enfermedad</option>
-                            <option value="vacaciones">Vacaciones</option>
-                            <option value="sin_justificacion">Sin justificación</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="absence-date-start">Fecha inicio:</label>
-                        <input type="date" id="absence-date-start" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="absence-date-end">Fecha fin (opcional):</label>
-                        <input type="date" id="absence-date-end">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="absence-notes">Notas adicionales:</label>
-                    <textarea id="absence-notes" rows="3" placeholder="Detalles opcionales..."></textarea>
-                </div>
-                <div class="form-group file-upload-group">
-                    <label for="absence-evidence">Adjuntar evidencia (opcional):</label>
-                    <input type="file" id="absence-evidence" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx">
-                    <div class="file-info">Formatos: JPG, PNG, GIF, PDF, DOC. Máx: 10 MB</div>
-                </div>
-                <button type="submit" class="submit-btn">Enviar reporte</button>
-            </form>
-            <p id="absence-form-message"></p>
-
-            <h4 style="margin-top: 24px;">Mis reportes de ausencia</h4>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Proyecto</th>
-                        <th>Razón</th>
-                        <th>Estado</th>
-                        <th>Notas</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="user-absences-body"></tbody>
-            </table>
-        </section>
-
-        <!-- Section: Absence Records (Admin) -->
-        <section id="absence-records-section" style="display:none;">
-            <h3>Registros de Ausencias</h3>
-
-            
-
-            <div class="absence-filters" style="margin-bottom: 16px;">
-                <div class="form-group">
-                    <label for="auto-absence-date">Auto-registrar faltas del día:</label>
-                    <input type="date" id="auto-absence-date">
-                </div>
-                <button class="filter-btn" id="auto-absence-run-btn">Ejecutar auto-ausencias</button>
+        <section id="report-absence-section" style="display:none; background: transparent; border: none; box-shadow: none; padding: 0;">
+            <div style="width: 100%; margin-bottom: 20px; display: flex; flex-direction: column; align-items: flex-start;">
+                <h3 style="margin: 0; font-size: 1.8rem;"><i class="fas fa-calendar-times" style="margin-right: 8px;"></i> Report Absence</h3>
+                <p style="color: var(--text-gray); margin-top: 8px; font-size: 0.95rem;">Submit and track your absence requests.</p>
             </div>
 
-            <!-- Summary cards + chart -->
-            <div id="absence-summary-container" class="absence-summary-container"></div>
-
-            <!-- Filters -->
-            <div class="absence-filters">
-                <div class="form-group">
-                    <label for="absence-filter-user">Usuario:</label>
-                    <select id="absence-filter-user"><option value="">Todos</option></select>
+            <div class="box-card" style="margin-bottom: 20px; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-file-signature" style="margin-right: 8px;"></i> New Request</h4>
                 </div>
-                <div class="form-group">
-                    <label for="absence-filter-project">Proyecto:</label>
-                    <select id="absence-filter-project"><option value="">Todos</option></select>
-                </div>
-                <div class="form-group">
-                    <label for="absence-filter-reason">Razón:</label>
-                    <select id="absence-filter-reason">
-                        <option value="">Todas</option>
-                        <option value="familiar">Familiar</option>
-                        <option value="enfermedad">Enfermedad</option>
-                        <option value="vacaciones">Vacaciones</option>
-                        <option value="sin_justificacion">Sin justificación</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="absence-filter-status">Estado:</label>
-                    <select id="absence-filter-status">
-                        <option value="">Todos</option>
-                        <option value="pendiente">Pendiente</option>
-                        <option value="aprobado">Aprobado</option>
-                        <option value="rechazado">Rechazado</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="absence-filter-date-from">Desde:</label>
-                    <input type="date" id="absence-filter-date-from">
-                </div>
-                <div class="form-group">
-                    <label for="absence-filter-date-to">Hasta:</label>
-                    <input type="date" id="absence-filter-date-to">
-                </div>
-                <button class="filter-btn" id="absence-filter-btn">Filtrar</button>
-            </div>
-
-            <!-- Search -->
-            <div class="form-group">
-                <label for="admin-absences-search">Buscar:</label>
-                <input type="text" id="admin-absences-search" placeholder="Buscar en registros...">
-            </div>
-
-            <!-- Table -->
-            <table>
-                <thead>
-                    <tr>
-                        <th>Usuario</th>
-                        <th>Fecha</th>
-                        <th>Proyecto</th>
-                        <th>Razón</th>
-                        <th>Estado</th>
-                        <th>Notas</th>
-                        <th>Evidencia</th>
-                        <th>Reportado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="admin-absences-body"></tbody>
-            </table>
-            <p id="admin-absence-message"></p>
-        </section>
-
-        <!-- Section for Special User Tools -->
-        <section id="special-tools-section" style="display:none;">
-            <h3>Active Timers</h3>
-            <p>Here you can see all active timers for regular users. Pause or stop them when necessary.</p>
-            <p id="timer-control-message"></p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Project</th>
-                        <th>Start Time</th>
-                        <th>Duration</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="active-timers-body"></tbody>
-            </table>
-            <template id="active-timer-row-template">
-                <tr data-timer-row="">
-                    <td data-label="User"></td>
-                    <td data-label="Project"></td>
-                    <td data-label="Start Time"></td>
-                    <td data-label="Duration" data-field="duration"></td>
-                    <td data-label="Status"></td>
-                    <td data-label="Actions">
-                        <button data-action="paused" data-id="">Pause</button>
-                        <button data-action="resumed" data-id="">Resume</button>
-                        <button data-action="stopped" data-id="">Stop</button>
-                    </td>
-                </tr>
-            </template>
-        </section>
-        <!-- Section: Manual Attendance (Admin Only) -->
-        <section id="manual-attendance-section" style="display:none;">
-            <h3 id="manual-section-title">📝 Manual Records</h3>
-            <p id="manual-section-subtitle">Register attendance entries manually for employees who forgot to clock in/out.</p>
-
-            <form id="manual-attendance-form" class="manual-attendance-form">
-                <div class="manual-mode-switch" role="group" aria-label="Entry mode">
-                    <button type="button" id="manual-mode-single" class="manual-mode-btn active" data-mode="single">Single Day</button>
-                    <button type="button" id="manual-mode-multi" class="manual-mode-btn" data-mode="multi">Multiple Days</button>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Employees: <span class="required">*</span></label>
-                        <input type="text" id="manual-employee-search" placeholder="Search employee..." class="manual-employee-search-input">
-                        <div id="manual-employee-list" class="manual-employee-list" role="listbox" aria-multiselectable="true"></div>
-                        <div class="manual-selector-footer">
-                            <small id="manual-selected-count" class="manual-selected-count">0 selected</small>
-                            <div class="manual-user-actions">
-                                <button type="button" id="manual-select-all-users" class="manual-secondary-btn">Select all</button>
-                                <button type="button" id="manual-clear-users" class="manual-secondary-btn">Clear</button>
-                            </div>
+                <form id="absence-report-form" class="absence-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="absence-project-select">Project:</label>
+                            <select id="absence-project-select">
+                                <option value="">— Select project —</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="absence-reason">Reason:</label>
+                            <select id="absence-reason" required>
+                                <option value="">— Select —</option>
+                                <option value="familiar">Family</option>
+                                <option value="enfermedad">Illness</option>
+                                <option value="vacaciones">Vacation</option>
+                                <option value="sin_justificacion">Unexcused</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="absence-date-start">Start Date:</label>
+                            <input type="date" id="absence-date-start" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="absence-date-end">End Date (optional):</label>
+                            <input type="date" id="absence-date-end">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="manual-project">Project:</label>
-                        <select id="manual-project">
-                            <option value="">— Select project —</option>
-                        </select>
-                        <label for="manual-conflict-strategy" class="manual-sub-label">On conflicts:</label>
-                        <select id="manual-conflict-strategy">
-                            <option value="skip" selected>Skip existing records</option>
-                            <option value="overwrite">Overwrite existing records</option>
-                        </select>
+                        <label for="absence-notes">Additional Notes:</label>
+                        <textarea id="absence-notes" rows="3" placeholder="Optional details..."></textarea>
+                    </div>
+                    <div class="form-group file-upload-group">
+                        <label for="absence-evidence">Attach Evidence (optional):</label>
+                        <input type="file" id="absence-evidence" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx">
+                        <div class="file-info">Formats: JPG, PNG, GIF, PDF, DOC. Max: 10 MB</div>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                        <button type="submit" class="submit-btn"><i class="fas fa-paper-plane"></i> Submit Report</button>
+                    </div>
+                </form>
+                <p id="absence-form-message" style="margin-top: 10px; font-weight: 600;"></p>
+            </div>
+
+            <div class="box-card" style="display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-list-ul" style="margin-right: 8px;"></i> My Absence Reports</h4>
+                </div>
+                
+                <input type="checkbox" id="toggle-user-absences" class="see-more-checkbox">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Project</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-absences-body"></tbody>
+                    </table>
+                </div>
+                <label for="toggle-user-absences" class="see-more-btn">
+                    <span class="text-expand"><i class="fas fa-chevron-down" style="margin-right: 8px;"></i> Load more</span>
+                    <span class="text-collapse"><i class="fas fa-chevron-up" style="margin-right: 8px;"></i> Show less</span>
+                </label>
+            </div>
+        </section>
+
+        <!-- Section: Absence Records (Admin) -->
+        <section id="absence-records-section" style="display:none; background: transparent; border: none; box-shadow: none; padding: 0;">
+            <div style="width: 100%; margin-bottom: 20px; display: flex; flex-direction: column; align-items: flex-start;">
+                <h3 style="margin: 0; font-size: 1.8rem;"><i class="fas fa-calendar-check" style="margin-right: 8px;"></i> Absence Records</h3>
+                <p style="color: var(--text-gray); margin-top: 8px; font-size: 0.95rem;">Manage employee absences and run automated absence registrations.</p>
+            </div>
+
+            <!-- Auto-Absence Tool Card -->
+            <div class="box-card admin-only" style="margin-bottom: 20px; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-robot" style="margin-right: 8px;"></i> Automated Absences</h4>
+                </div>
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 20px; background: var(--bg-input); padding: 18px 20px; border-radius: 12px; border: 1px solid var(--border-subtle);">
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        <span style="font-size: 0.95rem; color: var(--text-white); font-weight: 500;">Target Date:</span>
+                        <input type="date" id="auto-absence-date" title="Date for auto-absences" style="height: 42px; width: 160px; border-radius: 50px; padding: 0 15px; border: 1px solid var(--border-subtle); background: var(--bg-card) !important; cursor: pointer;">
+                    </div>
+                    <button id="auto-absence-run-btn" title="Run Auto-Absences"><i class="fas fa-play"></i> Run Process</button>
+                </div>
+            </div>
+
+            <!-- Records Table Card -->
+            <div class="box-card" style="display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; gap: 15px;">
+                    <h4 style="margin: 0; color: var(--text-white); font-size: 1.2rem;"><i class="fas fa-list-ul" style="margin-right: 8px;"></i> Absence History</h4>
+                    
+                    <div class="search-wrapper" style="width: 100%; max-width: 320px;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="admin-absences-search" placeholder="Search records..." style="padding-left: 42px !important; border-radius: 50px !important;">
                     </div>
                 </div>
 
-                <div id="manual-single-date-block" class="form-row">
-                    <div class="form-group">
-                        <label for="manual-date">Date: <span class="required">*</span></label>
-                        <input type="date" id="manual-date" required>
-                    </div>
-                </div>
-
-                <div id="manual-range-date-block" class="form-row" style="display:none;">
-                    <div class="form-group">
-                        <label for="manual-date-start">Start date: <span class="required">*</span></label>
-                        <input type="date" id="manual-date-start">
-                    </div>
-                    <div class="form-group">
-                        <label for="manual-date-end">End date: <span class="required">*</span></label>
-                        <input type="date" id="manual-date-end">
-                    </div>
-                    <div class="form-group manual-checkbox-group">
-                        <label for="manual-exclude-weekends">Exclude weekends</label>
-                        <input type="checkbox" id="manual-exclude-weekends">
-                    </div>
-                </div>
-
-                <div id="manual-shared-time-block" class="form-row">
-                    <div class="form-group">
-                        <label for="manual-entry-time">Entry time: <span class="required">*</span></label>
-                        <input type="time" id="manual-entry-time" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="manual-exit-time">Exit time: <span class="required">*</span></label>
-                        <input type="time" id="manual-exit-time" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="manual-lunch-start">Lunch start (optional):</label>
-                        <input type="time" id="manual-lunch-start" placeholder="12:00">
-                    </div>
-                    <div class="form-group">
-                        <label for="manual-lunch-end">Lunch end (optional):</label>
-                        <input type="time" id="manual-lunch-end" placeholder="13:00">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="manual-reason">Reason for manual entry: <span class="required">*</span></label>
-                    <textarea id="manual-reason" rows="2" placeholder="e.g., Employee forgot to clock in, Device malfunction..." required></textarea>
-                </div>
-                <button type="submit" class="submit-btn">Register Manual Entry</button>
-            </form>
-
-            <form id="manual-absence-form" class="manual-attendance-form" style="display:none;">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="manual-absence-user">User: <span class="required">*</span></label>
-                        <select id="manual-absence-user" required>
-                            <option value="">— Select user —</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="manual-absence-project">Project:</label>
-                        <select id="manual-absence-project">
-                            <option value="">— Select project —</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="manual-absence-date">Date: <span class="required">*</span></label>
-                        <input type="date" id="manual-absence-date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="manual-absence-reason">Absence type:</label>
-                        <select id="manual-absence-reason">
-                            <option value="sin_justificacion">Sin justificación</option>
-                            <option value="familiar">Familiar</option>
-                            <option value="enfermedad">Enfermedad</option>
-                            <option value="vacaciones">Vacaciones</option>
+                <!-- Filters -->
+                <div class="absence-filters" style="background: var(--bg-input); padding: 15px; border-radius: 12px; border: 1px solid var(--border-subtle); margin-bottom: 20px;">
+                    <div class="form-group" style="flex: 1; min-width: 140px;">
+                        <label for="absence-filter-user">User:</label>
+                        <select id="absence-filter-user">
+                            <option value="">All</option>
                         </select>
                     </div>
+                    <div class="form-group" style="flex: 1; min-width: 140px;">
+                        <label for="absence-filter-project">Project:</label>
+                        <select id="absence-filter-project">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; min-width: 140px;">
+                        <label for="absence-filter-reason">Reason:</label>
+                        <select id="absence-filter-reason">
+                            <option value="">All</option>
+                            <option value="familiar">Family</option>
+                            <option value="enfermedad">Illness</option>
+                            <option value="vacaciones">Vacation</option>
+                            <option value="sin_justificacion">Unexcused</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; min-width: 140px;">
+                        <label for="absence-filter-status">Status:</label>
+                        <select id="absence-filter-status">
+                            <option value="">All</option>
+                            <option value="pendiente">Pending</option>
+                            <option value="aprobado">Approved</option>
+                            <option value="rechazado">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; min-width: 140px;">
+                        <label for="absence-filter-date-from">From:</label>
+                        <input type="date" id="absence-filter-date-from">
+                    </div>
+                    <div class="form-group" style="flex: 1; min-width: 140px;">
+                        <label for="absence-filter-date-to">To:</label>
+                        <input type="date" id="absence-filter-date-to">
+                    </div>
+                <div class="form-group" style="flex: 0 0 auto;">
+                    <label style="visibility: hidden;">Action</label>
+                    <button class="filter-btn" id="absence-filter-btn" style="margin: 0; width: 100%;"><i class="fas fa-filter"></i> Filter</button>
                 </div>
-                <div class="form-group">
-                    <label for="manual-absence-notes">Notes:</label>
-                    <textarea id="manual-absence-notes" rows="2" placeholder="Optional"></textarea>
-                </div>
-                <button type="submit" class="submit-btn">Register Manual Absence</button>
-            </form>
+            </div>
 
-            <p id="manual-attendance-message"></p>
+            <input type="checkbox" id="toggle-admin-absences" class="see-more-checkbox">
+
+            <!-- Table -->
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Date</th>
+                            <th>Project</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                            <th>Evidence</th>
+                            <th>Reported At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-absences-body"></tbody>
+                </table>
+            </div>
+            <label for="toggle-admin-absences" class="see-more-btn">
+                <span class="text-expand"><i class="fas fa-chevron-down" style="margin-right: 8px;"></i> Load more</span>
+                <span class="text-collapse"><i class="fas fa-chevron-up" style="margin-right: 8px;"></i> Show less</span>
+            </label>
+            <p id="admin-absence-message"></p>
+
+            <!-- Summary cards + chart -->
+            <div id="absence-summary-container" class="absence-summary-container" style="margin-top: 30px;"></div>
+        </div>
+        </section>
+
+        <!-- Section: Manual Attendance (Admin Only) -->
+        <section id="manual-attendance-section" style="display:none; background: transparent; border: none; box-shadow: none; padding: 0;">
+            <div style="width: 100%; margin-bottom: 20px; display: flex; flex-direction: column; align-items: flex-start;">
+                <h3 id="manual-section-title" style="margin: 0; font-size: 1.8rem;"><i class="fas fa-edit" style="margin-right: 8px;"></i> Manual Records</h3>
+                <p id="manual-section-subtitle" style="color: var(--text-gray); margin-top: 8px; font-size: 0.95rem;">Register attendance entries manually for employees who forgot to clock in/out.</p>
+            </div>
+
+            <div class="box-card" style="margin-bottom: 20px; display: flex; flex-direction: column;">
+
+                <!-- Mode Switch -->
+                <div class="manual-mode-switch-wrapper" style="display: flex; justify-content: center; width: 100%; margin-bottom: 24px;">
+                    <div class="manual-mode-switch" role="group" aria-label="Entry mode">
+                        <button type="button" id="manual-mode-single" class="manual-mode-btn active" data-mode="single">Single Day</button>
+                        <button type="button" id="manual-mode-multi" class="manual-mode-btn" data-mode="multi">Multiple Days</button>
+                    </div>
+                </div>
+
+                <!-- Manual Attendance Form -->
+                <form id="manual-attendance-form" class="manual-attendance-form">
+                    <div class="manual-grid-layout">
+                        <!-- Left Column: Users -->
+                        <div class="manual-col-left">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Select Employees: <span class="required">*</span></label>
+                                <div class="search-wrapper" style="width: 100%; margin-bottom: 12px; max-width: none;">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="manual-employee-search" placeholder="Search employee..." class="manual-employee-search-input" style="padding-left: 42px !important; border-radius: 50px !important;">
+                                </div>
+                                <div id="manual-employee-list" class="manual-employee-list" role="listbox" aria-multiselectable="true"></div>
+                                <div class="manual-selector-footer">
+                                    <small id="manual-selected-count" class="manual-selected-count">0 selected</small>
+                                    <div class="manual-user-actions">
+                                        <button type="button" id="manual-select-all-users" class="manual-secondary-btn">Select all</button>
+                                        <button type="button" id="manual-clear-users" class="manual-secondary-btn">Clear</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Settings -->
+                        <div class="manual-col-right">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="manual-project">Project:</label>
+                                    <select id="manual-project">
+                                        <option value="">— Select project —</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="manual-conflict-strategy">On conflicts:</label>
+                                    <select id="manual-conflict-strategy">
+                                        <option value="skip" selected>Skip existing records</option>
+                                        <option value="overwrite">Overwrite existing records</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="manual-single-date-block" class="form-row">
+                                <div class="form-group">
+                                    <label for="manual-date">Date: <span class="required">*</span></label>
+                                    <input type="date" id="manual-date" required>
+                                </div>
+                            </div>
+
+                            <div id="manual-range-date-block" class="form-row" style="display:none;">
+                                <div class="form-group">
+                                    <label for="manual-date-start">Start date: <span class="required">*</span></label>
+                                    <input type="date" id="manual-date-start">
+                                </div>
+                                <div class="form-group">
+                                    <label for="manual-date-end">End date: <span class="required">*</span></label>
+                                    <input type="date" id="manual-date-end">
+                                </div>
+                                <div class="form-group manual-checkbox-group" style="flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding-top: 25px;">
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+                                        <input type="checkbox" id="manual-exclude-weekends" style="width: 18px; height: 18px; cursor: pointer;">
+                                        <span>Exclude weekends</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div id="manual-shared-time-block" class="form-row">
+                                <div class="form-group">
+                                    <label for="manual-entry-time">Entry time: <span class="required">*</span></label>
+                                    <input type="time" id="manual-entry-time" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="manual-exit-time">Exit time: <span class="required">*</span></label>
+                                    <input type="time" id="manual-exit-time" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="manual-lunch-start">Lunch start:</label>
+                                    <input type="time" id="manual-lunch-start" placeholder="12:00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="manual-lunch-end">Lunch end:</label>
+                                    <input type="time" id="manual-lunch-end" placeholder="13:00">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="manual-reason">Reason for manual entry: <span class="required">*</span></label>
+                                <textarea id="manual-reason" rows="2" placeholder="e.g., Forgot to clock in, Device malfunction..." required style="border-radius: 12px;"></textarea>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+                                <button type="submit" class="submit-btn"><i class="fas fa-save"></i> Register Entry</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Manual Absence Form -->
+                <form id="manual-absence-form" class="manual-attendance-form" style="display:none;">
+                    <div class="manual-grid-layout">
+                        <!-- Left Column: Users -->
+                        <div class="manual-col-left">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Select Employees: <span class="required">*</span></label>
+                                <div class="search-wrapper" style="width: 100%; margin-bottom: 12px; max-width: none;">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="manual-absence-search" placeholder="Search employee..." class="manual-employee-search-input" style="padding-left: 42px !important; border-radius: 50px !important;">
+                                </div>
+                                <div id="manual-absence-employee-list" class="manual-employee-list" role="listbox" aria-multiselectable="true"></div>
+                                <div class="manual-selector-footer">
+                                    <small id="manual-absence-selected-count" class="manual-selected-count">0 selected</small>
+                                    <div class="manual-user-actions">
+                                        <button type="button" id="manual-absence-select-all" class="manual-secondary-btn">Select all</button>
+                                        <button type="button" id="manual-absence-clear" class="manual-secondary-btn">Clear</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Absence Details -->
+                        <div class="manual-col-right">
+                            <div id="manual-absence-single-date-block" class="form-row">
+                                <div class="form-group">
+                                    <label for="manual-absence-date">Date: <span class="required">*</span></label>
+                                    <input type="date" id="manual-absence-date" required>
+                                </div>
+                            </div>
+                            <div id="manual-absence-range-date-block" class="form-row" style="display:none;">
+                                <div class="form-group">
+                                    <label for="manual-absence-date-start">From: <span class="required">*</span></label>
+                                    <input type="date" id="manual-absence-date-start">
+                                </div>
+                                <div class="form-group">
+                                    <label for="manual-absence-date-end">To: <span class="required">*</span></label>
+                                    <input type="date" id="manual-absence-date-end">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="manual-absence-project">Project (Optional):</label>
+                                    <select id="manual-absence-project">
+                                        <option value="">— Select project —</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="manual-absence-reason">Absence type:</label>
+                                    <select id="manual-absence-reason">
+                                        <option value="sin_justificacion">Unexcused</option>
+                                        <option value="familiar">Family</option>
+                                        <option value="enfermedad">Illness</option>
+                                        <option value="vacaciones">Vacation</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="manual-absence-notes">Notes:</label>
+                                <textarea id="manual-absence-notes" rows="3" placeholder="Optional details about the absence..." style="border-radius: 12px;"></textarea>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+                                <button type="submit" class="submit-btn"><i class="fas fa-calendar-times"></i> Register Absence</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </section>
 
         <div id="manual-batch-confirm-modal" class="modal" style="display:none;">
@@ -669,9 +959,23 @@
                 <h3>Confirm Manual Batch</h3>
                 <div id="manual-batch-summary" class="attendance-record-group"></div>
                 <div class="attendance-confirm-actions">
-                    <button type="button" id="manual-batch-cancel" class="attendance-action-btn attendance-action-cancel">Cancel</button>
-                    <button type="button" id="manual-batch-submit" class="attendance-action-btn attendance-action-edit">Create records</button>
+                    <button type="button" id="manual-batch-cancel"
+                        class="attendance-action-btn btn-secondary">Cancel</button>
+                    <button type="button" id="manual-batch-submit"
+                        class="attendance-action-btn">Create records</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom App Alert Modal -->
+    <div id="customAppAlert" class="modal" style="display: none; z-index: 100000;">
+        <div class="modal-content" style="max-width: 400px; text-align: center; padding: 30px 20px;">
+            <div id="appAlertIcon" style="font-size: 3.5rem; margin-bottom: 15px;"></div>
+            <h3 id="appAlertTitle" style="margin: 0 0 10px 0; color: var(--text-white); font-size: 1.4rem;">Notification</h3>
+            <p id="appAlertMessage" style="color: var(--text-gray); margin-bottom: 20px; font-size: 0.95rem;"></p>
+            <div id="appAlertButtons" style="display: flex; justify-content: center; gap: 10px;">
+                <!-- Botones generados dinámicamente por JS -->
             </div>
         </div>
     </div>
@@ -728,7 +1032,7 @@
                 <div class="form-group">
                     <label for="edit-project-id">Project:</label>
                     <select id="edit-project-id">
-                        <option value="">— Sin proyecto —</option>
+                        <option value="">— No project —</option>
                     </select>
                 </div>
                 <button type="submit">Save Changes</button>
@@ -737,12 +1041,30 @@
         </div>
     </div>
 
+    <!-- Active Timer Row Template -->
+    <template id="active-timer-row-template">
+        <tr data-timer-row="">
+            <td data-label="User" style="font-weight: 600; color: var(--text-white);"></td>
+            <td data-label="Project"></td>
+            <td data-label="Start Time"></td>
+            <td data-label="Duration" data-field="duration" style="font-family: monospace; font-size: 1.05rem; color: var(--primary); font-weight: 600;"></td>
+            <td data-label="Status"></td>
+            <td data-label="Actions">
+                <div class="table-actions">
+                            <button class="edit-btn" data-action="paused" data-id=""><i class="fas fa-pause"></i></button>
+                            <button class="copy-btn" data-action="resumed" data-id=""><i class="fas fa-play"></i></button>
+                            <button class="delete-btn" data-action="stopped" data-id=""><i class="fas fa-stop"></i></button>
+                </div>
+            </td>
+        </tr>
+    </template>
+
     <!-- Action Selection Modal -->
     <div id="action-selection-modal" class="modal" style="display: none;">
         <div class="modal-content action-modal-content">
             <div class="action-modal-header">
-                <h3>Registrar asistencia</h3>
-                <p>Selecciona la acción que deseas registrar.</p>
+                <h3>Register Attendance</h3>
+                <p>Select the action you want to register.</p>
             </div>
             <input type="hidden" id="scanned-project-id">
             <input type="hidden" id="scanned-project-qr-id">
@@ -752,7 +1074,7 @@
                 <button class="action-button" data-action="start_lunch"><span>⏸️</span> Start Lunch</button>
                 <button class="action-button" data-action="end_lunch"><span>▶️</span> End Lunch</button>
             </div>
-            <button class="action-cancel-button close-button">Cancelar</button>
+            <button class="action-cancel-button close-button btn-secondary">Cancel</button>
         </div>
     </div>
 
@@ -769,10 +1091,13 @@
         <div class="modal-content attendance-confirm-modal-content">
             <span id="attendance-delete-close" class="close-button">×</span>
             <h3>Delete Attendance Record</h3>
-            <p id="attendance-delete-confirm-message" class="attendance-confirm-message">Are you sure you want to delete this record?</p>
+            <p id="attendance-delete-confirm-message" class="attendance-confirm-message">Are you sure you want to delete
+                this record?</p>
             <div class="attendance-confirm-actions">
-                <button type="button" id="attendance-delete-cancel" class="attendance-action-btn attendance-action-cancel">Cancel</button>
-                <button type="button" id="attendance-delete-confirm" class="attendance-action-btn attendance-action-delete">Delete</button>
+                <button type="button" id="attendance-delete-cancel"
+                    class="attendance-action-btn btn-secondary">Cancel</button>
+                <button type="button" id="attendance-delete-confirm"
+                    class="attendance-action-btn btn-danger">Delete</button>
             </div>
         </div>
     </div>
@@ -781,6 +1106,7 @@
 
     <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <script>
@@ -806,6 +1132,65 @@
         if (sessionStorage.getItem('user_id')) {
             loadGoogleMapsApi();
         }
+
+        // Expandir textareas automaticamente a medida que se escribe
+        document.addEventListener('input', function (e) {
+            if (e.target.tagName.toLowerCase() === 'textarea') {
+                e.target.style.height = 'auto'; // Reiniciar altura para calcular el nuevo espacio real
+                // Se añade +2px para compensar los bordes de la caja y evitar pequeños saltos o scroll
+                e.target.style.height = (e.target.scrollHeight + 2) + 'px'; 
+            }
+        });
+
+        // Inicializar Flatpickr (Calendarios y Selectores de Hora)
+        window.initCustomCalendars = function() {
+            // 1. Fechas (Flatpickr ignora automáticamente los que ya están inicializados)
+            flatpickr('input[type="date"]', {
+                dateFormat: "Y-m-d",
+                disableMobile: true, // Mantiene la interactividad nativa en teléfonos
+                onReady: function(selectedDates, dateStr, instance) {
+                    const yearWrapper = instance.currentYearElement.parentNode;
+                    yearWrapper.style.display = 'none';
+                    
+                    const select = document.createElement('select');
+                    select.className = 'cur-year-select';
+                    
+                    const currentYear = new Date().getFullYear();
+                    for (let y = currentYear - 5; y <= currentYear + 5; y++) {
+                        const opt = document.createElement('option');
+                        opt.value = y; opt.text = y;
+                        select.appendChild(opt);
+                    }
+                    
+                    select.value = instance.currentYear;
+                    select.addEventListener('change', function(e) {
+                        instance.changeYear(parseInt(e.target.value));
+                    });
+                    
+                    instance.customYearSelect = select;
+                    instance.monthNav.querySelector('.flatpickr-current-month').appendChild(select);
+                },
+                onYearChange: function(selectedDates, dateStr, instance) {
+                    if (instance.customYearSelect) {
+                        instance.customYearSelect.value = instance.currentYear;
+                    }
+                }
+            });
+
+            // 2. Horas
+            flatpickr('input[type="time"]', {
+                enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: false, disableMobile: true
+            });
+
+            // 3. Fecha y Hora combinada
+            flatpickr('input[type="datetime-local"]', {
+                enableTime: true, dateFormat: "Y-m-d\\TH:i", disableMobile: true
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initCustomCalendars();
+        });
     </script>
 </body>
 
