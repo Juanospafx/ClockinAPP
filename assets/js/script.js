@@ -250,7 +250,7 @@ async function apiFetch(endpoint, method = 'GET', data = null, contentType = 'js
             rawText = await response.text();
             payload = JSON.parse(rawText);
         } catch (_) {
-            console.error('Failed to parse JSON. Raw response:', rawText.substring(0, 500));
+            console.error('[apiFetch] Invalid JSON from:', url, '| Raw:', rawText.substring(0, 300));
             payload = null;
         }
         if (!response.ok || !payload || payload.ok !== true) {
@@ -989,9 +989,14 @@ async function loadAttendanceRecords(uid = null) {
         attendanceAllRecords = Array.isArray(data.records) ? data.records : [];
         attendancePage = 1;
         if (attendanceAllRecords.length) {
+            // Usar original_time (fecha real del evento) para la navegación del calendario
             const withDates = attendanceAllRecords
-                .map(r => new Date(r.entry_time || r.original_time || r.created_at || Date.now()))
-                .filter(d => !Number.isNaN(d.getTime()))
+                .map(r => {
+                    // Priorizar original_time sobre created_at — es la fecha real del evento
+                    const base = r.original_time || r.entry_time || r.created_at;
+                    return base ? new Date(base) : null;
+                })
+                .filter(d => d && !Number.isNaN(d.getTime()))
                 .sort((a, b) => b - a);
             if (withDates.length) {
                 const latest = withDates[0];
@@ -1006,14 +1011,18 @@ async function loadAttendanceRecords(uid = null) {
         }
         renderAttendancePage();
     } catch (err) {
-        console.error('[loadAttendanceRecords] Error:', err);
-        console.error('[loadAttendanceRecords] Message:', err.message);
-        console.error('[loadAttendanceRecords] Code:', err.code);
-        recordsBody.innerHTML = `<tr><td colspan="11">Error: ${err.message || 'Unknown error'}</td></tr>`;
-        const mock = getAttendanceMockRecords();
-        attendanceAllRecords = mock;
-        attendanceCalendarDate = new Date(mock[0].entry_time);
-        renderAttendancePage();
+        const msg = err.message || 'Unknown error';
+        const code = err.code || '';
+        console.error('[Attendance] Load failed:', code, msg);
+
+        // Si es error de autenticación, redirigir al login
+        if (code === 'unauthorized' || msg.includes('401') || msg.includes('Unauthorized')) {
+            sessionStorage.clear();
+            window.location.href = appUrl('/pages/login/login.html');
+            return;
+        }
+
+        recordsBody.innerHTML = `<tr><td colspan="11">Error loading records: ${msg}</td></tr>`;
     }
 }
 
@@ -1149,7 +1158,8 @@ function transformAttendanceRecordsToMatrix(records, visibleDates) {
     validRecords.forEach((record) => {
         const employeeName = (record.username || 'Unknown').trim() || 'Unknown';
         const employeeId = record.user_id || employeeName;
-        const base = record.entry_time || record.original_time || record.created_at || record.date;
+        // Priorizar original_time — es la fecha real del evento, no la de creación en DB
+        const base = record.original_time || record.entry_time || record.created_at || record.date;
         const d = base ? new Date(base) : null;
         if (!d || Number.isNaN(d.getTime())) return;
         const dayKey = attendanceDateKey(d);
@@ -2630,6 +2640,13 @@ document.addEventListener('DOMContentLoaded', () => {
     sessionStorage.setItem('user_role', userRole);
     userId = sessionStorage.getItem('user_id');
     username = sessionStorage.getItem('username');
+
+    // Si no hay sesión en sessionStorage, redirigir al login
+    if (!userId || !userRole) {
+        console.warn('[Init] No session found, redirecting to login');
+        window.location.href = appUrl('/pages/login/login.html');
+        return;
+    }
 
     configureRoleUI(userRole);
     initThemeToggle();
