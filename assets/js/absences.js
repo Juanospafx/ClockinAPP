@@ -677,9 +677,11 @@ function handleAbsenceAction(e) {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
     e.preventDefault();
+    e.stopPropagation();
 
     const action = btn.dataset.action;
-    const absenceId = Number(btn.dataset.absenceId);
+    const contextAbsenceId = btn.closest('[data-absence-id]')?.dataset?.absenceId;
+    const absenceId = Number(btn.dataset.absenceId || contextAbsenceId);
 
     if (action === 'approve-absence') {
         if (!absenceId) return;
@@ -698,6 +700,11 @@ function handleAbsenceAction(e) {
         btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
     } else if (action === 'set-status-inline') {
         const status = btn.dataset.status;
+        const inline = btn.closest('.absence-status-inline');
+        const menu = inline?.querySelector('.status-inline-menu');
+        const trigger = inline?.querySelector('.status-inline-trigger');
+        if (menu) menu.hidden = true;
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
         updateAbsenceStatusInline(absenceId, status, btn);
     } else if (action === 'edit-absence') {
         const encoded = btn.dataset.absence || '';
