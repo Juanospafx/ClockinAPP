@@ -270,44 +270,11 @@ async function apiFetch(endpoint, method = 'GET', data = null, contentType = 'js
 }
 
 function formatUtcAsLocal(utcString) {
-    if (!utcString) return { date: 'N/A', time: 'N/A' };
-    // Ensure 'Z' is appended if timezone is missing, to treat it as UTC
-    const date = new Date(utcString.includes('Z') ? utcString : utcString.replace(' ', 'T') + 'Z');
-    if (isNaN(date.getTime())) return { date: 'Invalid Date', time: 'Invalid Time' };
-
-    const pad = (v) => String(v).padStart(2, '0');
-    const year = date.getFullYear();
-    const month = pad(date.getMonth() + 1);
-    const day = pad(date.getDate());
-    const hours = pad(date.getHours());
-    const minutes = pad(date.getMinutes());
-    const seconds = pad(date.getSeconds());
-
-    return {
-        date: `${year}-${month}-${day}`,
-        time: `${hours}:${minutes}:${seconds}`
-    };
-}
-
-function formatLocalDateTimeString(value) {
-    if (!value) return { date: 'N/A', time: 'N/A' };
-    const normalized = String(value).replace(' ', 'T');
-    const date = new Date(normalized);
-    if (isNaN(date.getTime())) return { date: 'Invalid Date', time: 'Invalid Time' };
-
-    const pad = (v) => String(v).padStart(2, '0');
-    return {
-        date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-        time: `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
-    };
+    return DateTimeUtils.formatForDisplayLocal(utcString);
 }
 
 function formatRecordDateTime(record, value) {
-    // Manual entries are captured in local wall-clock time; avoid UTC shift on display.
-    if (record && record.entry_source === 'manual') {
-        return formatLocalDateTimeString(value);
-    }
-    return formatUtcAsLocal(value);
+    return DateTimeUtils.formatForDisplayLocal(value);
 }
 
 function formatDurationHours(totalMinutes) {
@@ -340,30 +307,17 @@ function formatDurationHours(totalMinutes) {
 }
 
 function parseRecordDateTimeToMs(record, value) {
-    if (!value) return null;
-
-    const raw = String(value).trim();
-    if (!raw) return null;
-
-    if (record && record.entry_source === 'manual') {
-        const normalized = raw.replace(' ', 'T');
-        const ts = Date.parse(normalized);
-        return Number.isFinite(ts) ? ts : null;
-    }
-
-    const ts = Date.parse(raw);
-    return Number.isFinite(ts) ? ts : null;
+    const parsed = DateTimeUtils.parseServerUtc(value);
+    return parsed ? parsed.getTime() : null;
 }
 
 function resolveRecordDurationMinutes(record) {
     const entryRaw = record?.entry_time || record?.original_time || '';
     const exitRaw = record?.exit_time || record?.rounded_time || '';
 
-    const entryTs = parseRecordDateTimeToMs(record, entryRaw);
-    const exitTs = parseRecordDateTimeToMs(record, exitRaw);
-
-    if (Number.isFinite(entryTs) && Number.isFinite(exitTs) && exitTs > entryTs) {
-        return Math.round((exitTs - entryTs) / 60000);
+    const duration = DateTimeUtils.durationBetweenUtc(entryRaw, exitRaw);
+    if (Number.isFinite(duration)) {
+        return duration;
     }
 
     return record?.total_duration;
@@ -2007,8 +1961,8 @@ async function openEditModal(recordData) {
     document.getElementById('edit-location').value = attendanceEditingRecord.location || '';
     const entryTimeEdit = (attendanceEditingRecord.entry_time || attendanceEditingRecord.original_time || '');
     const exitTimeEdit = (attendanceEditingRecord.exit_time || attendanceEditingRecord.rounded_time || '');
-    document.getElementById('edit-entry-time').value = entryTimeEdit.replace(' ', 'T').slice(0, 16);
-    document.getElementById('edit-exit-time').value = exitTimeEdit.replace(' ', 'T').slice(0, 16);
+    document.getElementById('edit-entry-time').value = DateTimeUtils.utcToDatetimeLocalValue(entryTimeEdit);
+    document.getElementById('edit-exit-time').value = DateTimeUtils.utcToDatetimeLocalValue(exitTimeEdit);
     syncEditDurationsFromDateTimes();
 
     await Promise.all([
@@ -2939,10 +2893,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         user_id: Number.isFinite(userIdEdit) ? userIdEdit : null,
                         type: typeEdit,
                         location: locationEdit,
-                        original_time: entryTimeEdit.replace('T', ' '),
-                        rounded_time: exitTimeEdit.replace('T', ' '),
-                        entry_time: entryTimeEdit.replace('T', ' '),
-                        exit_time: exitTimeEdit.replace('T', ' '),
+                        original_time: DateTimeUtils.datetimeLocalToUtcIso(entryTimeEdit),
+                        rounded_time: DateTimeUtils.datetimeLocalToUtcIso(exitTimeEdit),
+                        entry_time: DateTimeUtils.datetimeLocalToUtcIso(entryTimeEdit),
+                        exit_time: DateTimeUtils.datetimeLocalToUtcIso(exitTimeEdit),
                         total_duration: null,
                         lunch_duration: null,
                         project_qr_id: null,

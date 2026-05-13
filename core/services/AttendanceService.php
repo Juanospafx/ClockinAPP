@@ -364,15 +364,22 @@ class AttendanceService {
             $roundedTimeStr = $exitTimeStr;
         }
 
-        // Normalize without timezone suffix and ensure seconds for stable parsing.
-        $originalTimeStr = preg_replace('/\s+/', ' ', str_replace('T', ' ', (string)$originalTimeStr));
-        $roundedTimeStr = preg_replace('/\s+/', ' ', str_replace('T', ' ', (string)$roundedTimeStr));
-        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $originalTimeStr)) $originalTimeStr .= ':00';
-        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $roundedTimeStr)) $roundedTimeStr .= ':00';
+        // Normalize to UTC storage format (Y-m-d H:i:s), accepting ISO8601 with explicit Z/offset.
+        try {
+            $entryDt = new DateTimeImmutable((string)$originalTimeStr);
+            $exitDt = new DateTimeImmutable((string)$roundedTimeStr);
+        } catch (Throwable $e) {
+            return ['error' => ['code' => 'validation_error', 'message' => 'Invalid datetime format.'], 'status' => 400];
+        }
+
+        $entryDt = $entryDt->setTimezone(new DateTimeZone('UTC'));
+        $exitDt = $exitDt->setTimezone(new DateTimeZone('UTC'));
+        $originalTimeStr = $entryDt->format('Y-m-d H:i:s');
+        $roundedTimeStr = $exitDt->format('Y-m-d H:i:s');
 
         // Recompute whenever both timestamps are present to avoid stale/blank/zero values.
-        $entryTs = strtotime((string)$originalTimeStr);
-        $exitTs = strtotime((string)$roundedTimeStr);
+        $entryTs = $entryDt->getTimestamp();
+        $exitTs = $exitDt->getTimestamp();
         if ($entryTs === false || $exitTs === false || $exitTs <= $entryTs) {
             return ['error' => ['code' => 'validation_error', 'message' => 'Exit time must be greater than entry time.'], 'status' => 400];
         }
