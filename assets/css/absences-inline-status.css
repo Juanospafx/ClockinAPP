@@ -22,3 +22,29 @@ body.absence-edit-open .floating-shape{display:none!important}
 .absence-edit-dialog::before,.absence-edit-dialog::after,
 .absence-edit-header::before,.absence-edit-header::after{content:none!important}
 .absence-edit-dialog{contain:layout paint}
+
+/* Root cause (Edit Absence only): global rule in modern_theme.css expands
+   ::-webkit-calendar-picker-indicator to full-width absolute layer.
+   In this modal it renders the calendar glyph on the left over the date text. */
+#absence-edit-modal input[type="date"],
+#absence-status-modal input[type="date"]{
+  position:relative;
+  padding-left:14px !important;
+  padding-right:42px !important;
+  appearance:auto;
+  -webkit-appearance:auto;
+  background-image:none !important;
+}
+#absence-edit-modal input[type="date"]::-webkit-calendar-picker-indicator,
+#absence-status-modal input[type="date"]::-webkit-calendar-picker-indicator{
+  position:absolute;
+  right:10px;
+  left:auto;
+  top:50%;
+  transform:translateY(-50%);
+  width:18px !important;
+  height:18px !important;
+  opacity:.85;
+}
+#absence-edit-modal .temporal-input-icon,
+#absence-status-modal .temporal-input-icon{display:none !important;}
