@@ -63,8 +63,9 @@ function openAbsenceEditModal(absence) {
     feedback.textContent = '';
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('absence-edit-open');
 }
-function closeAbsenceEditModal(){ const m=document.getElementById('absence-edit-modal'); if(m)m.style.display='none'; document.body.style.overflow=''; }
+function closeAbsenceEditModal(){ const m=document.getElementById('absence-edit-modal'); if(m)m.style.display='none'; document.body.style.overflow=''; document.body.classList.remove('absence-edit-open'); }
 
 async function submitAbsenceEditForm(e){
   e.preventDefault();
