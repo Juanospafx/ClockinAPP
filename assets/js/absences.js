@@ -19,7 +19,7 @@ const REASON_COLORS = {
 
 let absenceSummaryChart = null;
 let absenceStatusUpdateSeq = 0;
-const ABSENCE_STATUS_OPTIONS = ['aprobado', 'rechazado', 'pendiente'];
+const ABSENCE_STATUS_OPTIONS = ['aprobado', 'rechazado'];
 
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>'"]/g, (ch) => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[ch]));
@@ -696,6 +696,11 @@ function handleAbsenceAction(e) {
         const expanded = btn.getAttribute('aria-expanded') === 'true';
         document.querySelectorAll('.status-inline-menu').forEach((el) => { el.hidden = true; });
         document.querySelectorAll('.status-inline-trigger').forEach((el) => el.setAttribute('aria-expanded', 'false'));
+        if (!expanded) {
+            const rect = btn.getBoundingClientRect();
+            menu.style.top = `${Math.round(rect.bottom + 6)}px`;
+            menu.style.left = `${Math.round(rect.left)}px`;
+        }
         menu.hidden = expanded;
         btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
     } else if (action === 'set-status-inline') {
