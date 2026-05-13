@@ -18,6 +18,79 @@ const REASON_COLORS = {
 };
 
 let absenceSummaryChart = null;
+let absenceStatusUpdateSeq = 0;
+const ABSENCE_STATUS_OPTIONS = ['aprobado', 'rechazado', 'pendiente'];
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, (ch) => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[ch]));
+}
+
+function ensureAbsenceEditModal() {
+    let modal = document.getElementById('absence-edit-modal');
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.id = 'absence-edit-modal';
+    modal.className = 'attendance-modal-overlay';
+    modal.style.display = 'none';
+    modal.innerHTML = `
+      <div class="attendance-modal-content" style="max-width: 640px; width:min(96vw,640px); max-height:88vh; overflow:auto;">
+        <div class="attendance-modal-header"><h3>Edit Absence</h3><button type="button" data-action="close-edit-absence" class="close-button">&times;</button></div>
+        <form id="absence-edit-form" class="absence-form" style="padding:14px;">
+          <input type="hidden" id="absence-edit-id" />
+          <div class="form-row"><div class="form-group"><label>Start Date</label><input id="absence-edit-date-start" type="date" required></div><div class="form-group"><label>End Date</label><input id="absence-edit-date-end" type="date" required></div></div>
+          <div class="form-row"><div class="form-group"><label>Reason</label><select id="absence-edit-reason" required><option value="familiar">Family</option><option value="enfermedad">Illness</option><option value="vacaciones">Vacation</option><option value="sin_justificacion">Unexcused</option></select></div><div class="form-group"><label>Status</label><select id="absence-edit-status" required><option value="pendiente">Pending</option><option value="aprobado">Approved</option><option value="rechazado">Rejected</option></select></div></div>
+          <div class="form-group"><label>Notes</label><textarea id="absence-edit-notes" rows="3"></textarea></div>
+          <p id="absence-edit-feedback" class="attendance-modal-feedback"></p>
+          <div style="display:flex;justify-content:flex-end;gap:8px;"><button type="button" data-action="close-edit-absence" class="btn">Cancel</button><button type="submit" class="btn">Save</button></div>
+        </form>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => { if (e.target === modal || e.target.dataset.action === 'close-edit-absence') closeAbsenceEditModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.style.display === 'flex') closeAbsenceEditModal(); });
+    modal.querySelector('#absence-edit-form').addEventListener('submit', submitAbsenceEditForm);
+    return modal;
+}
+
+function openAbsenceEditModal(absence) {
+    const modal = ensureAbsenceEditModal();
+    document.getElementById('absence-edit-id').value = absence.id;
+    document.getElementById('absence-edit-date-start').value = absence.date_start || '';
+    document.getElementById('absence-edit-date-end').value = absence.date_end || absence.date_start || '';
+    document.getElementById('absence-edit-reason').value = absence.reason || 'sin_justificacion';
+    document.getElementById('absence-edit-status').value = absence.status || 'pendiente';
+    document.getElementById('absence-edit-notes').value = absence.notes || '';
+    const feedback = document.getElementById('absence-edit-feedback');
+    feedback.textContent = '';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function closeAbsenceEditModal(){ const m=document.getElementById('absence-edit-modal'); if(m)m.style.display='none'; document.body.style.overflow=''; }
+
+async function submitAbsenceEditForm(e){
+  e.preventDefault();
+  const form=e.target; const btn=form.querySelector('button[type="submit"]'); if(btn?.disabled)return;
+  const id=document.getElementById('absence-edit-id').value;
+  const payload={date_start:document.getElementById('absence-edit-date-start').value,date_end:document.getElementById('absence-edit-date-end').value,reason:document.getElementById('absence-edit-reason').value,status:document.getElementById('absence-edit-status').value,notes:document.getElementById('absence-edit-notes').value.trim()};
+  const fb=document.getElementById('absence-edit-feedback');
+  btn.disabled=true; btn.textContent='Saving...';
+  try{ await apiFetch(`absences/${id}`,'PUT',payload); fb.textContent='Saved.'; fb.className='attendance-modal-feedback success'; await loadAdminAbsences(); await loadAbsenceSummary(); closeAbsenceEditModal(); }
+  catch(err){ fb.textContent=err.message||'Update failed'; fb.className='attendance-modal-feedback error'; }
+  finally{ btn.disabled=false; btn.textContent='Save'; }
+}
+
+async function updateAbsenceStatusInline(absenceId, status, triggerBtn) {
+    if (!absenceId || !status || triggerBtn?.dataset.loading === '1') return;
+    const seq = ++absenceStatusUpdateSeq;
+    if (triggerBtn) { triggerBtn.dataset.loading = '1'; triggerBtn.disabled = true; }
+    try {
+        await apiFetch(`absences/${absenceId}/review`, 'PUT', { status });
+        if (seq === absenceStatusUpdateSeq) { await loadAdminAbsences(); await loadAbsenceSummary(); }
+    } catch (error) {
+        appAlert('Error updating status: ' + (error.message || 'Unknown error'), 'Update Failed', 'error');
+    } finally {
+        if (triggerBtn) { triggerBtn.dataset.loading = '0'; triggerBtn.disabled = false; }
+    }
+}
 
 // ========================================================
 // User: Report Absence
@@ -216,7 +289,14 @@ async function loadAdminAbsences() {
                 <td data-label="Date">${dateRange}</td>
                 <td data-label="Project">${projectName}</td>
                 <td data-label="Reason"><span class="reason-badge ${a.reason}">${reasonLabel}</span></td>
-                <td data-label="Status"><span class="status-badge ${a.status}">${a.status}</span></td>
+                <td data-label="Status">
+                    <div class="absence-status-inline" data-absence-id="${a.id}">
+                        <button class="status-badge ${a.status} status-inline-trigger" data-action="toggle-status-menu" data-absence-id="${a.id}" aria-expanded="false">${a.status}</button>
+                        <div class="status-inline-menu" hidden>
+                            ${ABSENCE_STATUS_OPTIONS.map(s => `<button type="button" data-action="set-status-inline" data-absence-id="${a.id}" data-status="${s}" class="${s===a.status?'active':''}">${escapeHtml(s)}</button>`).join('')}
+                        </div>
+                    </div>
+                </td>
                 <td data-label="Notes">${a.notes || '—'}</td>
                 <td data-label="Evidence">
                     ${a.evidence_path ? `<a href="${appUrl('/' + a.evidence_path)}" target="_blank" class="evidence-link">📎 View</a>` : '—'}
@@ -258,38 +338,7 @@ async function reviewAbsence(absenceId, status) {
 
 async function editAbsence(absence) {
     if (!absence || !absence.id) return;
-
-    const dateStart = prompt('Start date (YYYY-MM-DD):', absence.date_start || '');
-    if (dateStart === null) return;
-
-    const dateEnd = prompt('End date (YYYY-MM-DD):', absence.date_end || dateStart || '');
-    if (dateEnd === null) return;
-
-    const reason = prompt('Reason (familiar|enfermedad|vacaciones|sin_justificacion):', absence.reason || 'sin_justificacion');
-    if (reason === null) return;
-
-    const notes = prompt('Notes:', absence.notes || '');
-    if (notes === null) return;
-
-    const status = prompt('Status (pendiente|aprobado|rechazado) [leave empty to keep]:', absence.status || '');
-    if (status === null) return;
-
-    try {
-        await apiFetch(`absences/${absence.id}`, 'PUT', {
-            project_id: absence.project_id || null,
-            date_start: dateStart.trim(),
-            date_end: dateEnd.trim(),
-            reason: reason.trim(),
-            notes: notes.trim(),
-            status: status.trim()
-        });
-
-        loadAdminAbsences();
-        loadAbsenceSummary();
-        if (typeof loadNotifications === 'function') loadNotifications();
-    } catch (error) {
-        appAlert('Error: ' + error.message, 'Update Failed', 'error');
-    }
+    openAbsenceEditModal(absence);
 }
 
 /**
@@ -616,6 +665,12 @@ function initAbsencesModule() {
     if (adminAbsencesBody) {
         adminAbsencesBody.addEventListener('click', handleAbsenceAction);
     }
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.absence-status-inline')) {
+            document.querySelectorAll('.status-inline-menu').forEach((el) => { el.hidden = true; });
+            document.querySelectorAll('.status-inline-trigger').forEach((el) => el.setAttribute('aria-expanded', 'false'));
+        }
+    });
 }
 
 function handleAbsenceAction(e) {
@@ -632,6 +687,18 @@ function handleAbsenceAction(e) {
     } else if (action === 'reject-absence') {
         if (!absenceId) return;
         reviewAbsence(absenceId, 'rechazado');
+    } else if (action === 'toggle-status-menu') {
+        const inline = btn.closest('.absence-status-inline');
+        if (!inline) return;
+        const menu = inline.querySelector('.status-inline-menu');
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        document.querySelectorAll('.status-inline-menu').forEach((el) => { el.hidden = true; });
+        document.querySelectorAll('.status-inline-trigger').forEach((el) => el.setAttribute('aria-expanded', 'false'));
+        menu.hidden = expanded;
+        btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    } else if (action === 'set-status-inline') {
+        const status = btn.dataset.status;
+        updateAbsenceStatusInline(absenceId, status, btn);
     } else if (action === 'edit-absence') {
         const encoded = btn.dataset.absence || '';
         if (!encoded) return;
