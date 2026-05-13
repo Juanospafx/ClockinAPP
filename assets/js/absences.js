@@ -19,7 +19,7 @@ const REASON_COLORS = {
 
 let absenceSummaryChart = null;
 let absenceStatusUpdateSeq = 0;
-const ABSENCE_STATUS_OPTIONS = ['aprobado', 'rechazado'];
+const ABSENCE_STATUS_OPTIONS = ['aprobado', 'rechazado']; // kept for explicit edit modal only
 
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>'"]/g, (ch) => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[ch]));
@@ -30,10 +30,10 @@ function ensureAbsenceEditModal() {
     if (modal) return modal;
     modal = document.createElement('div');
     modal.id = 'absence-edit-modal';
-    modal.className = 'attendance-modal-overlay';
-    modal.style.display = 'none';
+    modal.className = 'absence-edit-overlay';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(7,10,18,.62);z-index:10000;align-items:center;justify-content:center;padding:16px;';
     modal.innerHTML = `
-      <div class="attendance-modal-content" style="max-width: 640px; width:min(96vw,640px); max-height:88vh; overflow:auto;">
+      <div class="absence-edit-content" style="background:var(--bg-card,#1f2937);border:1px solid var(--border-subtle,#374151);border-radius:14px;max-width:640px;width:min(96vw,640px);max-height:88vh;overflow:auto;box-shadow:0 20px 40px rgba(0,0,0,.35)">
         <div class="attendance-modal-header"><h3>Edit Absence</h3><button type="button" data-action="close-edit-absence" class="close-button">&times;</button></div>
         <form id="absence-edit-form" class="absence-form" style="padding:14px;">
           <input type="hidden" id="absence-edit-id" />
@@ -289,14 +289,7 @@ async function loadAdminAbsences() {
                 <td data-label="Date">${dateRange}</td>
                 <td data-label="Project">${projectName}</td>
                 <td data-label="Reason"><span class="reason-badge ${a.reason}">${reasonLabel}</span></td>
-                <td data-label="Status">
-                    <div class="absence-status-inline" data-absence-id="${a.id}">
-                        <button class="status-badge ${a.status} status-inline-trigger" data-action="toggle-status-menu" data-absence-id="${a.id}" aria-expanded="false">${a.status}</button>
-                        <div class="status-inline-menu" hidden>
-                            ${ABSENCE_STATUS_OPTIONS.map(s => `<button type="button" data-action="set-status-inline" data-absence-id="${a.id}" data-status="${s}" class="${s===a.status?'active':''}">${escapeHtml(s)}</button>`).join('')}
-                        </div>
-                    </div>
-                </td>
+                <td data-label="Status"><span class="status-badge ${a.status}">${a.status}</span></td>
                 <td data-label="Notes">${a.notes || '—'}</td>
                 <td data-label="Evidence">
                     ${a.evidence_path ? `<a href="${appUrl('/' + a.evidence_path)}" target="_blank" class="evidence-link">📎 View</a>` : '—'}
@@ -665,12 +658,6 @@ function initAbsencesModule() {
     if (adminAbsencesBody) {
         adminAbsencesBody.addEventListener('click', handleAbsenceAction);
     }
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.absence-status-inline')) {
-            document.querySelectorAll('.status-inline-menu').forEach((el) => { el.hidden = true; });
-            document.querySelectorAll('.status-inline-trigger').forEach((el) => el.setAttribute('aria-expanded', 'false'));
-        }
-    });
 }
 
 function handleAbsenceAction(e) {
@@ -689,28 +676,6 @@ function handleAbsenceAction(e) {
     } else if (action === 'reject-absence') {
         if (!absenceId) return;
         reviewAbsence(absenceId, 'rechazado');
-    } else if (action === 'toggle-status-menu') {
-        const inline = btn.closest('.absence-status-inline');
-        if (!inline) return;
-        const menu = inline.querySelector('.status-inline-menu');
-        const expanded = btn.getAttribute('aria-expanded') === 'true';
-        document.querySelectorAll('.status-inline-menu').forEach((el) => { el.hidden = true; });
-        document.querySelectorAll('.status-inline-trigger').forEach((el) => el.setAttribute('aria-expanded', 'false'));
-        if (!expanded) {
-            const rect = btn.getBoundingClientRect();
-            menu.style.top = `${Math.round(rect.bottom + 6)}px`;
-            menu.style.left = `${Math.round(rect.left)}px`;
-        }
-        menu.hidden = expanded;
-        btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-    } else if (action === 'set-status-inline') {
-        const status = btn.dataset.status;
-        const inline = btn.closest('.absence-status-inline');
-        const menu = inline?.querySelector('.status-inline-menu');
-        const trigger = inline?.querySelector('.status-inline-trigger');
-        if (menu) menu.hidden = true;
-        if (trigger) trigger.setAttribute('aria-expanded', 'false');
-        updateAbsenceStatusInline(absenceId, status, btn);
     } else if (action === 'edit-absence') {
         const encoded = btn.dataset.absence || '';
         if (!encoded) return;
