@@ -14,5 +14,11 @@ body.absence-edit-open .floating-shape{display:none!important}
 .absence-modal-close{width:34px;height:34px;border-radius:10px;border:1px solid var(--border-subtle,#374151);background:rgba(255,255,255,.04);color:var(--text-white,#fff);display:inline-flex;align-items:center;justify-content:center;font-size:16px;line-height:1;cursor:pointer}
 .absence-modal-close:hover{background:rgba(255,255,255,.10)}
 #absence-edit-modal svg,#absence-status-modal svg{display:none!important}
-#absence-edit-modal .attendance-modal-header,#absence-status-modal .attendance-modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-subtle,#374151)}
+#absence-edit-modal .absence-edit-header,#absence-status-modal .absence-edit-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-subtle,#374151)}
 #absence-edit-modal .absence-edit-content,#absence-status-modal .absence-edit-content{overflow-x:hidden}
+
+/* Root-cause fix: legacy decorative layer is injected via .app-header first-child pseudo and leaked by inherited modal classes; isolate with dedicated modal class tree */
+.absence-edit-dialog,.absence-edit-dialog *{position:relative;z-index:auto}
+.absence-edit-dialog::before,.absence-edit-dialog::after,
+.absence-edit-header::before,.absence-edit-header::after{content:none!important}
+.absence-edit-dialog{contain:layout paint}

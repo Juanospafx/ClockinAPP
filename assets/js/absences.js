@@ -33,9 +33,9 @@ function ensureAbsenceEditModal() {
     modal.className = 'absence-edit-overlay';
     modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(7,10,18,.62);z-index:10000;align-items:center;justify-content:center;padding:16px;';
     modal.innerHTML = `
-      <div class="absence-edit-content" style="background:var(--bg-card,#1f2937);border:1px solid var(--border-subtle,#374151);border-radius:14px;max-width:640px;width:min(96vw,640px);max-height:88vh;overflow:auto;box-shadow:0 20px 40px rgba(0,0,0,.35)">
-        <div class="attendance-modal-header"><h3>Edit Absence</h3><button type="button" data-action="close-edit-absence" class="absence-modal-close" aria-label="Close">✕</button></div>
-        <form id="absence-edit-form" class="absence-form" style="padding:14px;">
+      <div class="absence-edit-content absence-edit-dialog" style="background:var(--bg-card,#1f2937);border:1px solid var(--border-subtle,#374151);border-radius:14px;max-width:640px;width:min(96vw,640px);max-height:88vh;overflow:auto;box-shadow:0 20px 40px rgba(0,0,0,.35)">
+        <div class="absence-edit-header"><h3>Edit Absence</h3><button type="button" data-action="close-edit-absence" class="absence-modal-close" aria-label="Close">✕</button></div>
+        <form id="absence-edit-form" class="absence-edit-form" style="padding:14px;">
           <input type="hidden" id="absence-edit-id" />
           <div class="form-row"><div class="form-group"><label>Start Date</label><input id="absence-edit-date-start" type="date" required></div><div class="form-group"><label>End Date</label><input id="absence-edit-date-end" type="date" required></div></div>
           <div class="form-row"><div class="form-group"><label>Reason</label><select id="absence-edit-reason" required><option value="familiar">Family</option><option value="enfermedad">Illness</option><option value="vacaciones">Vacation</option><option value="sin_justificacion">Unexcused</option></select></div><div class="form-group"><label>Status</label><select id="absence-edit-status" required><option value="pendiente">Pending</option><option value="aprobado">Approved</option><option value="rechazado">Rejected</option></select></div></div>
@@ -338,9 +338,9 @@ function ensureAbsenceStatusModal() {
     modal.className = 'absence-edit-overlay';
     modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(7,10,18,.62);z-index:10000;align-items:center;justify-content:center;padding:16px;';
     modal.innerHTML = `
-      <div class="absence-edit-content" style="background:var(--bg-card,#1f2937);border:1px solid var(--border-subtle,#374151);border-radius:14px;max-width:420px;width:min(96vw,420px);overflow:auto;box-shadow:0 20px 40px rgba(0,0,0,.35)">
-        <div class="attendance-modal-header"><h3>Change Status</h3><button type="button" data-action="close-status-modal" class="absence-modal-close" aria-label="Close">✕</button></div>
-        <form id="absence-status-form" class="absence-form" style="padding:14px;">
+      <div class="absence-edit-content absence-edit-dialog" style="background:var(--bg-card,#1f2937);border:1px solid var(--border-subtle,#374151);border-radius:14px;max-width:420px;width:min(96vw,420px);overflow:auto;box-shadow:0 20px 40px rgba(0,0,0,.35)">
+        <div class="absence-edit-header"><h3>Change Status</h3><button type="button" data-action="close-status-modal" class="absence-modal-close" aria-label="Close">✕</button></div>
+        <form id="absence-status-form" class="absence-edit-form" style="padding:14px;">
           <input type="hidden" id="absence-status-id" />
           <div class="form-group"><label>Status</label><select id="absence-status-value" required>
             <option value="aprobado">Approved</option><option value="rechazado">Rejected</option><option value="pendiente">Pending</option>
