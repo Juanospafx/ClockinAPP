@@ -7,6 +7,42 @@ require_once __DIR__ . '/../../../core/middlewares/auth.php';
 require_once __DIR__ . '/../../../core/services/AuthService.php';
 
 /**
+ * Build absence filters from the query string and current role.
+ */
+function build_absence_filters_from_query(): array
+{
+    $currentUserId = require_login();
+    $currentRole = AuthService::getCurrentUserRole() ?? 'user';
+
+    $filters = [];
+
+    if ($currentRole === 'admin') {
+        if (!empty($_GET['user_id'])) {
+            $filters['user_id'] = (int)$_GET['user_id'];
+        }
+    } else {
+        $filters['user_id'] = $currentUserId;
+    }
+
+    if (!empty($_GET['project_id'])) $filters['project_id'] = $_GET['project_id'];
+    if (!empty($_GET['reason']))     $filters['reason']     = $_GET['reason'];
+    if (!empty($_GET['status']))     $filters['status']     = $_GET['status'];
+    if (!empty($_GET['search']))     $filters['search']     = trim((string)$_GET['search']);
+    if (!empty($_GET['date_from']))  $filters['date_from']  = $_GET['date_from'];
+    if (!empty($_GET['from']))       $filters['date_from']  = $_GET['from'];
+    if (!empty($_GET['date_to']))    $filters['date_to']    = $_GET['date_to'];
+    if (!empty($_GET['to']))         $filters['date_to']    = $_GET['to'];
+    if (!empty($_GET['limit']))      $filters['limit']      = $_GET['limit'];
+
+    if (!empty($filters['date_from']) && !empty($filters['date_to']) && $filters['date_from'] > $filters['date_to']) {
+        json_error('validation_error', 'From Date cannot be greater than To Date.', 400);
+        exit;
+    }
+
+    return $filters;
+}
+
+/**
  * POST /absences — create absence report (multipart/form-data for file upload)
  */
 function handle_absences_create(): void
@@ -31,27 +67,7 @@ function handle_absences_create(): void
  */
 function handle_absences_list(): void
 {
-    $currentUserId = require_login();
-    $currentRole = AuthService::getCurrentUserRole() ?? 'user';
-
-    $filters = [];
-
-    if ($currentRole === 'admin') {
-        // Admin can filter by any user
-        if (!empty($_GET['user_id'])) {
-            $filters['user_id'] = (int)$_GET['user_id'];
-        }
-    } else {
-        // Regular users only see their own
-        $filters['user_id'] = $currentUserId;
-    }
-
-    if (!empty($_GET['project_id'])) $filters['project_id'] = $_GET['project_id'];
-    if (!empty($_GET['reason']))     $filters['reason']     = $_GET['reason'];
-    if (!empty($_GET['status']))     $filters['status']     = $_GET['status'];
-    if (!empty($_GET['date_from']))  $filters['date_from']  = $_GET['date_from'];
-    if (!empty($_GET['date_to']))    $filters['date_to']    = $_GET['date_to'];
-    if (!empty($_GET['limit']))      $filters['limit']      = $_GET['limit'];
+    $filters = build_absence_filters_from_query();
 
     // Check for summary mode
     if (isset($_GET['summary'])) {
@@ -62,6 +78,36 @@ function handle_absences_list(): void
 
     $absences = AbsenceService::listAbsences($filters);
     json_ok(['absences' => $absences]);
+}
+
+/**
+ * GET /absences/export/excel — export filtered absences to XLSX.
+ */
+function handle_absences_export_excel(): void
+{
+    $filters = build_absence_filters_from_query();
+    unset($filters['limit']);
+
+    $report = AbsenceService::exportAbsencesToExcel($filters);
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="' . $report['filename'] . '"');
+    header('Content-Length: ' . strlen($report['content']));
+    echo $report['content'];
+}
+
+/**
+ * GET /absences/export/pdf — export filtered absences to PDF.
+ */
+function handle_absences_export_pdf(): void
+{
+    $filters = build_absence_filters_from_query();
+    unset($filters['limit']);
+
+    $report = AbsenceService::exportAbsencesToPdf($filters);
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $report['filename'] . '"');
+    header('Content-Length: ' . strlen($report['content']));
+    echo $report['content'];
 }
 
 /**

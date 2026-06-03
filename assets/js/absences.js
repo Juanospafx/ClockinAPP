@@ -242,6 +242,84 @@ async function loadUserAbsenceHistory() {
 // Admin: Absence Records
 // ========================================================
 
+function getAdminAbsenceFilterParams() {
+    const params = new URLSearchParams();
+    const userId = document.getElementById('absence-filter-user')?.value;
+    const projectId = document.getElementById('absence-filter-project')?.value;
+    const reason = document.getElementById('absence-filter-reason')?.value;
+    const status = document.getElementById('absence-filter-status')?.value;
+    const dateFrom = document.getElementById('absence-filter-date-from')?.value;
+    const dateTo = document.getElementById('absence-filter-date-to')?.value;
+    const search = document.getElementById('admin-absences-search')?.value?.trim();
+
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+        throw new Error('From Date cannot be greater than To Date.');
+    }
+
+    if (userId) params.set('user_id', userId);
+    if (projectId) params.set('project_id', projectId);
+    if (reason) params.set('reason', reason);
+    if (status) params.set('status', status);
+    if (dateFrom) params.set('from', dateFrom);
+    if (dateTo) params.set('to', dateTo);
+    if (search) params.set('search', search);
+
+    return params;
+}
+
+function updateAbsenceExportButtons(hasRecords, loadingType = null) {
+    const excelBtn = document.getElementById('absence-export-excel-btn');
+    const pdfBtn = document.getElementById('absence-export-pdf-btn');
+    [
+        [excelBtn, 'excel', '<i class="fas fa-file-excel"></i> Export Excel'],
+        [pdfBtn, 'pdf', '<i class="fas fa-file-pdf"></i> Export PDF']
+    ].forEach(([btn, type, label]) => {
+        if (!btn) return;
+        btn.disabled = !hasRecords || loadingType !== null;
+        btn.innerHTML = loadingType === type
+            ? '<i class="fas fa-spinner fa-spin"></i> Generating...'
+            : label;
+    });
+}
+
+async function exportAdminAbsences(format) {
+    const hasRecords = document.getElementById('admin-absences-body')?.dataset.hasRecords === '1';
+    if (!hasRecords) return;
+
+    try {
+        const params = getAdminAbsenceFilterParams();
+        updateAbsenceExportButtons(true, format);
+
+        const response = await fetch(`${API_BASE_URL}/absences/export/${format}?${params.toString()}`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+        if (!response.ok) {
+            throw new Error('Unable to generate report. Please try again.');
+        }
+
+        const blob = await response.blob();
+        const disposition = response.headers.get('Content-Disposition') || '';
+        const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+        const fallbackExt = format === 'excel' ? 'xlsx' : 'pdf';
+        const filename = filenameMatch ? filenameMatch[1] : `absence_records_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.${fallbackExt}`;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+
+        appAlert(format === 'excel' ? 'Excel report generated successfully.' : 'PDF report generated successfully.', 'Success', 'success');
+    } catch (error) {
+        appAlert(error.message || 'Unable to generate report. Please try again.', 'Error', 'error');
+    } finally {
+        updateAbsenceExportButtons(hasRecords);
+    }
+}
+
 /**
  * Load all absences with admin filters.
  */
@@ -250,32 +328,21 @@ async function loadAdminAbsences() {
     const messageEl = document.getElementById('admin-absence-message');
     if (!tbody) return;
 
-    // Collect filters
-    const params = new URLSearchParams();
-    const userId = document.getElementById('absence-filter-user')?.value;
-    const projectId = document.getElementById('absence-filter-project')?.value;
-    const reason = document.getElementById('absence-filter-reason')?.value;
-    const status = document.getElementById('absence-filter-status')?.value;
-    const dateFrom = document.getElementById('absence-filter-date-from')?.value;
-    const dateTo = document.getElementById('absence-filter-date-to')?.value;
-
-    if (userId) params.set('user_id', userId);
-    if (projectId) params.set('project_id', projectId);
-    if (reason) params.set('reason', reason);
-    if (status) params.set('status', status);
-    if (dateFrom) params.set('date_from', dateFrom);
-    if (dateTo) params.set('date_to', dateTo);
-
     try {
+        const params = getAdminAbsenceFilterParams();
         const qs = params.toString();
         const data = await apiFetch(`absences${qs ? '?' + qs : ''}`);
         const absences = data.absences || [];
 
         if (absences.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9">No absence reports found.</td></tr>';
+            tbody.dataset.hasRecords = '0';
+            updateAbsenceExportButtons(false);
             return;
         }
 
+        tbody.dataset.hasRecords = '1';
+        updateAbsenceExportButtons(true);
         tbody.innerHTML = absences.map(a => {
             const dateRange = a.date_start === a.date_end
                 ? a.date_start
@@ -311,6 +378,12 @@ async function loadAdminAbsences() {
 
     } catch (error) {
         tbody.innerHTML = `<tr><td colspan="9">Error: ${error.message}</td></tr>`;
+        tbody.dataset.hasRecords = '0';
+        updateAbsenceExportButtons(false);
+        if (messageEl) {
+            messageEl.textContent = error.message;
+            messageEl.className = 'error-message';
+        }
     }
 }
 
@@ -576,13 +649,17 @@ async function loadAbsenceSummary() {
     const params = new URLSearchParams();
     params.set('summary', '1');
 
-    const userId = document.getElementById('absence-filter-user')?.value;
-    const dateFrom = document.getElementById('absence-filter-date-from')?.value;
-    const dateTo = document.getElementById('absence-filter-date-to')?.value;
-
-    if (userId) params.set('user_id', userId);
-    if (dateFrom) params.set('date_from', dateFrom);
-    if (dateTo) params.set('date_to', dateTo);
+    try {
+        const activeFilters = getAdminAbsenceFilterParams();
+        ['user_id', 'from', 'to'].forEach((key) => {
+            if (activeFilters.has(key)) {
+                params.set(key, activeFilters.get(key));
+            }
+        });
+    } catch (error) {
+        container.innerHTML = `<p class="error-message">${error.message}</p>`;
+        return;
+    }
 
     try {
         const data = await apiFetch(`absences?${params.toString()}`);
@@ -679,6 +756,8 @@ function initAbsencesModule() {
 
     // Admin filter button
     const filterBtn = document.getElementById('absence-filter-btn');
+    const exportExcelBtn = document.getElementById('absence-export-excel-btn');
+    const exportPdfBtn = document.getElementById('absence-export-pdf-btn');
 
 
     const autoRunBtn = document.getElementById('auto-absence-run-btn');
@@ -694,12 +773,23 @@ function initAbsencesModule() {
             loadAbsenceSummary();
         });
     }
+    if (exportExcelBtn) {
+        exportExcelBtn.addEventListener('click', () => exportAdminAbsences('excel'));
+    }
+    if (exportPdfBtn) {
+        exportPdfBtn.addEventListener('click', () => exportAdminAbsences('pdf'));
+    }
 
     // Admin search
     const adminSearch = document.getElementById('admin-absences-search');
     if (adminSearch) {
+        let searchTimer = null;
         adminSearch.addEventListener('keyup', () => {
-            filterTable('admin-absences-search', 'admin-absences-body');
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                loadAdminAbsences();
+                loadAbsenceSummary();
+            }, 300);
         });
     }
 
