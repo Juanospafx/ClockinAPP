@@ -175,6 +175,14 @@ try {
     }
 
     // --- Absences ---
+    if ($route === 'absences/export/excel' && $method === 'GET') {
+        handle_absences_export_excel();
+        return;
+    }
+    if ($route === 'absences/export/pdf' && $method === 'GET') {
+        handle_absences_export_pdf();
+        return;
+    }
     if ($route === 'absences' && $method === 'GET') {
         handle_absences_list();
         return;

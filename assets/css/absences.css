@@ -108,6 +108,37 @@
     margin-top: auto;
 }
 
+.absence-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    margin-left: auto;
+}
+
+.absence-export-btn.excel {
+    background: #15803d;
+    border-color: rgba(34, 197, 94, 0.35);
+}
+
+.absence-export-btn.excel:hover:not(:disabled) {
+    background: #16a34a;
+}
+
+.absence-export-btn.pdf {
+    background: #b91c1c;
+    border-color: rgba(248, 113, 113, 0.35);
+}
+
+.absence-export-btn.pdf:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+.absence-export-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
 
 /* --- Status badges --- */
 .status-badge {
@@ -319,6 +350,12 @@
     .absence-filters .filter-btn {
         width: 100%;
         margin-top: 8px;
+    }
+
+    .absence-filter-actions {
+        width: 100%;
+        flex-direction: column;
+        margin-left: 0;
     }
 
     #auto-absence-run-btn {
