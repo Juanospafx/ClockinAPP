@@ -6,6 +6,53 @@ require_once __DIR__ . '/../../../core/services/AttendanceService.php';
 require_once __DIR__ . '/../../../core/middlewares/auth.php';
 require_once __DIR__ . '/../../../core/services/AuthService.php';
 
+function build_attendance_filters_from_query(): array {
+    $currentUserId = require_login();
+    $currentUserRole = AuthService::getCurrentUserRole() ?? 'user';
+    $allUsersRequested = ($_GET['user_id'] ?? '') === 'all' || isset($_GET['all']);
+    $queryUserId = isset($_GET['user_id']) && $_GET['user_id'] !== '' && $_GET['user_id'] !== 'all'
+        ? (int)$_GET['user_id']
+        : null;
+
+    if ($currentUserRole === 'admin') {
+        $userId = $queryUserId ?: ($allUsersRequested ? null : $currentUserId);
+        $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : null;
+    } elseif ($currentUserRole === 'special') {
+        $userId = $queryUserId ?: $currentUserId;
+        $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : null;
+        if ($userId !== $currentUserId) {
+            $limit = $limit ? min($limit, 15) : 15;
+        }
+    } else {
+        $userId = $currentUserId;
+        $limit = null;
+    }
+
+    $fromDate = trim((string)($_GET['from'] ?? $_GET['date_from'] ?? ''));
+    $toDate = trim((string)($_GET['to'] ?? $_GET['date_to'] ?? ''));
+    foreach ([$fromDate, $toDate] as $date) {
+        $parsedDate = $date !== '' ? DateTime::createFromFormat('!Y-m-d', $date) : null;
+        if ($date !== '' && (!$parsedDate || $parsedDate->format('Y-m-d') !== $date)) {
+            json_error('validation_error', 'Dates must use the YYYY-MM-DD format.', 400);
+            exit;
+        }
+    }
+    if ($fromDate !== '' && $toDate !== '' && $fromDate > $toDate) {
+        json_error('validation_error', 'From Date cannot be greater than To Date.', 400);
+        exit;
+    }
+
+    return [
+        'user_id' => $userId,
+        'limit' => $limit,
+        'from' => $fromDate !== '' ? $fromDate : null,
+        'to' => $toDate !== '' ? $toDate : null,
+        'search' => trim((string)($_GET['search'] ?? '')),
+        'view_mode' => in_array($_GET['view_mode'] ?? '', ['day', 'week'], true) ? $_GET['view_mode'] : null,
+        'focus_date' => trim((string)($_GET['focus_date'] ?? '')),
+    ];
+}
+
 function handle_attendance_list(): void {
     $currentUserId = require_login();
     $currentUserRole = AuthService::getCurrentUserRole() ?? 'user';
@@ -32,30 +79,34 @@ function handle_attendance_list(): void {
         return;
     }
 
-    $queryUserId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
-    $limitParam = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : null;
-    $records = [];
-
-    if ($currentUserRole === 'admin') {
-        if ($queryUserId) {
-            $records = AttendanceService::fetchRecords($queryUserId, $limitParam);
-        } elseif (isset($_GET['all'])) {
-            $records = AttendanceService::fetchRecords(null, $limitParam);
-        } else {
-            $records = AttendanceService::fetchRecords($currentUserId, $limitParam);
-        }
-    } elseif ($currentUserRole === 'special') {
-        $targetUserId = $queryUserId ?: $currentUserId;
-        $limit = $limitParam;
-        if ($targetUserId !== $currentUserId) {
-            $limit = $limit ? min($limit, 15) : 15;
-        }
-        $records = AttendanceService::fetchRecords($targetUserId, $limit);
-    } else {
-        $records = AttendanceService::fetchRecords($currentUserId, null);
-    }
+    $filters = build_attendance_filters_from_query();
+    $records = AttendanceService::fetchRecords(
+        $filters['user_id'],
+        $filters['limit'],
+        $filters['from'],
+        $filters['to'],
+        $filters['search']
+    );
 
     json_ok(['records' => $records]);
+}
+
+function handle_attendance_export(string $format): void {
+    $filters = build_attendance_filters_from_query();
+    if ((AuthService::getCurrentUserRole() ?? 'user') === 'admin') {
+        $filters['limit'] = null;
+    }
+    $report = AttendanceService::exportReport($format, $filters);
+
+    $contentTypes = [
+        'csv' => 'text/csv; charset=UTF-8',
+        'excel' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'pdf' => 'application/pdf',
+    ];
+    header('Content-Type: ' . $contentTypes[$format]);
+    header('Content-Disposition: attachment; filename="' . $report['filename'] . '"');
+    header('Content-Length: ' . strlen($report['content']));
+    echo $report['content'];
 }
 
 function handle_attendance_create(): void {

@@ -68,19 +68,20 @@ class AttendanceService {
         }
 
         if ($fromDate !== null) {
-            $whereClauses[] = 'DATE(ar.original_time) >= ?';
-            $params[] = $fromDate;
+            $whereClauses[] = 'ar.original_time >= ?';
+            $params[] = $fromDate . ' 00:00:00';
         }
 
         if ($toDate !== null) {
-            $whereClauses[] = 'DATE(ar.original_time) <= ?';
-            $params[] = $toDate;
+            $whereClauses[] = 'ar.original_time < ?';
+            $params[] = date('Y-m-d 00:00:00', strtotime($toDate . ' +1 day'));
         }
 
         if ($searchText !== null && $searchText !== '') {
-            $whereClauses[] = '(u.username LIKE ? OR p.name LIKE ?)';
-            $params[] = '%' . $searchText . '%';
-            $params[] = '%' . $searchText . '%';
+            $searchColumns = ['u.username', 'p.name', 'ar.location', 'ar.type'];
+            if ($hasEntrySource) $searchColumns[] = 'ar.entry_source';
+            $whereClauses[] = '(' . implode(' LIKE ? OR ', $searchColumns) . ' LIKE ?)';
+            foreach ($searchColumns as $_) $params[] = '%' . $searchText . '%';
         }
 
         if (!empty($whereClauses)) {
@@ -95,6 +96,230 @@ class AttendanceService {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function exportReport(string $format, array $filters): array {
+        if (!in_array($format, ['csv', 'excel', 'pdf'], true)) {
+            throw new InvalidArgumentException('Unsupported attendance export format.');
+        }
+
+        $rows = self::fetchRecords(
+            $filters['user_id'] ?? null,
+            $filters['limit'] ?? null,
+            $filters['from'] ?? null,
+            $filters['to'] ?? null,
+            $filters['search'] ?? null
+        );
+        $reportRows = array_map([self::class, 'formatExportRow'], $rows);
+        $extension = $format === 'excel' ? 'xlsx' : $format;
+
+        if ($format === 'csv') {
+            $content = self::buildCsv($reportRows);
+        } elseif ($format === 'excel') {
+            $content = self::buildXlsx($reportRows);
+        } else {
+            $content = self::buildPdf($reportRows, $filters);
+        }
+
+        return [
+            'filename' => 'attendance_records_' . date('Ymd') . '.' . $extension,
+            'content' => $content,
+        ];
+    }
+
+    private static function formatExportRow(array $row): array {
+        $clockIn = (string)($row['entry_time'] ?? $row['original_time'] ?? '');
+        $clockOut = (string)($row['exit_time'] ?? '');
+        $status = $row['type'] === 'entry'
+            ? (!empty($row['late_reason']) ? 'Late' : 'On time')
+            : ($row['type'] === 'absence' ? 'Absence' : ucfirst((string)$row['type']));
+
+        return [
+            (string)($row['username'] ?? ''),
+            (string)($row['project_name'] ?? 'No project') ?: 'No project',
+            $clockIn,
+            $clockOut,
+            self::formatMinutes($row['total_duration'] ?? null),
+            $status,
+            $clockIn !== '' ? substr($clockIn, 0, 10) : '',
+            (string)($row['created_at'] ?? ''),
+        ];
+    }
+
+    private static function formatMinutes($minutes): string {
+        if ($minutes === null || $minutes === '') return '';
+        $total = max(0, (int)$minutes);
+        return sprintf('%02d:%02d', intdiv($total, 60), $total % 60);
+    }
+
+    private static function exportHeaders(): array {
+        return ['User', 'Project', 'Clock In', 'Clock Out', 'Worked Hours', 'Status', 'Date', 'Created At'];
+    }
+
+    private static function buildCsv(array $rows): string {
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, "\xEF\xBB\xBF");
+        fputcsv($stream, self::exportHeaders());
+        foreach ($rows as $row) fputcsv($stream, $row);
+        rewind($stream);
+        return (string)stream_get_contents($stream);
+    }
+
+    private static function buildXlsx(array $rows): string {
+        $headers = self::exportHeaders();
+        $widths = array_map('strlen', $headers);
+        foreach ($rows as $row) {
+            foreach ($row as $index => $value) {
+                $widths[$index] = min(45, max($widths[$index], strlen((string)$value)));
+            }
+        }
+
+        $cols = '';
+        foreach ($widths as $index => $width) {
+            $cols .= '<col min="' . ($index + 1) . '" max="' . ($index + 1) . '" width="' . max(12, $width + 3) . '" customWidth="1"/>';
+        }
+        $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols>' . $cols . '</cols><sheetData>';
+        $sheet .= '<row r="1">';
+        foreach ($headers as $index => $header) {
+            $sheet .= '<c r="' . self::excelColumn($index) . '1" t="inlineStr" s="1"><is><t>' . self::xml($header) . '</t></is></c>';
+        }
+        $sheet .= '</row>';
+        foreach ($rows as $rowIndex => $row) {
+            $excelRow = $rowIndex + 2;
+            $sheet .= '<row r="' . $excelRow . '">';
+            foreach ($row as $columnIndex => $value) {
+                $cell = self::excelColumn($columnIndex) . $excelRow;
+                if (in_array($columnIndex, [2, 3, 7], true) && $value !== '') {
+                    $sheet .= '<c r="' . $cell . '" s="3"><v>' . self::excelSerialDate((string)$value) . '</v></c>';
+                } elseif ($columnIndex === 6 && $value !== '') {
+                    $sheet .= '<c r="' . $cell . '" s="2"><v>' . self::excelSerialDate((string)$value) . '</v></c>';
+                } else {
+                    $sheet .= '<c r="' . $cell . '" t="inlineStr"><is><t>' . self::xml((string)$value) . '</t></is></c>';
+                }
+            }
+            $sheet .= '</row>';
+        }
+        $sheet .= '</sheetData></worksheet>';
+
+        return self::zipStore([
+            '[Content_Types].xml' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>',
+            '_rels/.rels' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+            'xl/_rels/workbook.xml.rels' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>',
+            'xl/workbook.xml' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Attendance Records" sheetId="1" r:id="rId1"/></sheets></workbook>',
+            'xl/styles.xml' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/><numFmt numFmtId="165" formatCode="yyyy-mm-dd hh:mm"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" applyNumberFormat="1"/></cellXfs></styleSheet>',
+            'xl/worksheets/sheet1.xml' => $sheet,
+        ]);
+    }
+
+    private static function buildPdf(array $rows, array $filters): string {
+        $pages = array_chunk($rows, 18) ?: [[]];
+        $streams = [];
+        foreach ($pages as $pageIndex => $pageRows) {
+            $stream = "q 1 1 1 rg 0 0 841.89 595.28 re f Q\n";
+            $stream .= self::pdfText('Attendance Tracking Report', 30, 557, 18, true);
+            $stream .= self::pdfText('Generated On: ' . date('Y-m-d H:i:s'), 30, 535, 9);
+            $stream .= self::pdfText('Applied Filters: ' . self::formatFiltersForReport($filters), 30, 517, 8);
+            $headers = ['User', 'Project', 'Clock In', 'Clock Out', 'Worked', 'Status', 'Date'];
+            $x = [30, 145, 265, 390, 515, 585, 670];
+            $widths = [110, 115, 120, 120, 65, 80, 105];
+            $y = 485;
+            $stream .= "q 0.12 0.16 0.22 rg 30 " . ($y - 4) . " 780 22 re f Q\n";
+            foreach ($headers as $i => $header) $stream .= self::pdfText($header, $x[$i] + 3, $y + 2, 8, true, [1, 1, 1]);
+            $y -= 25;
+            foreach ($pageRows as $row) {
+                $values = array_slice($row, 0, 7);
+                $stream .= "q 0.86 0.88 0.92 rg 30 " . ($y - 4) . " 780 0.5 re f Q\n";
+                foreach ($values as $i => $value) $stream .= self::pdfText(self::truncateForPdf((string)$value, $widths[$i]), $x[$i] + 3, $y, 7);
+                $y -= 22;
+            }
+            if (!$pageRows) $stream .= self::pdfText('No attendance records found for the selected filters.', 30, 450, 10);
+            $stream .= self::pdfText('Page ' . ($pageIndex + 1) . ' of ' . count($pages), 745, 25, 8);
+            $streams[] = $stream;
+        }
+        return self::renderPdfDocument($streams);
+    }
+
+    private static function formatFiltersForReport(array $filters): string {
+        $parts = [];
+        if (!empty($filters['from'])) $parts[] = 'From: ' . $filters['from'];
+        if (!empty($filters['to'])) $parts[] = 'To: ' . $filters['to'];
+        if (!empty($filters['user_id'])) $parts[] = 'User ID: ' . $filters['user_id'];
+        if (!empty($filters['search'])) $parts[] = 'Search: ' . $filters['search'];
+        if (!empty($filters['view_mode'])) $parts[] = 'View: ' . ucfirst($filters['view_mode']);
+        if (!empty($filters['focus_date'])) $parts[] = 'Focus Date: ' . $filters['focus_date'];
+        return $parts ? implode(' | ', $parts) : 'All records';
+    }
+
+    private static function excelColumn(int $index): string {
+        $name = '';
+        for ($index++; $index > 0; $index = intdiv($index - 1, 26)) $name = chr(65 + (($index - 1) % 26)) . $name;
+        return $name;
+    }
+
+    private static function excelSerialDate(string $value): float {
+        $timestamp = strtotime($value);
+        return $timestamp === false ? 0 : ($timestamp / 86400) + 25569;
+    }
+
+    private static function xml(string $value): string {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_XML1, 'UTF-8');
+    }
+
+    private static function zipStore(array $files): string {
+        $local = $central = '';
+        $offset = 0;
+        foreach ($files as $name => $content) {
+            $crc = crc32($content);
+            $size = strlen($content);
+            $nameLength = strlen($name);
+            $localHeader = pack('VvvvvvVVVvv', 0x04034b50, 20, 0, 0, 0, 0, $crc, $size, $size, $nameLength, 0) . $name;
+            $local .= $localHeader . $content;
+            $central .= pack('VvvvvvvVVVvvvvvVV', 0x02014b50, 20, 20, 0, 0, 0, 0, $crc, $size, $size, $nameLength, 0, 0, 0, 0, 0, $offset) . $name;
+            $offset += strlen($localHeader) + $size;
+        }
+        return $local . $central . pack('VvvvvVVv', 0x06054b50, 0, 0, count($files), count($files), strlen($central), strlen($local), 0);
+    }
+
+    private static function truncateForPdf(string $value, int $width): string {
+        $limit = max(8, (int)floor($width / 4.5));
+        return strlen($value) <= $limit ? $value : substr($value, 0, $limit - 3) . '...';
+    }
+
+    private static function pdfText(string $text, float $x, float $y, int $size = 10, bool $bold = false, array $rgb = [0.08, 0.10, 0.13]): string {
+        $escaped = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $text);
+        return sprintf("BT /%s %d Tf %.2F %.2F %.2F rg %.2F %.2F Td (%s) Tj ET\n", $bold ? 'F2' : 'F1', $size, $rgb[0], $rgb[1], $rgb[2], $x, $y, $escaped);
+    }
+
+    private static function renderPdfDocument(array $streams): string {
+        $objects = [1 => '<< /Type /Catalog /Pages 2 0 R >>'];
+        $pageIds = [];
+        $nextId = 3;
+        foreach ($streams as $stream) {
+            $pageId = $nextId++;
+            $contentId = $nextId++;
+            $pageIds[] = $pageId;
+            $objects[$pageId] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 841.89 595.28] /Resources << /Font << /F1 __F1__ 0 R /F2 __F2__ 0 R >> >> /Contents ' . $contentId . ' 0 R >>';
+            $objects[$contentId] = "<< /Length " . strlen($stream) . " >>\nstream\n" . $stream . "endstream";
+        }
+        $f1 = $nextId++;
+        $f2 = $nextId++;
+        foreach ($pageIds as $pageId) $objects[$pageId] = str_replace(['__F1__', '__F2__'], [(string)$f1, (string)$f2], $objects[$pageId]);
+        $objects[2] = '<< /Type /Pages /Kids [' . implode(' ', array_map(fn($id) => $id . ' 0 R', $pageIds)) . '] /Count ' . count($pageIds) . ' >>';
+        $objects[$f1] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+        $objects[$f2] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>';
+        ksort($objects);
+        $pdf = "%PDF-1.4\n";
+        $offsets = [0];
+        foreach ($objects as $id => $object) {
+            $offsets[$id] = strlen($pdf);
+            $pdf .= $id . " 0 obj\n" . $object . "\nendobj\n";
+        }
+        $maxId = max(array_keys($objects));
+        $xref = strlen($pdf);
+        $pdf .= "xref\n0 " . ($maxId + 1) . "\n0000000000 65535 f \n";
+        for ($id = 1; $id <= $maxId; $id++) $pdf .= sprintf("%010d 00000 n \n", $offsets[$id] ?? 0);
+        return $pdf . "trailer\n<< /Size " . ($maxId + 1) . " /Root 1 0 R >>\nstartxref\n" . $xref . "\n%%EOF";
     }
 
     public static function getSummary(?int $userId): array {

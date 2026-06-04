@@ -1115,6 +1115,74 @@ html[data-theme="light"] .login-container .error-message {
     box-shadow: 0 4px 12px rgba(89, 226, 168, 0.3) !important;
 }
 
+.attendance-action-area,
+.attendance-filter-area {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    width: 100%;
+}
+
+.attendance-action-area {
+    justify-content: flex-end;
+}
+
+.attendance-action-area .admin-only:first-child {
+    margin-right: auto;
+}
+
+.attendance-export-btn {
+    min-width: 132px;
+    box-shadow: none !important;
+}
+
+.attendance-export-btn.csv,
+.attendance-export-btn.excel {
+    background: transparent !important;
+    border: 1px solid var(--success-color) !important;
+    color: var(--success-color) !important;
+}
+
+.attendance-export-btn.pdf {
+    background: transparent !important;
+    border: 1px solid var(--danger-color) !important;
+    color: var(--danger-color) !important;
+}
+
+.attendance-export-btn.csv:hover:not(:disabled),
+.attendance-export-btn.excel:hover:not(:disabled) {
+    background: var(--success-color) !important;
+    color: #fff !important;
+}
+
+.attendance-export-btn.pdf:hover:not(:disabled) {
+    background: var(--danger-color) !important;
+    color: #fff !important;
+}
+
+.attendance-export-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.attendance-date-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    color: var(--text-gray);
+    font-size: 0.78rem;
+    font-weight: 600;
+    min-width: 165px;
+}
+
+.attendance-date-filter input {
+    width: 100%;
+    height: 42px;
+    border-radius: 50px;
+    background: var(--bg-input) !important;
+}
+
 .attendance-nav-modern {
     display: flex;
     flex-wrap: wrap;
@@ -1528,6 +1596,9 @@ input[type="datetime-local"] ~ .temporal-input-icon {
     }
 
     .attendance-tools-modern, .attendance-nav-modern { flex-direction: column; align-items: stretch; }
+    .attendance-action-area, .attendance-filter-area { align-items: stretch; }
+    .attendance-action-area .admin-only:first-child { margin-right: 0; }
+    .attendance-export-btn, .attendance-date-filter { width: 100%; }
     .search-wrapper, .attendance-filters select { max-width: none; width: 100%; }
     .attendance-view-controls { justify-content: space-between; width: 100%; flex-wrap: wrap; }
     #recalculate-date { max-width: 120px; }

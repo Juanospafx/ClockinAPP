@@ -150,6 +150,8 @@ let attendanceCalendarViewMode = 'week';
 let attendanceMatrixCache = [];
 let attendanceModalRecordsById = new Map();
 let attendancePendingDeleteRecordId = null;
+let attendanceSearchTimer = null;
+let attendanceLoading = false;
 const ATTENDANCE_PAGE_SIZE = 10;
 
 function normalizeRole(role) {
@@ -937,8 +939,9 @@ async function loadAttendanceRecords(uid = null) {
     const calendarGrid = document.getElementById('attendance-calendar-grid');
     if (!recordsBody && !calendarGrid) return;
 
-    const role = normalizeRole(sessionStorage.getItem('user_role'));
-    const endpoint = role === 'admin' && !uid ? 'attendance?all=true' : `attendance?user_id=${uid || sessionStorage.getItem('user_id')}`;
+    const endpoint = `attendance?${buildAttendanceFilterParams(uid).toString()}`;
+    attendanceLoading = true;
+    updateAttendanceExportButtons();
 
     try {
         const data = await apiFetch(endpoint);
@@ -981,7 +984,51 @@ async function loadAttendanceRecords(uid = null) {
         if (errTarget) errTarget.innerHTML = `<div style="padding:20px;color:var(--danger)">Error loading records: ${msg}</div>`;
         attendanceAllRecords = [];
         renderAttendanceCalendar(attendanceAllRecords);
+    } finally {
+        attendanceLoading = false;
+        updateAttendanceExportButtons();
     }
+}
+
+function buildAttendanceFilterParams(uid = undefined) {
+    const params = new URLSearchParams();
+    const role = normalizeRole(sessionStorage.getItem('user_role'));
+    const userFilter = document.getElementById('admin-user-filter');
+    const selectedUser = uid !== undefined && uid !== null ? String(uid) : (userFilter?.value || '');
+    const from = document.getElementById('attendance-from-date')?.value || '';
+    const to = document.getElementById('attendance-to-date')?.value || '';
+    const search = document.getElementById('attendance-table-search')?.value.trim() || '';
+
+    if (role === 'admin' && !selectedUser) params.set('all', 'true');
+    else params.set('user_id', selectedUser || sessionStorage.getItem('user_id') || '');
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    if (search) params.set('search', search);
+    params.set('view_mode', attendanceCalendarViewMode);
+    params.set('focus_date', attendanceDateKey(attendanceCalendarDate));
+    return params;
+}
+
+function validateAttendanceDateRange() {
+    if (!isAttendanceDateRangeValid()) {
+        appAlert('From Date cannot be greater than To Date.', 'Invalid date range', 'error');
+        return false;
+    }
+    return true;
+}
+
+function isAttendanceDateRangeValid() {
+    const from = document.getElementById('attendance-from-date')?.value || '';
+    const to = document.getElementById('attendance-to-date')?.value || '';
+    return !(from && to && from > to);
+}
+
+function updateAttendanceExportButtons() {
+    const disabled = attendanceLoading || !attendanceAllRecords.length || !isAttendanceDateRangeValid();
+    ['csv', 'excel', 'pdf'].forEach((format) => {
+        const button = document.getElementById(`export-attendance-${format}`);
+        if (button) button.disabled = disabled;
+    });
 }
 
 function getAttendanceStatusBadge(record) {
@@ -992,21 +1039,8 @@ function getAttendanceStatusBadge(record) {
 }
 
 function renderAttendancePage() {
-    let filteredRecords = attendanceAllRecords;
-    if (attendanceFilterText) {
-        filteredRecords = attendanceAllRecords.filter(record => {
-            const searchable = [
-                record.username,
-                record.location,
-                record.type,
-                record.project_name || '',
-                record.entry_source || ''
-            ].join(' ').toUpperCase();
-            return searchable.includes(attendanceFilterText);
-        });
-    }
-
-    renderAttendanceCalendar(filteredRecords);
+    renderAttendanceCalendar(attendanceAllRecords);
+    updateAttendanceExportButtons();
 }
 
 function buildAttendanceDatesForMonth(year, month) {
@@ -1271,39 +1305,48 @@ function renderAttendanceCalendar(records) {
     `;
 }
 
-function exportAttendanceCsv() {
-    const rows = attendanceAllRecords || [];
-    if (!rows.length) return;
+async function exportAttendanceReport(format) {
+    if (!attendanceAllRecords.length || !validateAttendanceDateRange()) return;
+    const button = document.getElementById(`export-attendance-${format}`);
+    const labels = {
+        csv: '<i class="fas fa-file-csv"></i> Export CSV',
+        excel: '<i class="fas fa-file-excel"></i> Export Excel',
+        pdf: '<i class="fas fa-file-pdf"></i> Export PDF'
+    };
+    const success = {
+        csv: 'CSV report generated successfully.',
+        excel: 'Excel report generated successfully.',
+        pdf: 'PDF report generated successfully.'
+    };
 
-    const headers = ['User', 'Date', 'Location', 'Type', 'Status', 'Entry Time', 'Exit Time', 'Work Duration', 'Lunch Duration', 'Project'];
-    const body = rows.map(record => {
-        const entryTimeRaw = record.entry_time || record.original_time;
-        const exitTimeRaw = record.exit_time || record.rounded_time;
-        const localEntryTime = formatRecordDateTime(record, entryTimeRaw);
-        const localExitTime = formatRecordDateTime(record, exitTimeRaw);
-        const statusText = record.type === 'entry' ? (record.late_reason ? 'Late' : 'On time') : (record.type === 'absence' ? 'Absence' : '-');
-        return [
-            record.username,
-            localEntryTime.date,
-            record.location,
-            record.type,
-            statusText,
-            localEntryTime.time,
-            localExitTime.time,
-            formatDurationHours(record.total_duration),
-            formatDurationHours(record.lunch_duration),
-            record.project_name || 'No project'
-        ];
-    });
-
-    const csv = [headers, ...body].map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'attendance_records.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+        attendanceLoading = true;
+        updateAttendanceExportButtons();
+        if (button) button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+        const response = await fetch(`${API_BASE_URL}/attendance/export/${format}?${buildAttendanceFilterParams().toString()}`, {
+            credentials: 'include'
+        });
+        if (!response.ok) throw new Error('Export failed');
+        const blob = await response.blob();
+        const disposition = response.headers.get('Content-Disposition') || '';
+        const filenameMatch = disposition.match(/filename="?([^"]+)"?/i);
+        const extension = format === 'excel' ? 'xlsx' : format;
+        const filename = filenameMatch?.[1] || `attendance_records_${attendanceDateKey(new Date()).replace(/-/g, '')}.${extension}`;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+        appAlert(success[format], 'Success', 'success');
+    } catch (error) {
+        console.error('[Attendance] Export failed:', error);
+        appAlert('Unable to generate report. Please try again.', 'Export error', 'error');
+    } finally {
+        attendanceLoading = false;
+        if (button) button.innerHTML = labels[format];
+        updateAttendanceExportButtons();
+    }
 }
 
 async function loadActiveTimers() {
@@ -2998,12 +3041,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const attendanceSearchInput = document.getElementById('attendance-table-search');
     if (attendanceSearchInput) {
-        attendanceSearchInput.addEventListener('keyup', () => {
-            attendanceFilterText = attendanceSearchInput.value.toUpperCase();
-            attendancePage = 1;
-            renderAttendancePage();
+        attendanceSearchInput.addEventListener('input', () => {
+            clearTimeout(attendanceSearchTimer);
+            attendanceSearchTimer = setTimeout(() => loadAttendanceRecords(), 300);
         });
     }
+
+    ['attendance-from-date', 'attendance-to-date'].forEach((id) => {
+        const input = document.getElementById(id);
+        if (input) input.addEventListener('change', () => {
+            updateAttendanceExportButtons();
+            if (validateAttendanceDateRange()) loadAttendanceRecords();
+        });
+    });
 
     const prevMonthBtn = document.getElementById('attendance-calendar-prev');
     if (prevMonthBtn) {
@@ -3050,8 +3100,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const exportBtn = document.getElementById('export-attendance-csv');
-    if (exportBtn) exportBtn.addEventListener('click', exportAttendanceCsv);
+    ['csv', 'excel', 'pdf'].forEach((format) => {
+        const exportBtn = document.getElementById(`export-attendance-${format}`);
+        if (exportBtn) exportBtn.addEventListener('click', () => exportAttendanceReport(format));
+    });
 
     const notificationsToggle = document.getElementById('notifications-toggle');
     const notificationsPanel = document.getElementById('notifications-panel');

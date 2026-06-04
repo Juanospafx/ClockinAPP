@@ -196,16 +196,16 @@
                     <input type="date" id="recalculate-date" title="Date for recalculation" style="height: 38px; width: 150px; border-radius: 50px; padding: 0 15px;">
                 </div>
 
-                <!-- 3. Top Actions (Recalculate + Export CSV) -->
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; width: 100%;">
-                    <div class="admin-only" style="display: flex; align-items: center;">
-                        <button id="recalculate-duration-button" title="Recalculate Daily Duration"><i class="fas fa-sync-alt"></i> Recalculate</button>
-                    </div>
-                    <button id="export-attendance-csv" type="button" class="btn-success-outline" style="margin-left: auto;"><i class="fas fa-file-csv"></i> Export CSV</button>
+                <!-- 3. Top Actions -->
+                <div class="attendance-action-area">
+                    <button id="recalculate-duration-button" class="admin-only" title="Recalculate Daily Duration"><i class="fas fa-sync-alt"></i> Recalculate</button>
+                    <button id="export-attendance-csv" type="button" class="attendance-export-btn csv" disabled><i class="fas fa-file-csv"></i> Export CSV</button>
+                    <button id="export-attendance-excel" type="button" class="attendance-export-btn excel" disabled><i class="fas fa-file-excel"></i> Export Excel</button>
+                    <button id="export-attendance-pdf" type="button" class="attendance-export-btn pdf" disabled><i class="fas fa-file-pdf"></i> Export PDF</button>
                 </div>
 
-                <!-- 4. Search records & All Users (Side-by-side before calendar) -->
-                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 15px; width: 100%;">
+                <!-- 4. Attendance filters -->
+                <div class="attendance-filter-area">
                     <div class="search-wrapper" style="flex: 1; min-width: 250px;">
                         <i class="fas fa-search"></i>
                         <input type="text" id="attendance-table-search" placeholder="Search records...">
@@ -216,6 +216,14 @@
                             <option value="">All Users</option>
                         </select>
                     </div>
+                    <label class="attendance-date-filter" for="attendance-from-date">
+                        <span>From Date</span>
+                        <input type="date" id="attendance-from-date">
+                    </label>
+                    <label class="attendance-date-filter" for="attendance-to-date">
+                        <span>To Date</span>
+                        <input type="date" id="attendance-to-date">
+                    </label>
                 </div>
 
                 <div style="width: 100%; height: 1px; background: var(--border-subtle); margin: 5px 0;"></div>

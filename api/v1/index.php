@@ -108,6 +108,10 @@ try {
         handle_attendance_recalculate();
         return;
     }
+    if (preg_match('#^attendance/export/(csv|excel|pdf)$#', $route, $m) && $method === 'GET') {
+        handle_attendance_export($m[1]);
+        return;
+    }
     if (preg_match('#^attendance/(\\d+)$#', $route, $m)) {
         $id = (int)$m[1];
         if ($method === 'PUT') {
