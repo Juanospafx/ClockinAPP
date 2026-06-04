@@ -7,13 +7,18 @@ require_once __DIR__ . '/GeofenceService.php';
 require_once __DIR__ . '/ProjectService.php';
 
 class AttendanceService {
-    public static function fetchRecords(?int $userId, ?int $limit): array {
+    public static function fetchRecords(
+        ?int $userId,
+        ?int $limit,
+        ?string $fromDate = null,
+        ?string $toDate = null,
+        ?string $searchText = null
+    ): array {
         $pdo = get_pdo();
 
         $hasEntrySource = self::columnExists($pdo, 'attendance_records', 'entry_source');
         $hasManualReason = self::columnExists($pdo, 'attendance_records', 'manual_reason');
         $hasCreatedBy = self::columnExists($pdo, 'attendance_records', 'created_by');
-
         $hasLateReason = self::columnExists($pdo, 'attendance_records', 'late_reason');
 
         $selectEntrySource = $hasEntrySource ? 'ar.entry_source' : "NULL AS entry_source";
@@ -55,10 +60,31 @@ class AttendanceService {
         }
 
         $params = [];
+        $whereClauses = [];
 
         if ($userId !== null) {
-            $sql .= ' WHERE ar.user_id = ?';
+            $whereClauses[] = 'ar.user_id = ?';
             $params[] = $userId;
+        }
+
+        if ($fromDate !== null) {
+            $whereClauses[] = 'DATE(ar.original_time) >= ?';
+            $params[] = $fromDate;
+        }
+
+        if ($toDate !== null) {
+            $whereClauses[] = 'DATE(ar.original_time) <= ?';
+            $params[] = $toDate;
+        }
+
+        if ($searchText !== null && $searchText !== '') {
+            $whereClauses[] = '(u.username LIKE ? OR p.name LIKE ?)';
+            $params[] = '%' . $searchText . '%';
+            $params[] = '%' . $searchText . '%';
+        }
+
+        if (!empty($whereClauses)) {
+            $sql .= ' WHERE ' . implode(' AND ', $whereClauses);
         }
 
         $sql .= ' ORDER BY ar.created_at DESC';
