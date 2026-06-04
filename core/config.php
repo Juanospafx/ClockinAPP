@@ -27,15 +27,11 @@ function load_env_file(string $path): void {
 load_env_file(APP_ROOT . DIRECTORY_SEPARATOR . '.env');
 
 define('APP_TIMEZONE', $_ENV['APP_TIMEZONE'] ?? 'UTC');
-
-// --- Configuración Original (Producción / .env) ---
-// Comentada temporalmente para evitar choques en local
- define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
- define('DB_PORT', $_ENV['DB_PORT'] ?? '3306');
- define('DB_USER', $_ENV['DB_USER'] ?? '');
- define('DB_PASS', $_ENV['DB_PASS'] ?? '');
- define('DB_NAME', $_ENV['DB_NAME'] ?? '');
-
+define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
+define('DB_PORT', $_ENV['DB_PORT'] ?? '3306');
+define('DB_USER', $_ENV['DB_USER'] ?? '');
+define('DB_PASS', $_ENV['DB_PASS'] ?? '');
+define('DB_NAME', $_ENV['DB_NAME'] ?? '');
 
 if (DB_USER === '' || DB_NAME === '') {
     error_log('FATAL: Missing required database settings in .env file (DB_USER/DB_NAME)');
@@ -44,25 +40,6 @@ if (DB_USER === '' || DB_NAME === '') {
         echo json_encode(['ok' => false, 'error' => ['code' => 'config_error', 'message' => 'Server configuration error.']]);
         exit;
     }
-} 
-/*
-// --- CONFIGURACIÓN LOCAL XAMPP ---
-define('DB_HOST', '127.0.0.1');
-define('DB_PORT', '3306');
-define('DB_USER', 'root');
-define('DB_PASS', ''); // XAMPP por defecto no tiene contraseña
-define('DB_NAME', 'brightro_qrapp_inv');
-
- // Removida la validación de DB_PASS para permitir XAMPP
-if (DB_USER === '' || DB_NAME === '') {
-    error_log('FATAL: Missing database credentials in .env file');
-    if (php_sapi_name() !== 'cli') {
-        http_response_code(500);
-        echo json_encode(['ok' => false, 'error' => ['code' => 'config_error', 'message' => 'Server configuration error.']]);
-        exit;
-    }
-}*/
-   
-
+}
 
 define('APP_DEBUG', filter_var($_ENV['APP_DEBUG'] ?? 'false', FILTER_VALIDATE_BOOLEAN));

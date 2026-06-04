@@ -649,13 +649,15 @@ table th {
    FLATPICKR CUSTOM THEME (CALENDAR & TIME)
    ========================================================================== */
 .flatpickr-calendar {
-    width: 280px !important;
+    width: min(308px, calc(100vw - 24px)) !important;
     background: var(--bg-card) !important;
     border: 1px solid var(--border-subtle) !important;
     box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5) !important;
     border-radius: 12px !important;
     font-family: 'Outfit', 'Poppins', sans-serif !important;
     padding: 5px;
+    z-index: 100010 !important;
+    overflow: visible !important;
 }
 .flatpickr-months .flatpickr-month, 
 .flatpickr-current-month .flatpickr-monthDropdown-months,
@@ -680,10 +682,21 @@ table th {
 .flatpickr-current-month { display: flex !important; align-items: center; justify-content: center; gap: 4px; }
 .flatpickr-current-month input.cur-year { font-size: 0.85rem !important; font-weight: 600 !important; text-align: center; }
 .flatpickr-weekdays, span.flatpickr-weekday { color: var(--text-gray) !important; font-size: 0.75rem !important; }
-.dayContainer { width: 270px !important; min-width: 270px !important; max-width: 270px !important; }
+.flatpickr-weekdays,
+.flatpickr-days,
+.dayContainer {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+}
+.flatpickr-weekday,
+.flatpickr-day {
+    flex: 0 0 14.285714% !important;
+    max-width: 14.285714% !important;
+}
 .flatpickr-day {
     color: var(--text-white) !important; font-size: 0.85rem !important;
-    border-radius: 6px !important; max-width: 36px !important; height: 36px !important; line-height: 36px !important;
+    border-radius: 6px !important; height: 36px !important; line-height: 36px !important;
 }
 .flatpickr-day:hover { background: var(--bg-input) !important; border-color: var(--border-subtle) !important; }
 .flatpickr-day.selected, .flatpickr-day.selected:hover, .flatpickr-day.selected:focus { background: var(--primary) !important; border-color: var(--primary) !important; color: white !important; }
@@ -1198,7 +1211,7 @@ html[data-theme="light"] .login-container .error-message {
 }
 
 .attendance-calendar-wrap {
-    overflow: hidden;
+    overflow: visible;
     border: 1px solid var(--border-subtle);
     border-radius: 14px;
     background: var(--bg-card);
@@ -1214,6 +1227,8 @@ html[data-theme="light"] .login-container .error-message {
 /* Custom attendance matrix */
 .attendance-calendar-grid {
     overflow: auto;
+    position: relative;
+    isolation: isolate;
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
 }
@@ -1236,7 +1251,8 @@ html[data-theme="light"] .login-container .error-message {
 .attendance-matrix-head {
     position: sticky;
     top: 0;
-    z-index: 8;
+    z-index: 20;
+    background: var(--bg-card);
 }
 
 .attendance-matrix-col {
@@ -1248,7 +1264,7 @@ html[data-theme="light"] .login-container .error-message {
 .attendance-matrix-col-header {
     text-align: center;
     padding: 12px 6px;
-    background: transparent;
+    background: var(--bg-card);
     border-bottom: 2px solid var(--border-subtle) !important;
 }
 
@@ -1283,7 +1299,7 @@ html[data-theme="light"] .login-container .error-message {
 }
 
 .attendance-matrix-employee-head {
-    z-index: 9;
+    z-index: 21;
     border-bottom: 2px solid var(--border-subtle);
 }
 
@@ -1493,6 +1509,19 @@ html[data-theme="light"] .attendance-matrix-cell:hover:not(:disabled) {
     font-size: 0.95rem;
 }
 
+.attendance-confirm-actions .attendance-action-btn {
+    width: auto;
+    min-width: 120px;
+    height: auto;
+    min-height: 42px;
+    padding: 10px 18px !important;
+    gap: 8px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
 .attendance-action-delete {
     background: var(--danger-color);
     color: #fff;
@@ -1511,7 +1540,8 @@ html[data-theme="light"] .attendance-matrix-cell:hover:not(:disabled) {
     margin-top: 14px;
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 html[data-theme="light"] .attendance-record-group {
@@ -1866,6 +1896,18 @@ input[type="datetime-local"] ~ .temporal-input-icon {
 .action-button {
     min-height: 44px;
     letter-spacing: .1px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    line-height: 1.2;
+}
+
+.action-button span {
+    flex: 0 0 auto;
+    line-height: 1;
+    font-size: 1rem;
 }
 
 .action-cancel-button {
@@ -1908,6 +1950,13 @@ input[type="datetime-local"] ~ .temporal-input-icon {
 @media (max-width: 640px) {
     .action-buttons {
         grid-template-columns: 1fr;
+    }
+    .attendance-confirm-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+    .attendance-confirm-actions .attendance-action-btn {
+        width: 100%;
     }
 }
 

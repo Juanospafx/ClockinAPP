@@ -40,9 +40,10 @@ class TimerService {
                 continue;
             }
             $metrics = AttendanceService::calculateTimerMetrics($pdo, $entry, clone $now);
+            $lunchStatus = AttendanceService::getLunchStatus($pdo, $entry, clone $now);
             $durationSeconds = $metrics['duration_seconds'];
             $runningSince = $metrics['running_since'] instanceof DateTime ? $metrics['running_since']->format(DATE_ATOM) : null;
-            $startTime = new DateTime($entry['original_time']);
+            $startTime = new DateTime($entry['original_time'], new DateTimeZone('UTC'));
 
             $timers[] = [
                 'id' => (int)$entry['id'],
@@ -51,6 +52,10 @@ class TimerService {
                 'status' => isset($entry['status']) ? (int)$entry['status'] : null,
                 'duration_seconds' => $durationSeconds,
                 'duration_display' => format_timer_duration_display($durationSeconds),
+                'worked_seconds' => $metrics['worked_seconds'],
+                'total_seconds' => $metrics['total_seconds'],
+                'lunch_seconds' => $metrics['lunch_seconds'],
+                'lunch_complete' => $lunchStatus['complete'],
                 'start_time_display' => $startTime->format('Y-m-d H:i:s'),
                 'entry_time_iso' => $startTime->format(DATE_ATOM),
                 'running_since' => $runningSince,
@@ -75,9 +80,10 @@ class TimerService {
         }
         $now = new DateTime('now', new DateTimeZone('UTC'));
         $metrics = AttendanceService::calculateTimerMetrics($pdo, $entry, clone $now);
+        $lunchStatus = AttendanceService::getLunchStatus($pdo, $entry, clone $now);
         $durationSeconds = $metrics['duration_seconds'];
         $runningSince = $metrics['running_since'] instanceof DateTime ? $metrics['running_since']->format(DATE_ATOM) : null;
-        $startTime = new DateTime($entry['original_time']);
+        $startTime = new DateTime($entry['original_time'], new DateTimeZone('UTC'));
 
         $username = $entry['username'] ?? null;
         if ($username === null) {
@@ -100,6 +106,10 @@ class TimerService {
             'status' => isset($entry['status']) ? (int)$entry['status'] : null,
             'duration_seconds' => $durationSeconds,
             'duration_display' => format_timer_duration_display($durationSeconds),
+            'worked_seconds' => $metrics['worked_seconds'],
+            'total_seconds' => $metrics['total_seconds'],
+            'lunch_seconds' => $metrics['lunch_seconds'],
+            'lunch_complete' => $lunchStatus['complete'],
             'start_time_display' => $startTime->format('Y-m-d H:i:s'),
             'entry_time_iso' => $startTime->format(DATE_ATOM),
             'running_since' => $runningSince,
@@ -148,16 +158,22 @@ class TimerService {
             $eventType = $statusMap[$requestedStatus]['type'];
 
             if ($eventType === 'exit') {
+                $lunchValidation = AttendanceService::validateLunchForClockOut($pdo, $timerEntry, $eventTime);
+                if ($lunchValidation !== null) {
+                    $pdo->rollBack();
+                    return $lunchValidation;
+                }
                 $metrics = AttendanceService::calculateTimerMetrics($pdo, $timerEntry, $eventTime);
-                $totalDurationMinutes = (int)round($metrics['duration_seconds'] / 60);
+                $workedMinutes = (int)round($metrics['worked_seconds'] / 60);
+                $lunchMinutes = (int)round($metrics['lunch_seconds'] / 60);
 
                 $stmt = $pdo->prepare(
-                    'INSERT INTO attendance_records (user_id, location, type, original_time, rounded_time, project_qr_id, total_duration) VALUES (?, ?, ?, ?, ?, ?, ?)'
+                    'INSERT INTO attendance_records (user_id, location, type, original_time, rounded_time, project_qr_id, total_duration, lunch_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
                 );
-                $stmt->execute([$userId, $location, $eventType, $eventTime->format('Y-m-d H:i:s'), $roundedTime->format('Y-m-d H:i:s'), $timerEntry['project_qr_id'], $totalDurationMinutes]);
+                $stmt->execute([$userId, $location, $eventType, $eventTime->format('Y-m-d H:i:s'), $roundedTime->format('Y-m-d H:i:s'), $timerEntry['project_qr_id'], $workedMinutes, $lunchMinutes]);
 
-                $updateStmt = $pdo->prepare('UPDATE attendance_records SET status = ?, total_duration = ? WHERE id = ?');
-                $updateStmt->execute([$targetStatus, $totalDurationMinutes, $timerId]);
+                $updateStmt = $pdo->prepare('UPDATE attendance_records SET status = ?, total_duration = ?, lunch_duration = ? WHERE id = ?');
+                $updateStmt->execute([$targetStatus, $workedMinutes, $lunchMinutes, $timerId]);
             } else {
                 $stmt = $pdo->prepare(
                     'INSERT INTO attendance_records (user_id, location, type, original_time, rounded_time, project_qr_id) VALUES (?, ?, ?, ?, ?, ?)'

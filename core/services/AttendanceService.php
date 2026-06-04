@@ -26,18 +26,34 @@ class AttendanceService {
         $selectCreatedBy = $hasCreatedBy ? 'ar.created_by' : "NULL AS created_by";
         $selectCreatedByUsername = $hasCreatedBy ? 'admin_u.username AS created_by_username' : "NULL AS created_by_username";
         $selectLateReason = $hasLateReason ? 'ar.late_reason AS late_reason' : "NULL AS late_reason";
+        $manualExitEntryCase = $hasEntrySource
+            ? "WHEN ar.type = 'exit' AND ar.entry_source = 'manual' AND ar.rounded_time > ar.original_time THEN ar.original_time"
+            : '';
+        $manualExitTimeCase = $hasEntrySource
+            ? "WHEN ar.type = 'exit' AND ar.entry_source = 'manual' AND ar.rounded_time > ar.original_time THEN ar.rounded_time"
+            : '';
 
         $sql = "SELECT ar.id, ar.user_id, u.username, ar.location, ar.type, ar.original_time, ar.rounded_time,
                        ar.total_duration, ar.lunch_duration, ar.created_at, ar.project_qr_id, pq.project_id, p.name AS project_name,
                        CASE
-                           WHEN ar.type = 'exit' THEN ar.original_time
+                           {$manualExitEntryCase}
+                           WHEN ar.type = 'exit' THEN (
+                               SELECT e.original_time
+                               FROM attendance_records e
+                               WHERE e.user_id = ar.user_id
+                                 AND e.type = 'entry'
+                                 AND e.original_time <= ar.original_time
+                               ORDER BY e.original_time DESC, e.id DESC
+                               LIMIT 1
+                           )
                            WHEN ar.type = 'entry' THEN ar.original_time
                            ELSE ar.original_time
                        END AS entry_time,
                        CASE
-                           WHEN ar.type = 'exit' THEN ar.rounded_time
+                           {$manualExitTimeCase}
+                           WHEN ar.type = 'exit' THEN ar.original_time
                            WHEN ar.type = 'entry' THEN (
-                               SELECT x.rounded_time
+                               SELECT x.original_time
                                FROM attendance_records x
                                WHERE x.user_id = ar.user_id
                                  AND x.type = 'exit'
@@ -95,7 +111,30 @@ class AttendanceService {
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return array_map([self::class, 'appendCalculatedDurations'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    private static function appendCalculatedDurations(array $record): array {
+        $entryTs = !empty($record['entry_time']) ? strtotime((string)$record['entry_time']) : false;
+        $exitTs = !empty($record['exit_time']) ? strtotime((string)$record['exit_time']) : false;
+        $totalMinutes = ($entryTs !== false && $exitTs !== false && $exitTs > $entryTs)
+            ? (int)round(($exitTs - $entryTs) / 60)
+            : null;
+        $storedWorkedMinutes = isset($record['total_duration']) && $record['total_duration'] !== null
+            ? max(0, (int)$record['total_duration'])
+            : null;
+        $lunchMinutes = isset($record['lunch_duration']) && $record['lunch_duration'] !== null
+            ? max(0, (int)$record['lunch_duration'])
+            : (($totalMinutes !== null && $storedWorkedMinutes !== null)
+                ? max(0, $totalMinutes - $storedWorkedMinutes)
+                : 0);
+
+        $record['total_hours_minutes'] = $totalMinutes;
+        $record['lunch_duration_minutes'] = $lunchMinutes;
+        $record['worked_hours_minutes'] = $totalMinutes === null
+            ? $storedWorkedMinutes
+            : max(0, $totalMinutes - $lunchMinutes);
+        return $record;
     }
 
     public static function exportReport(string $format, array $filters): array {
@@ -139,7 +178,7 @@ class AttendanceService {
             (string)($row['project_name'] ?? 'No project') ?: 'No project',
             $clockIn,
             $clockOut,
-            self::formatMinutes($row['total_duration'] ?? null),
+            self::formatMinutes($row['worked_hours_minutes'] ?? $row['total_duration'] ?? null),
             $status,
             $clockIn !== '' ? substr($clockIn, 0, 10) : '',
             (string)($row['created_at'] ?? ''),
@@ -527,16 +566,22 @@ class AttendanceService {
                 $newStatus = self::mapTimerStatusFromType($type);
 
                 if ($type === 'exit') {
+                    $lunchValidation = self::validateLunchForClockOut($pdo, $openTimer, $originalTime);
+                    if ($lunchValidation !== null) {
+                        $pdo->rollBack();
+                        return $lunchValidation;
+                    }
                     $metrics = self::calculateTimerMetrics($pdo, $openTimer, $originalTime);
-                    $sessionDurationMinutes = (int)round($metrics['duration_seconds'] / 60);
+                    $workedMinutes = (int)round($metrics['worked_seconds'] / 60);
+                    $lunchMinutes = (int)round($metrics['lunch_seconds'] / 60);
 
                     $stmt = $pdo->prepare(
-                        'INSERT INTO attendance_records (user_id, location, type, original_time, rounded_time, project_qr_id, total_duration) VALUES (?, ?, ?, ?, ?, ?, ?)'
+                        'INSERT INTO attendance_records (user_id, location, type, original_time, rounded_time, project_qr_id, total_duration, lunch_duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
                     );
-                    $stmt->execute([$userId, $location, $type, $originalTime->format('Y-m-d H:i:s'), $roundedTime->format('Y-m-d H:i:s'), $currentProjectQrId, $sessionDurationMinutes]);
+                    $stmt->execute([$userId, $location, $type, $originalTime->format('Y-m-d H:i:s'), $roundedTime->format('Y-m-d H:i:s'), $currentProjectQrId, $workedMinutes, $lunchMinutes]);
 
-                    $updateStmt = $pdo->prepare('UPDATE attendance_records SET status = ?, total_duration = ? WHERE id = ?');
-                    $updateStmt->execute([$newStatus, $sessionDurationMinutes, $openTimer['id']]);
+                    $updateStmt = $pdo->prepare('UPDATE attendance_records SET status = ?, total_duration = ?, lunch_duration = ? WHERE id = ?');
+                    $updateStmt->execute([$newStatus, $workedMinutes, $lunchMinutes, $openTimer['id']]);
                 } elseif ($type === 'end_lunch') {
                     $lunchDurationMinutes = null;
                     $startLunchStmt = $pdo->prepare("SELECT original_time FROM attendance_records WHERE user_id = ? AND type = 'start_lunch' AND original_time >= ? ORDER BY original_time DESC LIMIT 1");
@@ -637,20 +682,7 @@ class AttendanceService {
 
         $gross = (int)round(($exitTs - $entryTs) / 60);
 
-        // Only auto-discount lunch (12:00–13:00) for shifts >= 6 hours that fully contain the lunch window.
-        // Short shifts or shifts that only partially overlap lunch should not be penalized.
-        $computedLunch = 0;
-        $MIN_HOURS_FOR_AUTO_LUNCH = 6;
-        if ($gross >= ($MIN_HOURS_FOR_AUTO_LUNCH * 60)) {
-            $day = date('Y-m-d', $entryTs);
-            $lunchStartTs = strtotime($day . ' 12:00:00');
-            $lunchEndTs = strtotime($day . ' 13:00:00');
-
-            // Only discount if the shift fully contains the 12:00-13:00 window
-            if ($entryTs <= $lunchStartTs && $exitTs >= $lunchEndTs) {
-                $computedLunch = 60; // Full 1-hour lunch
-            }
-        }
+        $computedLunch = min($gross, max(0, (int)($lunchDuration ?? 0)));
 
         $totalDuration = max(0, $gross - $computedLunch);
         $lunchDuration = $computedLunch;
@@ -819,8 +851,10 @@ class AttendanceService {
         ]);
         $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $elapsedSeconds = 0;
+        $workedSeconds = 0;
+        $lunchSeconds = 0;
         $segmentStart = null;
+        $lunchStart = null;
 
         foreach ($events as $event) {
             $eventTime = new DateTime($event['original_time'], $utc);
@@ -832,6 +866,10 @@ class AttendanceService {
                 case 'entry':
                 case 'resume':
                 case 'end_lunch':
+                    if ($event['type'] === 'end_lunch' && $lunchStart !== null) {
+                        $lunchSeconds += max(0, $eventTime->getTimestamp() - $lunchStart->getTimestamp());
+                        $lunchStart = null;
+                    }
                     if ($segmentStart === null) {
                         $segmentStart = $eventTime;
                     }
@@ -840,8 +878,11 @@ class AttendanceService {
                 case 'start_lunch':
                 case 'exit':
                     if ($segmentStart !== null) {
-                        $elapsedSeconds += max(0, $eventTime->getTimestamp() - $segmentStart->getTimestamp());
+                        $workedSeconds += max(0, $eventTime->getTimestamp() - $segmentStart->getTimestamp());
                         $segmentStart = null;
+                    }
+                    if ($event['type'] === 'start_lunch') {
+                        $lunchStart = $eventTime;
                     }
                     if ($event['type'] === 'exit') {
                         break 2;
@@ -852,13 +893,74 @@ class AttendanceService {
 
         $runningSince = null;
         if ($segmentStart !== null) {
-            $elapsedSeconds += max(0, $reference->getTimestamp() - $segmentStart->getTimestamp());
+            $workedSeconds += max(0, $reference->getTimestamp() - $segmentStart->getTimestamp());
             $runningSince = clone $segmentStart;
         }
 
+        $entryTime = new DateTime((string)$entryRow['original_time'], $utc);
+        $totalSeconds = max(0, $reference->getTimestamp() - $entryTime->getTimestamp());
+        $calculatedWorkedSeconds = max(0, $totalSeconds - $lunchSeconds);
+
         return [
-            'duration_seconds' => (int)$elapsedSeconds,
+            'duration_seconds' => (int)$workedSeconds,
+            'worked_seconds' => (int)$calculatedWorkedSeconds,
+            'tracked_seconds' => (int)$workedSeconds,
+            'total_seconds' => (int)$totalSeconds,
+            'lunch_seconds' => (int)$lunchSeconds,
             'running_since' => $runningSince,
         ];
+    }
+
+    public static function getLunchStatus(PDO $pdo, array $entryRow, ?DateTime $referenceTime = null): array {
+        $utc = new DateTimeZone('UTC');
+        $reference = $referenceTime ? clone $referenceTime : new DateTime('now', $utc);
+        $reference->setTimezone($utc);
+        $stmt = $pdo->prepare(
+            "SELECT type, original_time FROM attendance_records
+             WHERE user_id = ? AND original_time >= ? AND original_time <= ?
+               AND type IN ('start_lunch', 'end_lunch')
+             ORDER BY original_time ASC, id ASC"
+        );
+        $stmt->execute([
+            (int)$entryRow['user_id'],
+            (string)$entryRow['original_time'],
+            $reference->format('Y-m-d H:i:s'),
+        ]);
+
+        $hasStart = false;
+        $complete = false;
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $event) {
+            if ($event['type'] === 'start_lunch') $hasStart = true;
+            if ($event['type'] === 'end_lunch' && $hasStart) $complete = true;
+        }
+
+        return [
+            'has_start' => $hasStart,
+            'complete' => $complete,
+            'half_day_exempt' => self::isHalfDayShift($entryRow, $reference),
+        ];
+    }
+
+    public static function validateLunchForClockOut(PDO $pdo, array $entryRow, DateTime $exitTime): ?array {
+        $status = self::getLunchStatus($pdo, $entryRow, $exitTime);
+        if ($status['half_day_exempt'] || $status['complete']) {
+            return null;
+        }
+        return [
+            'error' => [
+                'code' => 'lunch_required',
+                'message' => 'Start Lunch and End Lunch are required before Clock Out for a full-day shift.',
+            ],
+            'status' => 422,
+        ];
+    }
+
+    private static function isHalfDayShift(array $entryRow, DateTime $exitTime): bool {
+        $timezone = new DateTimeZone(defined('APP_TIMEZONE') ? APP_TIMEZONE : date_default_timezone_get());
+        $entryLocal = new DateTime((string)$entryRow['original_time'], new DateTimeZone('UTC'));
+        $entryLocal->setTimezone($timezone);
+        $exitLocal = clone $exitTime;
+        $exitLocal->setTimezone($timezone);
+        return $entryLocal->format('H:i:s') > '13:00:00' || $exitLocal->format('H:i:s') < '12:00:00';
     }
 }

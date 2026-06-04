@@ -127,20 +127,9 @@ function syncEditDurationsFromDateTimes() {
 
     const grossMinutes = Math.round((exitTs - entryTs) / 60000);
 
-    let lunchMinutes = 0;
-    const entryDate = new Date(entryTs);
-    if (grossMinutes >= 360) {
-        const lunchStart = new Date(entryDate);
-        lunchStart.setHours(12, 0, 0, 0);
-        const lunchEnd = new Date(entryDate);
-        lunchEnd.setHours(13, 0, 0, 0);
+    const lunchMinutes = Math.max(0, Number(attendanceEditingRecord?.lunch_duration_minutes ?? attendanceEditingRecord?.lunch_duration ?? 0) || 0);
 
-        if (entryTs <= lunchStart.getTime() && exitTs >= lunchEnd.getTime()) {
-            lunchMinutes = 60;
-        }
-    }
-
-    totalInput.value = ((grossMinutes - lunchMinutes) / 60).toFixed(2);
+    totalInput.value = (Math.max(0, grossMinutes - lunchMinutes) / 60).toFixed(2);
     lunchInput.value = (lunchMinutes / 60).toFixed(2);
 }
 let attendancePage = 1;
@@ -281,31 +270,18 @@ function formatRecordDateTime(record, value) {
 
 function formatDurationHours(totalMinutes) {
     if (totalMinutes === null || totalMinutes === undefined || totalMinutes === '') {
-        return 'N/A';
+        return 'Pending';
     }
 
     const minutesValue = Number(totalMinutes);
     if (!Number.isFinite(minutesValue)) {
-        return 'N/A';
+        return 'Pending';
     }
 
     const safeMinutes = Math.max(0, Math.round(minutesValue));
-    if (safeMinutes === 0) {
-        return '0m';
-    }
-
     const hours = Math.floor(safeMinutes / 60);
     const minutes = safeMinutes % 60;
-
-    if (hours === 0) {
-        return `${minutes}m`;
-    }
-
-    if (minutes === 0) {
-        return `${hours}h`;
-    }
-
-    return `${hours}h ${minutes}m`;
+    return `${hours}h ${String(minutes).padStart(2, '0')}m`;
 }
 
 function parseRecordDateTimeToMs(record, value) {
@@ -313,16 +289,29 @@ function parseRecordDateTimeToMs(record, value) {
     return parsed ? parsed.getTime() : null;
 }
 
-function resolveRecordDurationMinutes(record) {
+function resolveAttendanceDurations(record) {
     const entryRaw = record?.entry_time || record?.original_time || '';
     const exitRaw = record?.exit_time || record?.rounded_time || '';
+    const calculatedTotal = DateTimeUtils.durationBetweenUtc(entryRaw, exitRaw);
+    const totalMinutes = record?.total_hours_minutes !== null
+        && record?.total_hours_minutes !== undefined
+        && record?.total_hours_minutes !== ''
+        && Number.isFinite(Number(record.total_hours_minutes))
+        ? Number(record.total_hours_minutes)
+        : (Number.isFinite(calculatedTotal) ? calculatedTotal : null);
+    const lunchMinutes = Math.max(0, Number(record?.lunch_duration_minutes ?? record?.lunch_duration ?? 0) || 0);
+    const backendWorkedRaw = record?.worked_hours_minutes ?? record?.total_duration;
+    const backendWorked = backendWorkedRaw === null || backendWorkedRaw === undefined || backendWorkedRaw === ''
+        ? null
+        : Number(backendWorkedRaw);
+    const workedMinutes = totalMinutes === null
+        ? (backendWorked !== null && Number.isFinite(backendWorked) ? Math.max(0, backendWorked) : null)
+        : Math.max(0, totalMinutes - lunchMinutes);
+    return { totalMinutes, lunchMinutes, workedMinutes };
+}
 
-    const duration = DateTimeUtils.durationBetweenUtc(entryRaw, exitRaw);
-    if (Number.isFinite(duration)) {
-        return duration;
-    }
-
-    return record?.total_duration;
+function resolveRecordDurationMinutes(record) {
+    return resolveAttendanceDurations(record).workedMinutes;
 }
 
 function formatLocalDateTime(date) {
@@ -606,7 +595,17 @@ function updateTimerDisplay() {
     }, 1000);
 }
 
-function applyLocalTimerAction() {
+function applyLocalTimerAction(action = '', actionTime = new Date()) {
+    const state = getTimerState();
+    if (action === 'entry') {
+        state.entryTimeIso = actionTime.toISOString();
+        state.lunchComplete = false;
+    } else if (action === 'start_lunch') {
+        state.lunchComplete = false;
+    } else if (action === 'end_lunch') {
+        state.lunchComplete = true;
+    }
+    saveTimerState(state);
     pollUserTimer();
 }
 
@@ -635,6 +634,8 @@ function syncLocalTimerWithBackend(timer) {
         lastSyncTimestamp: Date.now(),
         status: status,
         timerId: timer.id ?? null,
+        entryTimeIso: timer.entry_time_iso || null,
+        lunchComplete: Boolean(timer.lunch_complete),
     };
     saveTimerState(state);
 
@@ -764,6 +765,15 @@ async function registerAttendance(action) {
     if (modal) modal.style.display = 'none';
 
     const messageEl = document.getElementById('register-message');
+    if (action === 'exit' && !canClockOutWithoutLunch(getTimerState(), new Date())) {
+        const lunchMessage = 'Start Lunch and End Lunch are required before Clock Out for a full-day shift.';
+        if (messageEl) {
+            messageEl.textContent = lunchMessage;
+            messageEl.className = 'error-message';
+        }
+        appAlert(lunchMessage, 'Lunch required', 'warning');
+        return;
+    }
     const uid = sessionStorage.getItem('user_id');
     const projectIdInput = document.getElementById('scanned-project-id');
     const projectQrIdInput = document.getElementById('scanned-project-qr-id');
@@ -854,7 +864,7 @@ async function registerAttendance(action) {
             messageEl.className = 'success-message';
         }
 
-        applyLocalTimerAction();
+        applyLocalTimerAction(action, now);
 
         const recordsSection = document.getElementById('records-section');
         if (recordsSection && recordsSection.style.display === 'block') {
@@ -990,6 +1000,16 @@ async function loadAttendanceRecords(uid = null) {
     }
 }
 
+function canClockOutWithoutLunch(state, exitTime) {
+    if (!state || !state.entryTimeIso) return true;
+    const entryTime = new Date(state.entryTimeIso);
+    if (Number.isNaN(entryTime.getTime())) return true;
+    const enteredAfterOnePm = entryTime.getHours() > 13
+        || (entryTime.getHours() === 13 && (entryTime.getMinutes() > 0 || entryTime.getSeconds() > 0));
+    const exitsBeforeNoon = exitTime.getHours() < 12;
+    return enteredAfterOnePm || exitsBeforeNoon || Boolean(state.lunchComplete);
+}
+
 function buildAttendanceFilterParams(uid = undefined) {
     const params = new URLSearchParams();
     const role = normalizeRole(sessionStorage.getItem('user_role'));
@@ -1087,7 +1107,7 @@ function openAttendanceRecordModal(records) {
     body.innerHTML = (records || []).map((record, idx) => {
         const entry = formatRecordDateTime(record, record.entry_time || record.original_time);
         const exit = formatRecordDateTime(record, record.exit_time || record.rounded_time);
-        const durationMinutes = resolveRecordDurationMinutes(record);
+        const durations = resolveAttendanceDurations(record);
         const evidence = record.evidence_url || record.evidence || record.photo_url || record.image_url || '';
         const recordId = record?.id !== undefined && record?.id !== null ? String(record.id) : '';
 
@@ -1098,7 +1118,9 @@ function openAttendanceRecordModal(records) {
                 <div class="attendance-record-row"><div class="attendance-record-key">Date</div><div class="attendance-record-value">${formatRecordValue(entry.date)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Entry Time</div><div class="attendance-record-value">${formatRecordValue(entry.time)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Exit Time</div><div class="attendance-record-value">${formatRecordValue(exit.time)}</div></div>
-                <div class="attendance-record-row"><div class="attendance-record-key">Duration</div><div class="attendance-record-value">${formatDurationHours(durationMinutes)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Total Hours</div><div class="attendance-record-value">${formatDurationHours(durations.totalMinutes)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Lunch Duration</div><div class="attendance-record-value">${formatDurationHours(durations.lunchMinutes)}</div></div>
+                <div class="attendance-record-row"><div class="attendance-record-key">Worked Hours</div><div class="attendance-record-value">${formatDurationHours(durations.workedMinutes)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Location</div><div class="attendance-record-value">${formatRecordValue(record.location)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Type</div><div class="attendance-record-value">${formatRecordValue(record.type)}</div></div>
                 <div class="attendance-record-row"><div class="attendance-record-key">Project</div><div class="attendance-record-value">${formatRecordValue(record.project_name)}</div></div>
@@ -1189,8 +1211,10 @@ function transformAttendanceRecordsToMatrix(records, visibleDates) {
 function attendanceCellSummary(records) {
     const count = Array.isArray(records) ? records.length : 0;
     if (!count) return '';
+    const sessionRecords = records.filter((record) => record.type === 'entry');
+    const durationRecords = sessionRecords.length ? sessionRecords : records.filter((record) => record.type === 'exit');
     let totalMins = 0;
-    records.forEach(r => {
+    durationRecords.forEach(r => {
         totalMins += Number(resolveRecordDurationMinutes(r) || 0);
     });
     const durationStr = formatDurationHours(totalMins);
@@ -1537,7 +1561,7 @@ async function loadSpecialUserRecords(userId) {
         const data = await apiFetch(`attendance?user_id=${userId}`);
 
         if (!data.records || data.records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9">No records found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10">No records found.</td></tr>';
             return;
         }
 
@@ -1548,6 +1572,7 @@ async function loadSpecialUserRecords(userId) {
             const localExitTime = formatRecordDateTime(record, exitTimeRaw);
             const projectNameRaw = (record.project_name ?? '').trim();
             const projectName = projectNameRaw !== '' ? projectNameRaw : 'No project';
+            const durations = resolveAttendanceDurations(record);
             return `
         <tr>
           <td data-label="User">${record.username}</td>
@@ -1556,13 +1581,15 @@ async function loadSpecialUserRecords(userId) {
           <td data-label="Type">${record.type}</td>
           <td data-label="Entry Time">${localEntryTime.time}</td>
           <td data-label="Exit Time">${localExitTime.time}</td>
-          <td data-label="Duration (hours)">${formatDurationHours(record.total_duration)}</td>
+          <td data-label="Total Hours">${formatDurationHours(durations.totalMinutes)}</td>
+          <td data-label="Worked Hours">${formatDurationHours(durations.workedMinutes)}</td>
+          <td data-label="Lunch Duration">${formatDurationHours(durations.lunchMinutes)}</td>
           <td data-label="Project">${projectName}</td>
         </tr>
       `;
         }).join('');
     } catch (error) {
-        tbody.innerHTML = `<tr><td colspan="9">${error.message || 'Error loading records.'}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10">${error.message || 'Error loading records.'}</td></tr>`;
     }
 }
 
@@ -2940,8 +2967,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         rounded_time: DateTimeUtils.datetimeLocalToUtcIso(exitTimeEdit),
                         entry_time: DateTimeUtils.datetimeLocalToUtcIso(entryTimeEdit),
                         exit_time: DateTimeUtils.datetimeLocalToUtcIso(exitTimeEdit),
-                        total_duration: null,
-                        lunch_duration: null,
+                        total_duration: Math.round((Number(document.getElementById('edit-total-duration').value) || 0) * 60),
+                        lunch_duration: Math.round((Number(document.getElementById('edit-lunch-duration').value) || 0) * 60),
                         project_qr_id: null,
                         project_id: selectedProjectId
                     });
