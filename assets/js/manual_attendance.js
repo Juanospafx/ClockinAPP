@@ -306,7 +306,10 @@
     function validateTimeRange(entryTime, exitTime, lunchStart, lunchEnd) {
         if (!entryTime || !exitTime) return 'Entry and exit times are required.';
         if (entryTime >= exitTime) return 'Entry time must be earlier than exit time.';
-        const isHalfDay = entryTime > '13:00' || exitTime < '12:00';
+        const [entryHour, entryMinute] = entryTime.split(':').map(Number);
+        const [exitHour, exitMinute] = exitTime.split(':').map(Number);
+        const shiftMinutes = (exitHour * 60 + exitMinute) - (entryHour * 60 + entryMinute);
+        const requiresLunch = shiftMinutes >= 6 * 60;
 
         if (lunchStart && lunchEnd) {
             if (lunchStart >= lunchEnd) return 'Lunch start must be earlier than lunch end.';
@@ -316,7 +319,7 @@
         if ((lunchStart && !lunchEnd) || (!lunchStart && lunchEnd)) {
             return 'Provide both lunch start and lunch end, or leave both empty.';
         }
-        if (!isHalfDay && (!lunchStart || !lunchEnd)) {
+        if (requiresLunch && (!lunchStart || !lunchEnd)) {
             return 'Lunch start and lunch end are required for a full-day shift.';
         }
 

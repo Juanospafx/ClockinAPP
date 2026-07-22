@@ -147,7 +147,7 @@ class ManualAttendanceService
         if (($lunchStart !== '' && !preg_match('/^\d{2}:\d{2}$/', $lunchStart)) || ($lunchEnd !== '' && !preg_match('/^\d{2}:\d{2}$/', $lunchEnd))) {
             return ['error' => ['code' => 'validation_error', 'message' => 'Lunch start/end must be HH:MM format.'], 'status' => 400];
         }
-        if ($isRangeMode && !self::isHalfDayTimeRange($entryTime, $exitTime) && ($lunchStart === '' || $lunchEnd === '')) {
+        if ($isRangeMode && self::requiresLunchBreak($entryTime, $exitTime) && ($lunchStart === '' || $lunchEnd === '')) {
             return ['error' => ['code' => 'lunch_required', 'message' => 'Lunch start and lunch end are required for a full-day shift.'], 'status' => 422];
         }
 
@@ -447,9 +447,13 @@ class ManualAttendanceService
         ];
     }
 
-    private static function isHalfDayTimeRange(string $entryTime, string $exitTime): bool
+    private static function requiresLunchBreak(string $entryTime, string $exitTime): bool
     {
-        return $entryTime > '13:00' || $exitTime < '12:00';
+        [$entryHour, $entryMinute] = array_map('intval', explode(':', $entryTime));
+        [$exitHour, $exitMinute] = array_map('intval', explode(':', $exitTime));
+        $shiftMinutes = (($exitHour * 60) + $exitMinute) - (($entryHour * 60) + $entryMinute);
+
+        return $shiftMinutes >= (6 * 60);
     }
 
     private static function overlapMinutes(string $aStart, string $aEnd, string $bStart, string $bEnd): int
